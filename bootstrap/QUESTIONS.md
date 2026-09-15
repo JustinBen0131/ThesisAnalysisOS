@@ -15,6 +15,11 @@ I'll set this up around how you actually work. Ten questions, all at once.
 Answer what you care about; say **defaults** and I'll take every default, or
 **default** on any single one. Only #8 has no default.
 
+**0. Before you answer: does anything below need more explanation, or not
+fit how you actually work?** Tell me here in your own words and I'll clarify
+or reshape it before building anything. If it all makes sense, leave this
+blank or write N/A.
+
 **1. What's your name, and what timezone are you in?**
 Default: `<shell username>`, `<machine timezone>`
 

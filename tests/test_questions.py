@@ -21,15 +21,18 @@ class TestQuestions(unittest.TestCase):
 
     def test_ten_numbered_questions_in_order(self) -> None:
         numbers = [int(n) for n in re.findall(r"^\*\*(\d+)\.", self.ask, re.MULTILINE)]
-        self.assertEqual(numbers, list(range(1, 11)))
+        self.assertEqual(numbers, list(range(0, 11)))
+        self.assertIn("N/A", self.ask)
 
     def test_every_question_but_eight_shows_a_default(self) -> None:
         blocks = re.split(r"^\*\*(\d+)\.", self.ask, flags=re.MULTILINE)[1:]
         pairs = list(zip(blocks[0::2], blocks[1::2]))
-        self.assertEqual(len(pairs), 10)
+        self.assertEqual(len(pairs), 11)
         for number, body in pairs:
             if number == "8":
                 self.assertIn("No default", body)
+            elif number == "0":
+                self.assertIn("N/A", body)
             else:
                 self.assertIn("Default", body, "question {0} has no default".format(number))
 

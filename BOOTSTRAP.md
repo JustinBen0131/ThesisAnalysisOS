@@ -77,6 +77,16 @@ vendor the OS into their work repo, say no and point at that file.
    username, timezone, the folder name of the repo you are in); leave a
    bracket as-is if you cannot tell.
 
+   If they answered #0 with anything but blank or N/A, that comes first:
+   explain what they asked about in plain words, propose how you would
+   reshape the setup to fit what they described, and re-ask only the
+   questions that changed. Their workflow wins over the defaults every time.
+   You may ask up to three follow-up questions of your own when an answer is
+   ambiguous or when you can see something on the machine that contradicts it
+   (a `justfile` with a `test` recipe when they gave you `cargo test`, a repo
+   path that does not exist, a branch pattern that will not parse). Ground
+   every follow-up in something you actually observed. Then stop asking.
+
 3. Turn the answers into `bootstrap/answers.json`. The shape is
    `bootstrap/answers.schema.json`; a complete example is
    `bootstrap/answers.example.json`. Rules:
@@ -105,10 +115,26 @@ vendor the OS into their work repo, say no and point at that file.
    tasks, links the workspaces, pins the Codex hook paths, renders the first
    brief, and runs the doctor. Show the person the doctor output verbatim.
 
-6. Show the person the "Day 1" section of `MANUAL.md` and tell them, in three
-   lines, what changed on disk: the config, the tasks, the workspace blocks.
+6. Sharpen. Construction gives you a skeleton; this step gives it a mind.
+   You have licence, read-only, to look at the primary workspace: its layout,
+   build files, CI config, contributing guide, the last fifty commit subjects,
+   and the tests. From that, rewrite `kernels/PROJECT_KERNEL.md` so a cold
+   session knows what is load-bearing, what looks wrong but is correct, the
+   real commands, and the mistakes a newcomer makes. Rewrite
+   `kernels/PRINCIPAL_KERNEL.md` from their answers to #0, #6, #9 and #10:
+   how much rope they gave, what they reserve, what agents get wrong for
+   them, and the tone of their answers (terse people want terse agents).
+   Then `taos kernel refresh PROJECT_KERNEL --generator agent` and the same
+   for PRINCIPAL_KERNEL. Read `policies/OBJECTIVE.md` before you write a
+   word of either: it is what this OS is optimising for, and the kernels are
+   where that starts.
 
-7. If they want to begin, start their first task:
+7. Show the person the "Day 1" section of `MANUAL.md` and tell them, in three
+   lines, what changed on disk: the config, the tasks, the workspace blocks,
+   the two kernels you wrote and one thing in each they should correct if you
+   got it wrong.
+
+8. If they want to begin, start their first task:
 
    ```bash
    ./taos start --agent <you> --task <PREFIX>-1 --session "<PREFIX>-1 | <short label>"

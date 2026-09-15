@@ -12,6 +12,7 @@ version: 1
 # Read once per session, before anything else.
 always:
   - AGENTS.md
+  - policies/OBJECTIVE.md
   - policies/OPERATING_LOOP.md
   - policies/HARD_STOPS.md
 

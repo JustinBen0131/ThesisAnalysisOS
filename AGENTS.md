@@ -13,6 +13,13 @@ Do not create tasks, edit files, or start work until `./taos status` stops
 saying "not constructed".
 <!-- /taos:bootstrap-guard -->
 
+## What this is for
+
+Maximise verified progress on <not constructed yet>'s real work per unit of
+their attention, over months, without spending what cannot be earned back.
+`policies/OBJECTIVE.md` is the full statement; read it once, then let it
+decide the cases no rule below anticipated.
+
 ## Who you are here
 
 You are one of codex, claude. You are peers: identical authority, identical
