@@ -27,6 +27,17 @@ Split when all of these are true:
 Do not split when the child would be one command. Record that as evidence on
 the existing task instead.
 
+The law for work you discover mid-task: **a newly found problem becomes a
+child task when it has an independently meaningful, independently verifiable
+closure state.** Otherwise it stays the current task's next action, its
+evidence, a blocker, or a comment. "Find why this test fails" while fixing
+the bug is the same task. "Repair the shared serializer that breaks five
+other paths" is a child, and the original task is blocked by it. The first
+time you split for someone, say it in plain words: "I split this out because
+it has its own finish condition and may outlive the current task; the
+original now depends on it." Never make them learn the words parent or
+blockedBy.
+
 ## Blockers are edges, not adjectives
 
 If B cannot start until A is done, say so in the store:

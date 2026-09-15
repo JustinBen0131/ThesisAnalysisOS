@@ -151,6 +151,13 @@ def start(
         store.transition(task["id"], "active", "started by {0}".format(agent), agent)
 
     store.set_hot(task["id"], True, "started by {0}".format(agent), agent)
+    from . import control as control_mod
+
+    control = None
+    try:
+        control = control_mod.open_episode(paths, store.get(task["id"]), store.blockers(task["id"]), agent)
+    except TaosError:
+        control = None
     projections_mod.refresh(paths)
     _safe_label(
         paths,
@@ -162,6 +169,7 @@ def start(
     )
     data = capsule(paths, task["id"])
     data["lane"] = lane
+    data["control"] = control
     return data
 
 
@@ -212,6 +220,14 @@ def finish(
 
     task = store.transition(task["id"], state, reason, agent, evidence=evidence)
 
+    from . import control as control_mod
+
+    control_result = None
+    try:
+        control_result = control_mod.close_episode(paths, task, agent)
+    except TaosError:
+        control_result = None
+
     claim_store = claims_mod.ClaimStore(paths)
     released = claim_store.release_by_scope("task:{0}".format(task["id"]), agent)
 
@@ -239,6 +255,7 @@ def finish(
         "released_claims": [c.get("id") for c in released],
         "handoff": str(handoff_path) if handoff_path else None,
         "wrapper": handoff_mod.wrapper(handoff_path, to_agent) if handoff_path and to_agent else None,
+        "control": control_result,
     }
 
 
@@ -306,6 +323,10 @@ def capsule_text(data: Dict[str, Any]) -> str:
             lines.append("  {0}".format(command))
         if lane.get("protected_branches"):
             lines.append("  never commit on: {0}".format(", ".join(lane["protected_branches"])))
+    if data.get("control"):
+        from . import control as control_mod
+
+        lines.append(control_mod.control_line(data["control"]))
     gates = data.get("gates") or {}
     if gates.get("configured"):
         latest = gates.get("latest")
@@ -371,6 +392,9 @@ def _cmd_finish(args: argparse.Namespace, paths: Paths) -> int:
     print("{0} -> {1}".format(result["task"]["id"], result["state"]))
     if result.get("released_claims"):
         print("released claims: {0}".format(", ".join(result["released_claims"])))
+    if result.get("control"):
+        control = result["control"]
+        print("control:   episode closed, j={0} {1}".format(control["j"], "clean" if control["clean"] else "not clean"))
     if result.get("wrapper"):
         print("")
         print(result["wrapper"])

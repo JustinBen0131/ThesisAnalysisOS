@@ -143,6 +143,13 @@ def compact_status(paths: Paths, max_lines: int = 25) -> str:
             data["proposals_open"],
         )
     )
+    try:
+        from . import control as control_mod
+
+        if control_mod.settings(paths).get("enabled", True):
+            lines.append(control_mod.status_line(paths))
+    except Exception:
+        pass
     lines.append(
         'Rule: map the prompt to a task, then `./taos start --agent <you> --task <ID> --session "<ID> | <label>"`.'
     )

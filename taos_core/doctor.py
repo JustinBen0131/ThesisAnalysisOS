@@ -191,6 +191,21 @@ def run(paths: Paths) -> Dict[str, Any]:
         )
     )
 
+    # control law state
+    from . import control as control_mod
+
+    try:
+        control_problems = control_mod.check(paths)
+    except TaosError as exc:
+        control_problems = [str(exc)]
+    checks.append(
+        _check(
+            "control_state",
+            "pass" if not control_problems else ("warn" if all("malformed" in p for p in control_problems) else "fail"),
+            "; ".join(control_problems) or "derived state agrees with replay; parameters within bounds",
+        )
+    )
+
     # secrets in state
     patterns = [re.compile(p, re.IGNORECASE) for p in config_mod.secret_patterns(paths)]
     leaks = []

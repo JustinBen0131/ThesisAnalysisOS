@@ -20,6 +20,17 @@ in one pass, and then stop. Nothing else.
   starts the panel themselves; it is theirs).
 - Create tasks by hand, edit `.taos/`, or improvise structure.
 
+## Before anything: load the reference frame
+
+Read `bootstrap/REFERENCE.md` in full, then `policies/OBJECTIVE.md`, then
+`policies/CONTROL.md`. They are for you, never for the human. You are about to
+build an operating system for someone who has never run one, and you have
+never seen one run; those three files are the missing experience: what the
+reference instance looked like at scale, what each artifact looks like when
+it is good, what the system optimises for, and how it regulates itself.
+Nothing in them is a template for this person. Everything in them is the
+standard you build to.
+
 ## Step zero: make this repo theirs
 
 Before the questions, check whether this clone still points at someone else's

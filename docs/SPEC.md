@@ -860,6 +860,45 @@ Added after the first end-to-end run, all driven by the principal's answers:
   step zero); a work repo receives only the marked block, `.taos-link.json`,
   and hook files written only when absent. `policies/REPO_SPLIT.md`.
 
+## 11b. Amendments in v1.1: reference frame and the control law
+
+- **Reference frame.** `bootstrap/REFERENCE.md` is agent-only, first on the
+  bootstrap read order, never sent to the human. It carries the sanitized
+  picture of the reference instance at scale, the day it produced, what was
+  cut and why, worked examples of every artifact the agent must write
+  (project and principal kernels, handoff, atom, decision, first tasks), how
+  to read question-0 pushback, and the explicit statement that it is
+  reference, not template. Tests forbid private paths, physics vocabulary,
+  and real names in it.
+- **Control law.** `taos_core/control.py`, `policies/CONTROL.md` (in the
+  `always` read set). Config `control = {enabled, beta, lambda, min_evidence,
+  step, observed_profile}`; old configs get defaults. `start` opens an
+  episode (`control_open` event: compact state z, recommended profile, bands,
+  params, version) and prints a `control:` line in the capsule; `finish`
+  closes it (`control_close` event: raw outcome vector with nulls for
+  unobservable telemetry, J, progress, cost, clean flag). Profiles `lean`,
+  `balanced`, `careful`, `frontier`. Recommendation = mean J per (class,
+  profile) with priors at cold start + beta * sqrt(ln(1+N_class)/(1+N_profile))
+  + bounded biases; deterministic tie-break. Addendum: J = progress − cost
+  with no separate reuse term (continuation value is not yet modelled, and a
+  reuse term would double count when it is); the vector carries a
+  `provenance` map (observed / unavailable) and the controller's own
+  overhead; the bonus is documented as a heuristic; episodes opened as
+  `probe` are tagged `evidence_kind: probe` and counted apart from
+  observational ones, with no causal claim from observation. Setup answers
+  seed priors (`preference.exploration` → beta, `resources.compute` →
+  compute_bias). Tasks carry optional `done_when` and `verification`;
+  evidence rows may carry an artifact validity contract (`depends_on`,
+  `dependencies_known`, `valid`, `invalidated`); `taos task invalidate`
+  flips it. Tuning moves `compute_bias`,
+  `verify_bias` by a fixed step after `min_evidence` comparable outcomes;
+  `beta` decays with total evidence; all clamped. Derived state
+  `.taos/projections/control.json` is produced only by replay of the event
+  log (`rebuild`, also on every close), guarded against hand edits, checked
+  by the doctor (`control_state`). `taos control status|explain|rebuild|
+  frontier`. SessionStart injects one status line. `pause` suppresses it.
+  Never written into a linked workspace.
+
 ## 12. Builder ownership (parallel build)
 
 | Lane | Owns exactly these files |

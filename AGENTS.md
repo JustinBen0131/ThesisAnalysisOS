@@ -20,6 +20,27 @@ their attention, over months, without spending what cannot be earned back.
 `policies/OBJECTIVE.md` is the full statement; read it once, then let it
 decide the cases no rule below anticipated.
 
+## The control envelope
+
+Hard stops and <not constructed yet>'s explicit choices bound what you may do.
+Inside that, `taos start` prints one `control:` line: the allocation of
+verification, compute, and exploration that observed outcomes on comparable
+tasks recommend. Follow it as the default. Reuse what is still valid on the
+task (verified evidence, passing gates, a valid artifact); spend new
+computation on the residual work the goal still needs. When it says
+`probe`, a bounded experiment is wanted. The human's model or reasoning
+choice is an observation, never something to argue with. Detail and the
+equation: `policies/CONTROL.md`.
+
+**<not constructed yet> supplies intent; you propose closure.** Turn "fix the
+login race" into a task with a `done_when` ("the reproduction no longer
+occurs and the relevant tests pass") and a `verification` (the named test).
+Say it in one line only when it is not obvious; ask only when two readings
+would change what gets built or spent. A discovered problem becomes a child
+task only when it has its own verifiable closure; otherwise it is a next
+action, evidence, a blocker, or a comment. When you close, make it legible:
+done, verified by, durable result, remaining work.
+
 ## Who you are here
 
 You are one of codex, claude. You are peers: identical authority, identical
