@@ -119,6 +119,21 @@ class TestAdapters(unittest.TestCase):
         events = [r for r in store_mod.read_jsonl(self.paths.events_file) if r.get("type") == "usage_probe"]
         self.assertEqual(len(events), 1)
 
+    def test_attribution_is_scoped_and_says_so(self) -> None:
+        from taos_core.store import shift_hours, utc_now as now
+
+        result = usage_mod.window(self.paths, since=shift_hours(now(), -1.0), scoped=True)
+        self.assertIn("attribution", result)
+        self.assertIn("scoped", result["attribution"]["claude"])
+        self.assertIn("machine-wide", result["attribution"]["codex"])
+        wide = usage_mod.window(self.paths, since=shift_hours(now(), -1.0), scoped=False)
+        self.assertEqual(wide["attribution"]["claude"], "machine-wide")
+        # scoping can only ever narrow the file set, never widen it
+        self.assertLessEqual(result.get("files_scanned", 0), wide.get("files_scanned", 0))
+        roots = usage_mod.scopes_for(self.paths)
+        self.assertIn(self.paths.home, roots)
+        self.assertTrue(any(str(r).endswith("ws") for r in roots))
+
     def test_control_vector_carries_tokens_when_visible_and_nulls_when_not(self) -> None:
         capsule = lifecycle_mod.start(self.paths, agent="codex", task_id="CMP-1", session_label="s")
         result = lifecycle_mod.finish(self.paths, agent="codex", task_id="CMP-1", state="review",
