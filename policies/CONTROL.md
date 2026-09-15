@@ -99,11 +99,29 @@ describe a correlation as an improvement.
 | Heuristically estimated | the scalar `J` weights, the priors, the exploration bonus |
 | Observationally learned | per-class, per-profile mean `J`; the three biases |
 | Comparative | episodes tagged `probe` (counted separately; no causal claim beyond that) |
-| Unavailable, recorded as null | input, cached, output, and reasoning tokens; monetary cost; retries; artifact reuse; the model and effort the host actually used |
+| Read from the host, when it writes them | input, cached, cache-write, and output tokens; reasoning tokens where reported; the model actually used |
+| Estimated from a public table | monetary cost: observed tokens times published list prices in `bootstrap/rates.json` |
+| Unavailable, recorded as null | retries; artifact reuse; the effort setting in force; provider quota state |
 
 Every vector carries a `provenance` map naming which of these each field
-is. Null is a first-class value. Nothing is estimated from billing
-categories, and the human is never asked to supply a number.
+is. Null is a first-class value. The human is never asked to supply any of it.
+
+Both hosts already write token usage to disk, and TAOS reads it: Claude Code
+per message in the session transcript under `~/.claude/projects/`, Codex per
+response in the rollout under `~/.codex/sessions/`, where reasoning tokens
+are already inside `output_tokens` and are therefore reported but never added
+again. `taos bootstrap construct` probes both and records what this machine
+can see; `taos usage probe` and `taos usage show` report it.
+
+Two properties matter for honest accounting. Each record is a per-response
+delta, verified by reproducing Codex's own thread totals from the sum. And
+because every response resends the conversation, summed input and cached
+tokens are the billing-shaped quantity, not a measure of unique content: a
+long session legitimately reports hundreds of millions of cached tokens.
+Cost is tokens times a list price, so it is labelled `estimated`, never
+billed, and is null when no rate is known. Scanning is bounded by file mtime,
+a file count, and a byte cap, because the controller must cost less than it
+saves.
 
 ## Closure contracts
 
