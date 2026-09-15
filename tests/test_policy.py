@@ -47,7 +47,7 @@ class TestPolicy(unittest.TestCase):
         names = [r["name"] for r in result["routes"]]
         self.assertIn("starting_work", names)
         self.assertIn("git_and_branches", names)
-        self.assertEqual(result["load"][:4], ["AGENTS.md", "policies/OBJECTIVE.md", "policies/OPERATING_LOOP.md", "policies/HARD_STOPS.md"])
+        self.assertEqual(result["load"][:5], ["AGENTS.md", "policies/OBJECTIVE.md", "policies/CONTROL.md", "policies/OPERATING_LOOP.md", "policies/HARD_STOPS.md"])
         self.assertIn("policies/GIT.md", result["load"])
         self.assertEqual(result["missing"], [])
 
@@ -57,7 +57,7 @@ class TestPolicy(unittest.TestCase):
 
         result = policy_mod.route(self.paths, "hello")
         self.assertEqual(result["routes"], [])
-        self.assertEqual(len(result["load"]), 4)
+        self.assertEqual(len(result["load"]), 5)
 
     def test_secret_words_route_to_hard_stops_first(self) -> None:
         result = policy_mod.route(self.paths, "read the deploy key and sign the release")

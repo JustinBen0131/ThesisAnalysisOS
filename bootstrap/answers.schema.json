@@ -81,8 +81,30 @@
           "title": {"type": "string", "minLength": 3, "maxLength": 120},
           "goal": {"type": "string", "maxLength": 300},
           "next_action": {"type": "string", "maxLength": 300},
+          "done_when": {"type": "string", "maxLength": 300},
+          "verification": {"type": "string", "maxLength": 300},
           "priority": {"enum": ["P0", "P1", "P2", "P3"]}
         }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "agents_available": {"type": ["string", "null"], "maxLength": 200},
+        "compute": {"enum": ["constrained", "normal", "abundant"]},
+        "context_available": {"type": ["string", "null"], "maxLength": 80},
+        "context_working": {"type": ["string", "null"], "maxLength": 80},
+        "context_reserve": {"type": ["string", "null"], "maxLength": 80},
+        "protect": {"type": "array", "items": {"type": "string", "maxLength": 120}}
+      }
+    },
+    "preference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "exploration": {"enum": ["conservative", "balanced", "exploratory"]},
+        "priorities": {"type": "array", "items": {"type": "string", "maxLength": 60}}
       }
     },
     "agent_corrections": {

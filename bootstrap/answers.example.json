@@ -36,11 +36,25 @@
     "message people on my behalf"
   ],
   "secret_patterns": ["\\.pem$", "wallet"],
+  "resources": {
+    "agents_available": "codex and claude, both on paid plans",
+    "compute": "normal",
+    "context_available": null,
+    "context_working": "keep it lean",
+    "context_reserve": "a third",
+    "protect": []
+  },
+  "preference": {
+    "exploration": "balanced",
+    "priorities": ["verified quality", "user intent", "human attention", "resources", "exploration"]
+  },
   "first_tasks": [
     {
       "title": "Cut the monomorphisation pass from 40s to under 10s",
       "goal": "CI stops timing out on the large fixture",
       "next_action": "profile the pass on tests/fixtures/large.src and find the top three costs",
+      "done_when": "the large fixture compiles in under 10s on CI, three runs in a row",
+      "verification": "CI timing on tests/fixtures/large.src",
       "priority": "P1"
     },
     {
