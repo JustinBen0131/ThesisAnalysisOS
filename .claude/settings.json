@@ -1,0 +1,72 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.gnupg/**)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/id_rsa*)",
+      "Read(**/id_ed25519*)",
+      "Read(**/*keystore*)",
+      "Read(**/*mnemonic*)",
+      "Edit(.taos/tasks.json)",
+      "Edit(.taos/claims.json)",
+      "Edit(.taos/events.jsonl)",
+      "Edit(.taos/allocator.json)",
+      "Write(.taos/tasks.json)",
+      "Write(.taos/claims.json)",
+      "Write(.taos/events.jsonl)",
+      "Write(.taos/allocator.json)",
+      "Edit(hooks/**)",
+      "Write(hooks/**)",
+      "Edit(.claude/settings.json)",
+      "Write(.claude/settings.json)",
+      "Edit(.codex/hooks.json)",
+      "Write(.codex/hooks.json)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(rm -r*)",
+      "Bash(rm -R*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/hooks/guard.py\" --agent claude",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/hooks/session_start.py\"",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/hooks/stop_labels.py\" --agent claude",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}
