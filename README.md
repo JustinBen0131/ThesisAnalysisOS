@@ -86,4 +86,12 @@ here; what did not is in `docs/LINEAGE.md`.
 
 ## License
 
-MIT. See `LICENSE`.
+PolyForm Noncommercial 1.0.0, with additional permissions. In plain words:
+
+- Use it, change it, share it, for yourself, for research, for study, and to
+  organize your own work, including at your job. Free.
+- Keep the copyright notice with every copy and every derivative.
+- Do not sell it, sublicense it, host it as a service, or ship a product built
+  on it. That needs a separate written license from the author.
+
+Full text and the exact additional permissions are in `LICENSE`.
