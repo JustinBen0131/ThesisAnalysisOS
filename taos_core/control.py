@@ -181,7 +181,7 @@ def outcome_vector(paths: Paths, task: Dict[str, Any], opened_at: str, closed_at
     try:
         from . import usage as usage_mod
 
-        observed = usage_mod.window(paths, since=opened_at, until=closed_at)
+        observed = usage_mod.window(paths, since=opened_at, until=closed_at, scoped=True)
         agents = observed.get("agents") or {}
         if agents:
             totals = dict(usage_mod.ZERO)
@@ -212,6 +212,9 @@ def outcome_vector(paths: Paths, task: Dict[str, Any], opened_at: str, closed_at
                 vector["provenance"]["reasoning_tokens"] = "observed"
             if cost_seen:
                 vector["provenance"]["cost"] = "estimated"
+            # Coarse by construction: a concurrent session in the same window and
+            # scope is counted here too. Say so rather than implying exactness.
+            vector["token_attribution"] = observed.get("attribution")
     except Exception:
         pass   # a host that changed its format must never break a close
     return vector

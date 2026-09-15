@@ -76,8 +76,18 @@ class TestControlLaw(Base):
         self.assertEqual(closed["vector"]["gate_fail"], 1)
         self.assertEqual(closed["vector"]["gate_pass"], 1)
         self.assertFalse(closed["clean"])
-        self.assertIsNone(closed["vector"]["input_tokens"])  # unknown stays unknown
-        self.assertIsNone(closed["vector"]["cost"])
+        # Token fields follow the host: populated with `observed` provenance on a
+        # machine that writes transcripts, null with `unavailable` on one that
+        # does not. Never populated-but-unlabelled, and never null-but-claimed.
+        vector = closed["vector"]
+        for field in ("input_tokens", "output_tokens", "cached_tokens"):
+            if vector["provenance"][field] == "observed":
+                self.assertIsInstance(vector[field], int)
+            else:
+                self.assertIsNone(vector[field])
+        self.assertIn(vector["provenance"]["cost"], ("estimated", "unavailable"))
+        self.assertIsNone(vector["retries"])                  # genuinely unavailable
+        self.assertEqual(vector["provenance"]["retries"], "unavailable")
         state = control_mod.load_state(self.paths)
         self.assertEqual(state["episodes"], 1)
         self.assertEqual(state["open"], {})

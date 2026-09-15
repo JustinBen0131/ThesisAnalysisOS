@@ -123,6 +123,13 @@ billed, and is null when no rate is known. Scanning is bounded by file mtime,
 a file count, and a byte cap, because the controller must cost less than it
 saves.
 
+Attribution is honest but coarse, and the vector says so in
+`token_attribution`. Claude stores transcripts per working directory, so an
+episode counts only sessions under this OS home and its configured
+workspaces. Codex rollout paths carry no directory, so a Codex session
+running elsewhere in the same window is counted here too. Treat these
+numbers as the scale of an episode, never as an exact per-task bill.
+
 ## Closure contracts
 
 `A -> B` is only meaningful when `B` is stated. Every task can carry

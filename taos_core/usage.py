@@ -238,14 +238,52 @@ def probe(paths: Paths, workspace: Optional[Path] = None) -> Dict[str, Any]:
 # --------------------------------------------------------------------------
 
 
-def window(paths: Paths, since: str, until: Optional[str] = None, workspace: Optional[Path] = None) -> Dict[str, Any]:
-    """Tokens observed between two timestamps, per agent. Empty means unseen, not zero."""
+def scopes_for(paths: Paths) -> List[Path]:
+    """The directories whose sessions may be attributed to this OS's work."""
+    from . import config as config_mod
+
+    roots = [paths.home]
+    for workspace in (config_mod.load_soft(paths).get("workspaces") or []):
+        path = workspace.get("path")
+        if path:
+            roots.append(Path(path))
+    return roots
+
+
+def window(
+    paths: Paths,
+    since: str,
+    until: Optional[str] = None,
+    workspace: Optional[Path] = None,
+    scoped: bool = True,
+) -> Dict[str, Any]:
+    """Tokens observed between two timestamps, per agent. Empty means unseen, not zero.
+
+    Attribution is honest but coarse. Claude transcripts are stored per working
+    directory, so `scoped` restricts them to this OS home and its configured
+    workspaces; a session you ran elsewhere is not counted against this task.
+    Codex rollouts carry no directory in their path, so they cannot be scoped
+    that way: a Codex session running elsewhere in the same window is counted.
+    The result says which, in `attribution`.
+    """
     out: Dict[str, Any] = {"since": since, "until": until or utc_now(), "agents": {}}
     # Only files whose mtime falls in the window can contain the window. One
     # stat each beats opening hundreds of historical sessions: the controller
     # has to be cheaper than what it saves.
-    claude_files = [p for p in (claude_transcripts(workspace) or claude_transcripts(None)) if _touched_since(p, since)]
+    if workspace is not None:
+        candidates = claude_transcripts(workspace)
+    elif scoped:
+        candidates = []
+        for root in scopes_for(paths):
+            candidates.extend(claude_transcripts(root))
+    else:
+        candidates = claude_transcripts(None)
+    claude_files = [p for p in candidates if _touched_since(p, since)]
     codex_files = [p for p in codex_sessions() if _touched_since(p, since)]
+    out["attribution"] = {
+        "claude": "scoped to this OS home and its workspaces" if (scoped or workspace) else "machine-wide",
+        "codex": "machine-wide: rollout paths carry no working directory",
+    }
     for path in claude_files[-MAX_FILES:]:
         sample = read_claude(path, since, until)
         if sample["rows"]:
@@ -330,11 +368,13 @@ def _cmd_show(args: argparse.Namespace, paths: Paths) -> int:
     from .store import shift_hours
 
     since = args.since or shift_hours(utc_now(), -24.0 * args.days)
-    result = window(paths, since)
+    result = window(paths, since, scoped=not args.all_projects)
     if args.json:
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0
     print("since {0}".format(since))
+    for agent, note in sorted((result.get("attribution") or {}).items()):
+        print("  {0}: {1}".format(agent, note))
     if not result["agents"]:
         print("nothing observed in this window")
         return 0
@@ -359,5 +399,7 @@ def register(subparsers: Any) -> None:
     shower = sub.add_parser("show", help="tokens observed in a window")
     shower.add_argument("--days", type=float, default=1.0)
     shower.add_argument("--since")
+    shower.add_argument("--all-projects", dest="all_projects", action="store_true",
+                        help="count Claude sessions from every directory, not just this OS and its workspaces")
     shower.add_argument("--json", action="store_true")
     shower.set_defaults(func=_cmd_show)
