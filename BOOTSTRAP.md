@@ -85,7 +85,9 @@ vendor the OS into their work repo, say no and point at that file.
    ambiguous or when you can see something on the machine that contradicts it
    (a `justfile` with a `test` recipe when they gave you `cargo test`, a repo
    path that does not exist, a branch pattern that will not parse). Ground
-   every follow-up in something you actually observed. Then stop asking.
+   every follow-up in something you actually observed. If their reply
+   contains the word **proceed**, ask nothing and build with what you have,
+   stating the assumptions you made in one line each. Then stop asking.
 
 3. Turn the answers into `bootstrap/answers.json`. The shape is
    `bootstrap/answers.schema.json`; a complete example is

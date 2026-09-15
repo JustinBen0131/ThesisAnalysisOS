@@ -11,14 +11,21 @@ repo you are in). If you cannot tell, leave the bracket text as it is.
 
 <!-- ASK: send everything between these markers verbatim -->
 
-I'll set this up around how you actually work. Ten questions, all at once.
-Answer what you care about; say **defaults** and I'll take every default, or
-**default** on any single one. Only #8 has no default.
+I'll set this up around how you actually work. Here is the whole process:
 
-**0. Before you answer: does anything below need more explanation, or not
-fit how you actually work?** Tell me here in your own words and I'll clarify
-or reshape it before building anything. If it all makes sense, leave this
-blank or write N/A.
+1. Answer the questions below in one reply. Number your answers to match.
+   Say **defaults** to take every default, or **default** for any single
+   one. Only #8 has no default.
+2. I'll read your answers and look at your repos. If something is unclear or
+   contradicts what I see on disk, I'll ask you at most three follow-ups,
+   each tied to something specific I found. If you'd rather skip that,
+   write **proceed** anywhere in your reply and I'll build with what I have.
+3. I build it, run the checks, and show you the result. About a minute.
+4. You say **start** and I pick up your first task.
+
+**0. Does anything below need more explanation, or not fit how you work?**
+Say so here in your own words and I'll reshape it before building anything.
+Otherwise leave this blank or write N/A.
 
 **1. What's your name, and what timezone are you in?**
 Default: `<shell username>`, `<machine timezone>`
@@ -70,15 +77,13 @@ something is urgent. These become your first tasks, so make them real.
 No default. This is the one I need from you.
 
 **9. Day-to-day settings.**
-- What time should the daily brief be dated for? Default 8:30am
-- Port for the local dashboard? Default 4331
-- Open a browser when you start it? Default yes
-- Install the safety hooks into the repos from #3? Default yes. If those repos
-  already have hook files I won't touch them, I'll leave you a snippet instead.
-- Which agents do you use? Default both Codex and Claude
-- How many questions may we queue up for you in a day before the rest wait?
-  Default 3
-- Any hours you don't want to be asked anything? Default none
+- Daily brief time? Default 8:30am
+- Dashboard port? Default 4331, and open a browser when it starts? Default yes
+- Install the safety hooks into the repos from #3? Default yes (existing hook
+  files are never touched, you get a snippet instead)
+- Which agents? Default both Codex and Claude
+- How many questions may we queue for you per day before the rest wait? Default 3
+- Hours you don't want to be asked anything? Default none
 
 **10. What do AI agents keep getting wrong for you?**
 Anything you find yourself correcting more than once. Each one becomes a
