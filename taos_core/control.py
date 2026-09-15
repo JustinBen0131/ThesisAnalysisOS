@@ -154,7 +154,7 @@ def outcome_vector(paths: Paths, task: Dict[str, Any], opened_at: str, closed_at
     except Exception:
         pass
     wall = max(0.0, (parse_ts(closed_at) - since).total_seconds())
-    return {
+    vector: Dict[str, Any] = {
         "terminal": task.get("status"),
         "wall_seconds": round(wall, 1),
         "gate_pass": gate_pass,
@@ -164,17 +164,57 @@ def outcome_vector(paths: Paths, task: Dict[str, Any], opened_at: str, closed_at
         "blockers": blockers,
         "corrections": corrections,
         "evidence": len(task.get("evidence") or []),
-        # Not observable from the host today. Adapters may fill these later.
         "input_tokens": None,
         "cached_tokens": None,
+        "cache_write_tokens": None,
         "output_tokens": None,
         "reasoning_tokens": None,
         "cost": None,
+        "model": None,
         "retries": None,
         "reuse": None,
         "controller_seconds": None,
         "provenance": dict(PROVENANCE),
     }
+
+    # Both hosts write token usage to disk. Read it if it is there; stay null if not.
+    try:
+        from . import usage as usage_mod
+
+        observed = usage_mod.window(paths, since=opened_at, until=closed_at)
+        agents = observed.get("agents") or {}
+        if agents:
+            totals = dict(usage_mod.ZERO)
+            models: Dict[str, int] = {}
+            cost_amount = 0.0
+            cost_seen = False
+            for data in agents.values():
+                for key, value in data["totals"].items():
+                    totals[key] = totals.get(key, 0) + value
+                for name, count in (data.get("models") or {}).items():
+                    models[name] = models.get(name, 0) + count
+                if data.get("cost"):
+                    cost_amount += float(data["cost"]["amount"])
+                    cost_seen = True
+            vector.update({
+                "input_tokens": totals["input_tokens"],
+                "cached_tokens": totals["cached_tokens"],
+                "cache_write_tokens": totals["cache_write_tokens"],
+                "output_tokens": totals["output_tokens"],
+                # Reported by Codex and already inside output_tokens: never added again.
+                "reasoning_tokens": totals["reasoning_tokens"] or None,
+                "model": max(models.items(), key=lambda item: item[1])[0] if models else None,
+                "cost": round(cost_amount, 4) if cost_seen else None,
+            })
+            for field in ("input_tokens", "cached_tokens", "cache_write_tokens", "output_tokens", "model"):
+                vector["provenance"][field] = "observed"
+            if vector["reasoning_tokens"] is not None:
+                vector["provenance"]["reasoning_tokens"] = "observed"
+            if cost_seen:
+                vector["provenance"]["cost"] = "estimated"
+    except Exception:
+        pass   # a host that changed its format must never break a close
+    return vector
 
 
 def utility(vector: Dict[str, Any], lam: float = 0.0) -> Tuple[float, float, float]:
@@ -203,8 +243,10 @@ PROVENANCE = {
     "terminal": "observed", "wall_seconds": "observed", "gate_pass": "observed", "gate_fail": "observed",
     "decisions": "observed", "handoffs": "observed", "blockers": "observed", "corrections": "observed",
     "evidence": "observed", "controller_seconds": "observed",
-    "input_tokens": "unavailable", "cached_tokens": "unavailable", "output_tokens": "unavailable",
-    "reasoning_tokens": "unavailable", "cost": "unavailable", "retries": "unavailable", "reuse": "unavailable",
+    # Filled by the host adapters when this machine writes them; null otherwise.
+    "input_tokens": "unavailable", "cached_tokens": "unavailable", "cache_write_tokens": "unavailable",
+    "output_tokens": "unavailable", "reasoning_tokens": "unavailable", "model": "unavailable",
+    "cost": "unavailable", "retries": "unavailable", "reuse": "unavailable",
 }
 
 

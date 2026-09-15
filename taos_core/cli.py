@@ -26,6 +26,7 @@ from . import projections as projections_mod
 from . import proposals as proposals_mod
 from . import tasks as tasks_mod
 from . import telemetry as telemetry_mod
+from . import usage as usage_mod
 from .paths import Paths
 from .util import TaosError
 
@@ -47,6 +48,7 @@ MODULES = (
     burn_mod,
     policy_mod,
     control_mod,
+    usage_mod,
     panel_mod,
     bootstrap_mod,
 )
