@@ -890,7 +890,18 @@ Added after the first end-to-end run, all driven by the principal's answers:
   compute_bias). Tasks carry optional `done_when` and `verification`;
   evidence rows may carry an artifact validity contract (`depends_on`,
   `dependencies_known`, `valid`, `invalidated`); `taos task invalidate`
-  flips it. Tuning moves `compute_bias`,
+  flips it.
+- **Token telemetry** (`taos_core/usage.py`, `bootstrap/rates.json`). Adapters
+  read what the hosts already write: Claude `message.usage` per assistant row
+  in `~/.claude/projects/<slug>/<session>.jsonl`; Codex `payload.usage` in
+  `token_usage_record` rows under `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl`
+  (reasoning already inside `output_tokens`, reported never re-added). Both
+  are per-response deltas, verified against Codex's own `thread_token_usage`.
+  `probe()` runs at construct, records `config.telemetry.token_usage` per
+  agent and emits `usage_probe`; `window()` fills the control vector's token
+  fields with `observed` provenance and cost with `estimated`, or leaves
+  nulls. Scanning is bounded by mtime filter, `MAX_FILES` 40, `MAX_BYTES` 8 MiB
+  tail. `taos usage probe|show`. Tuning moves `compute_bias`,
   `verify_bias` by a fixed step after `min_evidence` comparable outcomes;
   `beta` decays with total evidence; all clamped. Derived state
   `.taos/projections/control.json` is produced only by replay of the event
