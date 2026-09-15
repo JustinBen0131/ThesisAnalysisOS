@@ -1,0 +1,16 @@
+# Runtime state. Yours, never shared.
+.taos/
+bootstrap/answers.json
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/

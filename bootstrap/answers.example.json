@@ -1,0 +1,62 @@
+{
+  "principal_name": "Alex",
+  "timezone": "America/New_York",
+  "project_name": "Compiler",
+  "prefix": "CMP",
+  "stack": "rust-cargo",
+  "gates": [
+    {"name": "test", "command": "cargo test"},
+    {"name": "fmt", "command": "cargo fmt --all -- --check"}
+  ],
+  "git_isolation": "worktree",
+  "branch_pattern": "{prefix_lower}/{id_lower}-{slug}",
+  "protected_branches": ["main", "master"],
+  "worktree_root": null,
+  "merge_policy": "human_pr",
+  "autonomy": "edit_branches",
+  "max_decisions_per_day": 3,
+  "quiet_hours": null,
+  "self_iteration_cadence": "weekly",
+  "planning_surface": "github-issues",
+  "brief_time": "08:30",
+  "panel_port": 4331,
+  "open_browser": true,
+  "install_hooks_in_workspaces": true,
+  "agents": ["codex", "claude"],
+  "workspaces": [
+    {"name": "compiler", "path": "/tmp/taos-example-workspace", "primary": true, "agent": "any"},
+    {"name": "compiler-claude", "path": "/tmp/taos-example-workspace-claude", "primary": false, "agent": "claude"}
+  ],
+  "human_only": [
+    "deploy or release",
+    "merge to main",
+    "sign or broadcast a transaction",
+    "touch keys, seed phrases, or secrets",
+    "spend money",
+    "message people on my behalf"
+  ],
+  "secret_patterns": ["\\.pem$", "wallet"],
+  "first_tasks": [
+    {
+      "title": "Cut the monomorphisation pass from 40s to under 10s",
+      "goal": "CI stops timing out on the large fixture",
+      "next_action": "profile the pass on tests/fixtures/large.src and find the top three costs",
+      "priority": "P1"
+    },
+    {
+      "title": "Fix the panic on empty generic bounds",
+      "goal": "issue 812 closes",
+      "next_action": "write the failing test first",
+      "priority": "P0"
+    },
+    {
+      "title": "Document the IR invariants nobody wrote down",
+      "next_action": "list every invariant the verifier actually checks",
+      "priority": "P3"
+    }
+  ],
+  "agent_corrections": [
+    "Do not add a dependency without asking. This tree is deliberately thin.",
+    "Write the failing test before the fix, every time."
+  ]
+}

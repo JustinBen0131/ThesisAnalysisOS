@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TAOS</title>
+<style>
+:root{
+  --bg:#f7f7f5; --card:#ffffff; --ink:#1b1b19; --muted:#6a6a64; --line:#e2e2dc;
+  --accent:#2f5d50; --warn:#8a6d1f; --bad:#9b3a32; --ok:#2f6b46;
+  --chip:#efefe9;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#121311; --card:#1b1c1a; --ink:#e9e9e4; --muted:#9b9b93; --line:#2c2e2b;
+    --accent:#7fb8a4; --warn:#d6b25a; --bad:#e08a80; --ok:#86c79c; --chip:#25271f;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  padding:14px 16px 0}
+h1{font-size:15px;margin:0 0 2px;font-weight:600;letter-spacing:.01em}
+.sub{color:var(--muted);font-size:12px;margin-bottom:10px}
+nav{display:flex;gap:2px;flex-wrap:wrap}
+nav button{appearance:none;border:0;background:transparent;color:var(--muted);cursor:pointer;
+  font:inherit;font-size:13px;padding:7px 11px;border-radius:6px 6px 0 0;border-bottom:2px solid transparent}
+nav button:hover{color:var(--ink)}
+nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+main{padding:16px;max-width:1100px;margin:0 auto}
+section{display:none}
+section[data-active="true"]{display:block}
+.top{font-size:16px;font-weight:600;margin:0 0 12px}
+.top.clear{color:var(--ok)}
+.grid{display:grid;gap:10px}
+@media (min-width:720px){ .grid.cols{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))} }
+.card{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:11px 13px;
+  min-width:0;overflow-wrap:anywhere;word-break:break-word}
+.card.new{animation:fade .15s ease-in}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.card h3{margin:0 0 4px;font-size:14px;font-weight:600;display:flex;gap:7px;align-items:baseline;flex-wrap:wrap}
+.card p{margin:3px 0;color:var(--muted);font-size:13px}
+.card p strong{color:var(--ink);font-weight:600}
+.chip{display:inline-block;background:var(--chip);color:var(--muted);border-radius:4px;
+  padding:1px 6px;font-size:11px;font-weight:600;letter-spacing:.02em;white-space:nowrap}
+.chip.p0{color:#fff;background:#9b3a32}
+.chip.p1{color:var(--ink);background:var(--warn);opacity:.85}
+.chip.active{color:var(--ok)}
+.chip.blocked{color:var(--bad)}
+.chip.stale{color:var(--bad);border:1px solid var(--bad)}
+.id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--muted)}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+  margin:22px 0 8px;font-weight:600}
+h2:first-child{margin-top:0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+button.act{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);
+  border-radius:6px;padding:5px 10px;font:inherit;font-size:12px;cursor:pointer}
+button.act:hover{border-color:var(--accent);color:var(--accent)}
+button.act.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+input[type=text]{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 8px;
+  color:var(--ink);font:inherit;font-size:13px;width:100%;max-width:340px}
+.row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:7px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:11px;
+  overflow-x:auto;font-size:12px;line-height:1.45}
+.empty{color:var(--muted);font-size:13px;font-style:italic}
+.cols2{display:grid;gap:10px}
+@media (min-width:760px){.cols2{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}}
+.colhead{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);
+  font-weight:600;margin-bottom:6px}
+footer{color:var(--muted);font-size:11px;padding:24px 16px;text-align:center}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">TAOS</h1>
+  <div class="sub" id="subtitle">connecting…</div>
+  <nav id="tabs"></nav>
+</header>
+<main>
+  <section id="tab-today" data-active="true"></section>
+  <section id="tab-work"></section>
+  <section id="tab-claims"></section>
+  <section id="tab-decisions"></section>
+  <section id="tab-handoffs"></section>
+  <section id="tab-atlas"></section>
+</main>
+<footer>Every number here is a row in <code>.taos/</code>. Nothing on this page is computed by a model.</footer>
+<script>
+const TOKEN = "__TAOS_TOKEN__";
+const TABS = ["today","work","claims","decisions","handoffs","atlas"];
+let current = "today", state = null, seen = new Set();
+
+function el(tag, cls, text){ const n=document.createElement(tag); if(cls)n.className=cls;
+  if(text!==undefined&&text!==null)n.textContent=String(text); return n; }
+function esc(s){ return String(s===undefined||s===null?"":s); }
+
+function chip(text, cls){ const c=el("span","chip"+(cls?" "+cls:""),text); return c; }
+
+function post(path, body){
+  return fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-TAOS-Token":TOKEN},
+    body:JSON.stringify(body)}).then(r=>r.json()).then(r=>{ if(r.error) alert(r.error); load(); return r; });
+}
+
+function taskCard(t, extra){
+  const card = el("div","card"+(seen.has(t.id)?"":" new")); seen.add(t.id);
+  const h = el("h3");
+  h.appendChild(el("span","id",t.id));
+  h.appendChild(document.createTextNode(esc(t.title)));
+  h.appendChild(chip(t.priority, t.priority==="P0"?"p0":(t.priority==="P1"?"p1":"")));
+  h.appendChild(chip(t.status, t.status==="active"?"active":(t.status==="blocked"?"blocked":"")));
+  if(t.owner_agent) h.appendChild(chip(t.owner_agent));
+  if(t.updated_at && (Date.now()-Date.parse(t.updated_at))/86400000 > 3) h.appendChild(chip("stale","stale"));
+  card.appendChild(h);
+  if(t.next_action){ const p=el("p"); p.appendChild(el("strong",null,"next: "));
+    p.appendChild(document.createTextNode(esc(t.next_action))); card.appendChild(p); }
+  if(t.goal) card.appendChild(el("p","", "goal: "+esc(t.goal)));
+  if(t.blockers && t.blockers.length) card.appendChild(el("p","","blocked by "+t.blockers.join(", ")));
+  if(extra) card.appendChild(extra);
+  const row = el("div","row");
+  const raw = el("a",null,"raw"); raw.href="/api/task/"+encodeURIComponent(t.id); raw.target="_blank";
+  raw.style.fontSize="12px"; row.appendChild(raw);
+  if(t.hot){ const b=el("button","act","cool it");
+    b.onclick=()=>post("/api/task/hot",{id:t.id,hot:false,reason:"cooled from the panel"}); row.appendChild(b); }
+  card.appendChild(row);
+  return card;
+}
+
+function renderToday(){
+  const s = document.getElementById("tab-today"); s.textContent="";
+  const b = state.brief;
+  const top = el("p","top"+(b.needs.length?"":" clear"), b.top_line); s.appendChild(top);
+  if(b.needs.length){ const ul=el("div","grid");
+    b.needs.forEach(n=>{ const c=el("div","card"); c.appendChild(el("p","",n)); ul.appendChild(c); });
+    s.appendChild(ul); }
+
+  if(state.decisions.length){
+    s.appendChild(el("h2",null,"Waiting on you"));
+    const g=el("div","grid");
+    state.decisions.slice(0,2).forEach(d=>g.appendChild(decisionCard(d)));
+    s.appendChild(g);
+  }
+
+  s.appendChild(el("h2",null,"Hot work"));
+  if(state.hot.length){ const g=el("div","grid cols");
+    state.hot.forEach(t=>g.appendChild(taskCard(t))); s.appendChild(g); }
+  else s.appendChild(el("p","empty","Nothing is hot. Pick something from Work."));
+
+  s.appendChild(el("h2",null,"Changed in the last day"));
+  if(b.changed.length){
+    const t=el("table"); const head=el("tr");
+    ["when","who","what","task","detail"].forEach(h=>head.appendChild(el("th",null,h)));
+    t.appendChild(head);
+    b.changed.slice(-25).reverse().forEach(r=>{ const tr=el("tr");
+      [r.ts.slice(11,16), r.agent, r.type, r.task_id||"", r.detail||""].forEach(v=>tr.appendChild(el("td",null,v)));
+      t.appendChild(tr); });
+    s.appendChild(t);
+  } else s.appendChild(el("p","empty","Nothing changed."));
+}
+
+function renderWork(){
+  const s=document.getElementById("tab-work"); s.textContent="";
+  const cols=["next","active","blocked","waiting","review"];
+  const wrap=el("div","cols2");
+  cols.forEach(c=>{
+    const box=el("div"); box.appendChild(el("div","colhead",c+" ("+state.tasks.filter(t=>t.status===c).length+")"));
+    const g=el("div","grid");
+    state.tasks.filter(t=>t.status===c).forEach(t=>g.appendChild(taskCard(t)));
+    if(!state.tasks.some(t=>t.status===c)) box.appendChild(el("p","empty","—"));
+    box.appendChild(g); wrap.appendChild(box);
+  });
+  s.appendChild(wrap);
+  const rest=state.tasks.filter(t=>["backlog","done","canceled","archived"].indexOf(t.status)>=0);
+  if(rest.length){
+    const d=el("details"); d.appendChild(el("summary",null,"backlog and finished ("+rest.length+")"));
+    const g=el("div","grid cols"); rest.forEach(t=>g.appendChild(taskCard(t))); d.appendChild(g);
+    s.appendChild(el("h2",null,"Everything else")); s.appendChild(d);
+  }
+}
+
+function renderClaims(){
+  const s=document.getElementById("tab-claims"); s.textContent="";
+  const all=state.claims.live.concat(state.claims.stale);
+  if(!all.length){ s.appendChild(el("p","empty","No claims. Both agents are free to take anything.")); return; }
+  const t=el("table"); const head=el("tr");
+  ["agent","scopes","session","age","",""].forEach(h=>head.appendChild(el("th",null,h)));
+  t.appendChild(head);
+  const now=Date.now();
+  all.forEach(c=>{
+    const stale=state.claims.stale.indexOf(c)>=0;
+    const tr=el("tr");
+    tr.appendChild(el("td",null,c.agent));
+    tr.appendChild(el("td",null,(c.scopes||[]).join(", ")));
+    tr.appendChild(el("td",null,c.session_label||""));
+    const hours=(now-Date.parse(c.heartbeat_at||c.claimed_at))/3600000;
+    tr.appendChild(el("td",null,hours<1?Math.round(hours*60)+"m":hours.toFixed(1)+"h"));
+    const flag=el("td"); if(stale) flag.appendChild(chip("stale","stale")); tr.appendChild(flag);
+    const act=el("td"); const b=el("button","act","release");
+    b.onclick=()=>{ if(confirm("Release "+c.agent+"'s claim on "+(c.scopes||[]).join(", ")+"?"))
+      post("/api/claim/release",{id:c.id}); };
+    act.appendChild(b); tr.appendChild(act);
+    t.appendChild(tr);
+  });
+  s.appendChild(t);
+}
+
+function decisionCard(d){
+  const card=el("div","card");
+  const h=el("h3"); h.appendChild(el("span","id",d.id));
+  h.appendChild(document.createTextNode(esc(d.question))); card.appendChild(h);
+  if(d.task_id) card.appendChild(el("p","","task "+d.task_id+" · asked by "+d.asked_by));
+  const row=el("div","row");
+  const note=el("input"); note.type="text"; note.placeholder="note (optional)";
+  if((d.options||[]).length){
+    d.options.forEach(o=>{ const b=el("button","act primary",o);
+      b.onclick=()=>post("/api/decide",{id:d.id,choice:o,note:note.value||null}); row.appendChild(b); });
+  } else {
+    const free=el("input"); free.type="text"; free.placeholder="your answer";
+    const b=el("button","act primary","answer");
+    b.onclick=()=>post("/api/decide",{id:d.id,choice:free.value,note:note.value||null});
+    row.appendChild(free); row.appendChild(b);
+  }
+  card.appendChild(row);
+  const row2=el("div","row"); row2.appendChild(note); card.appendChild(row2);
+  return card;
+}
+
+function renderDecisions(){
+  const s=document.getElementById("tab-decisions"); s.textContent="";
+  if(!state.decisions.length){ s.appendChild(el("p","empty","Nothing is waiting on you.")); return; }
+  const g=el("div","grid"); state.decisions.forEach(d=>g.appendChild(decisionCard(d))); s.appendChild(g);
+}
+
+function renderHandoffs(){
+  const s=document.getElementById("tab-handoffs"); s.textContent="";
+  if(!state.handoffs.length){ s.appendChild(el("p","empty","No handoffs written yet.")); return; }
+  const g=el("div","grid");
+  state.handoffs.forEach(h=>{
+    const card=el("div","card");
+    card.appendChild(el("h3",null,h.name));
+    const row=el("div","row");
+    const view=el("button","act","view");
+    const pre=el("pre"); pre.hidden=true;
+    view.onclick=()=>{ if(pre.hidden){ fetch("/api/handoff?path="+encodeURIComponent(h.path))
+      .then(r=>r.text()).then(t=>{pre.textContent=t;pre.hidden=false;}); } else pre.hidden=true; };
+    const copy=el("button","act","copy path");
+    copy.onclick=()=>navigator.clipboard&&navigator.clipboard.writeText(h.path);
+    row.appendChild(view); row.appendChild(copy);
+    card.appendChild(row); card.appendChild(pre); g.appendChild(card);
+  });
+  s.appendChild(g);
+}
+
+function renderAtlas(){
+  const s=document.getElementById("tab-atlas"); s.textContent="";
+  s.appendChild(el("h2",null,"Doctor"));
+  const t=el("table"); const head=el("tr");
+  ["check","status","detail"].forEach(h=>head.appendChild(el("th",null,h))); t.appendChild(head);
+  state.doctor.checks.forEach(c=>{ const tr=el("tr");
+    tr.appendChild(el("td",null,c.name));
+    const st=el("td"); st.appendChild(chip(c.status, c.status==="fail"?"blocked":(c.status==="warn"?"p1":"active")));
+    tr.appendChild(st);
+    tr.appendChild(el("td",null,c.detail)); t.appendChild(tr); });
+  s.appendChild(t);
+
+  s.appendChild(el("h2",null,"Kernels"));
+  const kt=el("table"); const kh=el("tr"); ["kernel","status","why"].forEach(h=>kh.appendChild(el("th",null,h)));
+  kt.appendChild(kh);
+  state.kernels.forEach(k=>{ const tr=el("tr"); tr.appendChild(el("td",null,k.name));
+    tr.appendChild(el("td",null,k.status)); tr.appendChild(el("td",null,(k.reasons||[]).join("; ")));
+    kt.appendChild(tr); });
+  s.appendChild(kt);
+
+  s.appendChild(el("h2",null,"Atoms"));
+  if(state.atoms.length){ const at=el("table"); const ah=el("tr");
+    ["atom","result","detail"].forEach(h=>ah.appendChild(el("th",null,h))); at.appendChild(ah);
+    state.atoms.forEach(a=>{ const tr=el("tr"); tr.appendChild(el("td",null,a.id));
+      const r=el("td"); r.appendChild(chip(a.ok?"ok":"failing", a.ok?"active":"blocked")); tr.appendChild(r);
+      tr.appendChild(el("td",null,a.detail)); at.appendChild(tr); });
+    s.appendChild(at);
+  } else s.appendChild(el("p","empty","No atoms promoted yet."));
+
+  s.appendChild(el("h2",null,"Proposals"));
+  if(state.proposals.length){
+    const g=el("div","grid");
+    state.proposals.forEach(p=>{ const card=el("div","card");
+      const h=el("h3"); h.appendChild(el("span","id",p.id)); h.appendChild(document.createTextNode(esc(p.title)));
+      h.appendChild(chip(p.kind)); card.appendChild(h);
+      card.appendChild(el("p","",p.body));
+      (p.evidence||[]).forEach(e=>card.appendChild(el("p","","evidence: "+e)));
+      const row=el("div","row");
+      const yes=el("button","act primary","accept");
+      yes.onclick=()=>post("/api/proposal/decide",{id:p.id,status:"accepted"});
+      const no=el("button","act","reject");
+      no.onclick=()=>post("/api/proposal/decide",{id:p.id,status:"rejected"});
+      row.appendChild(yes); row.appendChild(no); card.appendChild(row); g.appendChild(card); });
+    s.appendChild(g);
+  } else s.appendChild(el("p","empty","Nothing proposed."));
+
+  s.appendChild(el("h2",null,"Past their TTL"));
+  if(state.burn_candidates.length){
+    s.appendChild(el("p","", state.burn_candidates.length+" file(s). Archive and delete from the terminal with `taos burn plan`."));
+  } else s.appendChild(el("p","empty","Nothing to clean up."));
+
+  s.appendChild(el("h2",null,"Only you may do these"));
+  const ul=el("div","grid");
+  (state.human_only||[]).forEach(h=>{ const c=el("div","card"); c.appendChild(el("p","",h)); ul.appendChild(c); });
+  s.appendChild(ul);
+}
+
+const RENDER = {today:renderToday, work:renderWork, claims:renderClaims,
+  decisions:renderDecisions, handoffs:renderHandoffs, atlas:renderAtlas};
+
+function draw(){
+  document.getElementById("title").textContent = state.project + " · TAOS";
+  const owed = state.decisions.length;
+  document.getElementById("subtitle").textContent =
+    state.hot.length + " hot · " + owed + " waiting on you · doctor " +
+    (state.doctor.ok ? "green" : "failing") + " · " + state.server_time.replace("T"," ").replace("Z"," UTC");
+  TABS.forEach(t=>{ document.getElementById("tab-"+t).dataset.active = (t===current); });
+  RENDER[current]();
+}
+
+function load(){
+  fetch("/api/state").then(r=>r.json()).then(s=>{ state=s; draw(); })
+    .catch(()=>{ document.getElementById("subtitle").textContent="panel is not reachable"; });
+}
+
+(function init(){
+  const nav=document.getElementById("tabs");
+  TABS.forEach(t=>{ const b=document.createElement("button");
+    b.textContent=t; b.setAttribute("aria-selected", t===current);
+    b.onclick=()=>{ current=t; nav.querySelectorAll("button").forEach(x=>x.setAttribute("aria-selected", x.textContent===t));
+      draw(); };
+    nav.appendChild(b); });
+  load(); setInterval(load, 5000);
+})();
+</script>
+</body>
+</html>

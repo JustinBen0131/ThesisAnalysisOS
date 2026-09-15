@@ -1,0 +1,41 @@
+{
+  "schema": "TAOS_KERNEL_INDEX_V1",
+  "kernels": [
+    {
+      "name": "OS_KERNEL",
+      "path": "kernels/OS_KERNEL.md",
+      "sources": ["taos_core/*.py", "policies/*.md", "AGENTS.md"],
+      "max_age_days": 30,
+      "fingerprint": null,
+      "generated_at": null,
+      "generator": "shipped"
+    },
+    {
+      "name": "PROJECT_KERNEL",
+      "path": "kernels/PROJECT_KERNEL.md",
+      "sources": [".taos/config.json"],
+      "max_age_days": 30,
+      "fingerprint": null,
+      "generated_at": null,
+      "generator": "shipped"
+    },
+    {
+      "name": "PRINCIPAL_KERNEL",
+      "path": "kernels/PRINCIPAL_KERNEL.md",
+      "sources": [".taos/config.json"],
+      "max_age_days": 60,
+      "fingerprint": null,
+      "generated_at": null,
+      "generator": "shipped"
+    },
+    {
+      "name": "NOW_KERNEL",
+      "path": "kernels/NOW_KERNEL.md",
+      "sources": [".taos/tasks.json", ".taos/claims.json", ".taos/decisions.json"],
+      "max_age_days": 1,
+      "fingerprint": null,
+      "generated_at": null,
+      "generator": "shipped"
+    }
+  ]
+}

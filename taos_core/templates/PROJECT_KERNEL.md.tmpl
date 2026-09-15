@@ -1,0 +1,39 @@
+# PROJECT_KERNEL — {{project_name}}
+
+Advisory. Written at setup on {{constructed_at}} from the principal's answers.
+Everything here is a starting point an agent should sharpen with real
+knowledge. The task store and `policies/` stay canonical.
+
+## What this project is
+
+{{project_name}}. Task ids are `{{prefix}}-N`. Stack: {{stack}}.
+
+## Where the work happens
+
+{{workspaces_block}}
+
+{{git_block}}
+
+## What must pass
+
+{{gates_block}}
+
+## What an agent should know before touching code
+
+This section is deliberately thin. It is the job of the first agent that does
+real work here to replace it with what actually matters: the build and test
+commands beyond the gates, the layout of the tree, the parts that are
+load-bearing, the parts that look wrong but are correct, and the mistakes a
+newcomer makes.
+
+Regenerate it properly with:
+
+```bash
+taos kernel regen-prompt PROJECT_KERNEL
+```
+
+## Standing limits
+
+Only {{principal_name}} may:
+
+{{human_only_block}}

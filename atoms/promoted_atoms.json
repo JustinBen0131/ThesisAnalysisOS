@@ -1,0 +1,61 @@
+{
+  "schema": "TAOS_ATOMS_V1",
+  "atoms": [
+    {
+      "id": "handoff-header-required",
+      "status": "active",
+      "rule": "Every handoff starts with the four-line attribution header.",
+      "why": "A handoff without an author, session, task, and scope cannot be trusted or resumed.",
+      "review_date": "2027-03-01",
+      "check": {
+        "type": "regex_must_match",
+        "target": "latest_handoff",
+        "pattern": "^Agent: (codex|claude|human)\\n"
+      },
+      "fixtures": {
+        "red": "## State\nsome text\n",
+        "green": "Agent: codex\nChat/session: X-1 | y\nTask: X-1 | t\nClaim/scope: task:X-1\n"
+      }
+    },
+    {
+      "id": "handoff-has-next-command",
+      "status": "active",
+      "rule": "Every handoff ends with a literal next command.",
+      "why": "The receiving agent should be able to act without re-deriving the plan.",
+      "review_date": "2027-03-01",
+      "check": {
+        "type": "regex_must_match",
+        "target": "latest_handoff",
+        "pattern": "^## Next command\\n"
+      },
+      "fixtures": {
+        "red": "## Evidence\nnothing\n",
+        "green": "## Next command\ncargo test\n"
+      }
+    },
+    {
+      "id": "agents-md-names-the-claim-rule",
+      "status": "active",
+      "rule": "AGENTS.md always tells agents that a live claim by the other agent is do-not-touch.",
+      "why": "This is the one rule that keeps two agents from colliding. It must never be edited out.",
+      "review_date": "2027-03-01",
+      "check": {
+        "type": "regex_must_match",
+        "target": "agents_md",
+        "pattern": "do-not-touch"
+      }
+    },
+    {
+      "id": "agents-md-forbids-hand-editing-state",
+      "status": "active",
+      "rule": "AGENTS.md always forbids editing .taos state files by hand.",
+      "why": "Hand-edited state is how phantom tasks and drift appear.",
+      "review_date": "2027-03-01",
+      "check": {
+        "type": "regex_must_match",
+        "target": "agents_md",
+        "pattern": "Never edit `\\.taos/tasks\\.json`"
+      }
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+# Project-level Codex configuration for ThesisAnalysisOS.
+# Codex merges this over ~/.codex/config.toml once the project is trusted.
+
+# Hooks are what keep an agent away from your keys and your git history.
+# The hook definitions live in .codex/hooks.json. Newer Codex builds enable
+# hooks by default; this flag turns them on for builds that still need it.
+[features]
+hooks = true
+
+# AGENTS.md plus the workspace blocks can exceed the 32 KiB default.
+project_doc_max_bytes = 65536

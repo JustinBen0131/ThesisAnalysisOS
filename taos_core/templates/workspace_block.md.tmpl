@@ -1,0 +1,18 @@
+## Work tracking (TAOS)
+
+Work in this repository is tracked by an operating layer at:
+
+```
+{{taos_home}}
+```
+
+Before starting anything non-trivial here:
+
+```bash
+{{taos_home}}/taos status --compact
+{{taos_home}}/taos start --agent <codex|claude> --task {{prefix}}-N --session "{{prefix}}-N | short label"
+```
+
+Read `{{taos_home}}/AGENTS.md` for the full contract: claims, handoffs,
+decisions, and the hard stops. Two agents share this repo, so check
+`taos claim check` before writing in an area another agent may hold.

@@ -1,0 +1,23 @@
+#!/usr/bin/env python3
+"""taos — the ThesisAnalysisOS command line.
+
+No install step, no dependencies. Run it from anywhere inside the clone.
+"""
+
+from __future__ import annotations
+
+import os
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+
+if sys.version_info < (3, 9):  # pragma: no cover
+    sys.stderr.write("taos needs Python 3.9 or newer; found {0}\n".format(sys.version.split()[0]))
+    raise SystemExit(1)
+
+from taos_core.cli import main  # noqa: E402
+
+if __name__ == "__main__":
+    raise SystemExit(main())
