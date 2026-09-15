@@ -20,7 +20,8 @@ I'll set this up around how you actually work. Here is the whole process:
    contradicts what I see on disk, I'll ask you at most three follow-ups,
    each tied to something specific I found. If you'd rather skip that,
    write **proceed** anywhere in your reply and I'll build with what I have.
-3. I build it, run the checks, and show you the result. About a minute.
+3. I build it, run the checks, show you the result, and give you five tips
+   on getting the most out of me. About a minute.
 4. You say **start** and I pick up your first task.
 
 **0. Does anything below need more explanation, or not fit how you work?**

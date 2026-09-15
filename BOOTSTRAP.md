@@ -131,10 +131,12 @@ vendor the OS into their work repo, say no and point at that file.
    word of either: it is what this OS is optimising for, and the kernels are
    where that starts.
 
-7. Show the person the "Day 1" section of `MANUAL.md` and tell them, in three
-   lines, what changed on disk: the config, the tasks, the workspace blocks,
-   the two kernels you wrote and one thing in each they should correct if you
-   got it wrong.
+7. Tell them, in three lines, what changed on disk: the config, the tasks,
+   the workspace blocks, the two kernels you wrote and one thing in each they
+   should correct if you got it wrong. Then send the block in
+   `bootstrap/TIPS.md` verbatim. It is written in your voice on purpose: it
+   is the first time the system speaks for itself, and it tells them how to
+   let you grow.
 
 8. If they want to begin, start their first task:
 

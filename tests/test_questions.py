@@ -54,6 +54,17 @@ class TestQuestions(unittest.TestCase):
     def test_ask_block_is_short_enough_to_read(self) -> None:
         self.assertLess(len(self.ask.split()), 800, "the ask is too long to read in one sitting")
 
+    def test_tips_block_exists_and_is_clean(self) -> None:
+        text = (REPO / "bootstrap" / "TIPS.md").read_text(encoding="utf-8")
+        match = re.search(r"<!-- TIPS:.*?-->(?P<body>.*?)<!-- /TIPS -->", text, re.DOTALL)
+        self.assertIsNotNone(match)
+        body = match.group("body")
+        self.assertEqual(len(re.findall(r"^\*\*\d\.", body, re.MULTILINE)), 5)
+        for token in ("self_iteration", "push_branches_open_prs", "answers.json"):
+            self.assertNotIn(token, body)
+        self.assertLess(len(body.split()), 500)
+        self.assertIn("TIPS.md", (REPO / "BOOTSTRAP.md").read_text(encoding="utf-8"))
+
     def test_bootstrap_tells_the_agent_to_send_it_verbatim(self) -> None:
         text = (REPO / "BOOTSTRAP.md").read_text(encoding="utf-8")
         self.assertIn("verbatim", text)
