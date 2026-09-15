@@ -214,11 +214,29 @@ class _Handler(BaseHTTPRequestHandler):
         self._json({"error": "not found"}, 404)
 
 
+class _LoopbackServer(ThreadingHTTPServer):
+    """ThreadingHTTPServer without the reverse-DNS lookup on bind.
+
+    `HTTPServer.server_bind` calls `socket.getfqdn()`, which can stall for
+    tens of seconds on machines with slow or absent reverse DNS (GitHub's
+    macOS runners, some laptops on hotel wifi). We only ever bind loopback,
+    so the name is known.
+    """
+
+    daemon_threads = True
+    allow_reuse_address = True
+
+    def server_bind(self) -> None:
+        import socketserver
+
+        socketserver.TCPServer.server_bind(self)
+        self.server_name = "127.0.0.1"
+        self.server_port = self.server_address[1]
+
+
 def make_server(paths: Paths, port: int, token: str) -> ThreadingHTTPServer:
     handler = type("_BoundHandler", (_Handler,), {"paths": paths, "token": token})
-    server = ThreadingHTTPServer(("127.0.0.1", port), handler)
-    server.daemon_threads = True
-    return server
+    return _LoopbackServer(("127.0.0.1", port), handler)
 
 
 def serve(paths: Paths, port: int, token: str) -> None:  # pragma: no cover - long running
