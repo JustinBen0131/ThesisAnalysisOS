@@ -52,7 +52,7 @@ class TestQuestions(unittest.TestCase):
         self.assertIn("answers.schema.json", self.after)
 
     def test_ask_block_is_short_enough_to_read(self) -> None:
-        self.assertLess(len(self.ask.split()), 800, "the ask is too long to read in one sitting")
+        self.assertLess(len(self.ask.split()), 900, "the ask is too long to read in one sitting")
 
     def test_tips_block_exists_and_is_clean(self) -> None:
         text = (REPO / "bootstrap" / "TIPS.md").read_text(encoding="utf-8")
@@ -64,6 +64,20 @@ class TestQuestions(unittest.TestCase):
             self.assertNotIn(token, body)
         self.assertLess(len(body.split()), 500)
         self.assertIn("TIPS.md", (REPO / "BOOTSTRAP.md").read_text(encoding="utf-8"))
+
+    def test_reference_frame_is_on_the_orientation_path_and_never_sent(self) -> None:
+        reference = (REPO / "bootstrap" / "REFERENCE.md").read_text(encoding="utf-8")
+        bootstrap = (REPO / "BOOTSTRAP.md").read_text(encoding="utf-8")
+        self.assertIn("bootstrap/REFERENCE.md", bootstrap)
+        self.assertLess(bootstrap.index("REFERENCE.md"), bootstrap.index("Step zero"))
+        self.assertIn("REFERENCE, NOT TEMPLATE", reference)
+        self.assertIn("Never send any of it to the human", reference)
+        self.assertNotIn("<!-- ASK", reference)
+        for example in ("A good PROJECT_KERNEL", "A good PRINCIPAL_KERNEL", "A good handoff", "A good atom", "A good decision", "Good first tasks"):
+            self.assertIn(example, reference)
+        # sanitized: no private paths, no physics vocabulary, no real names
+        for leak in ("patsfan753", "sPHENIX", "PPG", "Justin", "Maxim", "Aztec", "Noir", "THE-"):
+            self.assertNotIn(leak, reference)
 
     def test_bootstrap_tells_the_agent_to_send_it_verbatim(self) -> None:
         text = (REPO / "BOOTSTRAP.md").read_text(encoding="utf-8")

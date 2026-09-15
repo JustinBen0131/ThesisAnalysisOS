@@ -73,25 +73,36 @@ phrases, `~/.ssh`, `~/.aws`. Add anything project-specific, like `wallet` or
 Default: nothing extra
 
 **8. What are you actually working on? Three to seven real things.**
-One per line, `what it is :: the literal next step`. Add `:: P0` at the end if
-something is urgent. These become your first tasks, so make them real.
+One per line: `what you want :: the literal next step :: what done looks like`.
+The last part is optional; leave it off and I'll propose a finish condition
+after I've looked at the repo, and you can correct it. Add `P0` if urgent.
+Example: `fix the flaky parser tests :: reproduce under cargo test :: full
+parser suite passes twice in a row`.
 No default. This is the one I need from you.
 
-**9. Day-to-day settings.**
-- Daily brief time? Default 8:30am
-- Dashboard port? Default 4331, and open a browser when it starts? Default yes
-- Install the safety hooks into the repos from #3? Default yes (existing hook
-  files are never touched, you get a snippet instead)
-- Which agents? Default both Codex and Claude
-- How many questions may we queue for you per day before the rest wait? Default 3
-- Hours you don't want to be asked anything? Default none
+**9. What resources should I assume I can use?** Rough answers, no token
+counts or prices.
+- Which agents or model families you actually have, if you know
+- Does compute or quota feel constrained, normal, or abundant
+- How much context to occupy in normal work, and how much to keep in reserve
+- Anything scarce you want protected
+- Mechanics, only if you care: which agents (both), hooks into the repos from
+  #3 (yes, existing hook files untouched), dashboard port (4331), brief time
+  (8:30am), questions queued per day (3), quiet hours (none)
+Default: your configured agents, normal availability, lean context with a
+third in reserve, mechanics as listed
 
-**10. What do AI agents keep getting wrong for you?**
-Anything you find yourself correcting more than once. Each one becomes a
-proposal you can accept later, and once an agent sees it actually happen it
-writes a check so the machine enforces it instead of you repeating it.
-Also: how often should I nag you about those proposals? Daily, weekly, or
-only when you ask. Default weekly.
+**10. When things trade off, how should I lean, and what do agents keep
+getting wrong for you?**
+- Exploration: conservative (stick to what works), balanced, or exploratory
+  (try heavier or unfamiliar approaches when they might pay off later)
+- What you care about unusually strongly: verified quality, your attention,
+  speed, money or quota, reusable capability, room to experiment
+- Corrections you keep giving agents. Each becomes a proposal; once an agent
+  sees it happen it writes a check so the machine enforces it. And how often
+  to bring those up: daily, weekly, or only when you ask
+Default: balanced; quality and your intent first, then your attention, then
+resources, with bounded room to experiment; no corrections yet; weekly
 
 <!-- /ASK -->
 
@@ -110,13 +121,20 @@ What each answer fills in `.taos/config.json`, and what it changes:
 | 5 | `gates[]`, `stack` | `taos gate run`; `finish --state review\|done` refuses without a pass in 24 h. Stack is auto-detected from the primary workspace (Cargo.toml, package.json, pyproject, go.mod) when unstated |
 | 6 | `autonomy` (`propose_only`/`edit_branches`/`push_branches_open_prs`), `human_only[]` | the guard's push and commit verdicts; the list shown in AGENTS.md and the panel |
 | 7 | `secret_patterns[]` | merged with the built-in deny list in the guard |
-| 8 | `first_tasks[]` | `{title, next_action, priority}`; created as `next`, none hot |
-| 9 | `brief_time`, `panel.port`, `panel.open_browser`, `install_hooks_in_workspaces`, `agents[]`, `attention.max_decisions_per_day`, `attention.quiet_hours` | the brief, the panel, workspace linking, decision budget |
-| 10 | `agent_corrections[]`, `self_iteration.cadence` | each correction becomes a `kind: atom` proposal, unpromoted; cadence shapes how often proposals surface |
+| 8 | `first_tasks[]` | `{title, next_action, done_when?, verification?, priority}`; created as `next`, none hot. If `done_when` is absent, propose one in the sharpen step after reading the repo |
+| 9 | `resources.{agents_available, compute, context_available, context_working, context_reserve, protect[]}`; mechanics `agents[]`, `install_hooks_in_workspaces`, `panel.port`, `brief_time`, `attention.max_decisions_per_day`, `attention.quiet_hours` | the controller's compute prior; limits the agents respect; the panel and brief mechanics |
+| 10 | `preference.{exploration, priorities[]}`, `agent_corrections[]`, `self_iteration.cadence` | the controller's exploration prior (initial `beta`); each correction becomes a `kind: atom` proposal, unpromoted; cadence shapes how often proposals surface |
+
+Parsing #8: `title :: next action :: done when`, any trailing `P0`..`P3`
+token is the priority; two parts means no closure was given. Parsing #9 and
+#10: map their words onto the enums (`constrained|normal|abundant`,
+`conservative|balanced|exploratory`); free text for context sizes is kept as
+given. These are priors and limits, never performance truths; measured
+outcomes refine the numbers without asking again.
 
 Shape: `bootstrap/answers.schema.json`. Worked example:
 `bootstrap/answers.example.json`. Omit any key the human said "default" for.
 
-Parsing #8: `title :: next action` and an optional `:: P0`..`P3`. Parsing #4
-and #6: map their words onto the enum values in the table above; if they say
-something you cannot map, ask that one thing back, and nothing else.
+Parsing #4 and #6: map their words onto the enum values in the table above;
+if they say something you cannot map, ask that one thing back, and nothing
+else.

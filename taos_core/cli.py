@@ -12,6 +12,7 @@ from . import bootstrap as bootstrap_mod
 from . import brief as brief_mod
 from . import burn as burn_mod
 from . import claims as claims_mod
+from . import control as control_mod
 from . import decisions as decisions_mod
 from . import doctor as doctor_mod
 from . import events as events_mod
@@ -45,6 +46,7 @@ MODULES = (
     atoms_mod,
     burn_mod,
     policy_mod,
+    control_mod,
     panel_mod,
     bootstrap_mod,
 )
