@@ -69,10 +69,13 @@ vendor the OS into their work repo, say no and point at that file.
 
    If `./taos` is not executable, use `python3 taos` everywhere below.
 
-2. Read `bootstrap/QUESTIONS.md`. Ask all ten questions in ONE message, in
-   order, numbered, each with its default shown. Tell the person they can
-   answer "defaults" for everything, or "default" for any single one. Do not
-   drip the questions one at a time; do not add questions of your own.
+2. Open `bootstrap/QUESTIONS.md` and send the block between the `ASK` markers
+   **verbatim**, as one message. Do not paraphrase it, do not reorder it, do
+   not drip the questions one at a time, do not add questions of your own,
+   and do not show them anything else from that file. The only substitutions
+   are the `<...>` placeholders, which you fill from the machine (shell
+   username, timezone, the folder name of the repo you are in); leave a
+   bracket as-is if you cannot tell.
 
 3. Turn the answers into `bootstrap/answers.json`. The shape is
    `bootstrap/answers.schema.json`; a complete example is
