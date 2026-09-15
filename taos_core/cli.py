@@ -20,6 +20,7 @@ from . import handoff as handoff_mod
 from . import kernels as kernels_mod
 from . import lifecycle as lifecycle_mod
 from . import panel as panel_mod
+from . import policy as policy_mod
 from . import projections as projections_mod
 from . import proposals as proposals_mod
 from . import tasks as tasks_mod
@@ -43,6 +44,7 @@ MODULES = (
     kernels_mod,
     atoms_mod,
     burn_mod,
+    policy_mod,
     panel_mod,
     bootstrap_mod,
 )

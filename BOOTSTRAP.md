@@ -20,6 +20,44 @@ in one pass, and then stop. Nothing else.
   starts the panel themselves; it is theirs).
 - Create tasks by hand, edit `.taos/`, or improvise structure.
 
+## Step zero: make this repo theirs
+
+Before the questions, check whether this clone still points at someone else's
+remote:
+
+```bash
+git remote -v
+```
+
+If it shows a remote that is not the person's own, say this to them, plainly:
+
+> This clone still points at the original repository. This OS is meant to be
+> yours to rewrite: the policies, the questions, the guard rules, all of it.
+> Make it your own private repo first, so your operating state never mixes
+> with the codebases your colleagues see.
+
+Then give them these commands and let them run them (do not run them
+yourself, the repo name and visibility are theirs to choose):
+
+```bash
+rm -rf .git && git init -b main
+git add -A && git commit -m "ThesisAnalysisOS: my instance"
+gh repo create <their-name>/<their-os-repo> --private --source=. --remote=origin --push
+```
+
+If they would rather keep the upstream to pull improvements, this instead:
+
+```bash
+git remote rename origin upstream
+gh repo create <their-name>/<their-os-repo> --private --source=. --remote=origin --push
+```
+
+The boundary that matters, and you should state it once: **this repo is
+private and holds the OS; their work repos receive only a four-line block in
+`AGENTS.md`, a `.taos-link.json`, and optionally the hook files.** Nothing
+else crosses. `policies/REPO_SPLIT.md` has the detail. If they ask you to
+vendor the OS into their work repo, say no and point at that file.
+
 ## The pass
 
 1. Verify the runtime. Both must succeed:

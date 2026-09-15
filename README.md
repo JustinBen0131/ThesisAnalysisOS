@@ -19,9 +19,14 @@ It is not affiliated with any employer or product.
 
 ## Sixty seconds
 
+Clone it, then make it yours. This is meant to be a repo you rewrite, not one
+you track.
+
 ```bash
-git clone https://github.com/JustinBen0131/ThesisAnalysisOS.git ~/ThesisAnalysisOS
-cd ~/ThesisAnalysisOS
+git clone https://github.com/JustinBen0131/ThesisAnalysisOS.git ~/my-os
+cd ~/my-os
+rm -rf .git && git init -b main && git add -A && git commit -m "my OS"
+gh repo create <you>/<your-os-repo> --private --source=. --remote=origin --push
 codex        # or: claude
 ```
 
@@ -37,6 +42,13 @@ starts your first task. Then, in your own terminal:
 ```bash
 ./taos panel on
 ```
+
+**The split that matters:** this private repo holds the OS and your operating
+state (`.taos/` is git-ignored, so your tasks never leave your disk). Your
+actual work repos receive only a four-line block in `AGENTS.md`, a
+`.taos-link.json`, and optionally the hook files. Nothing else crosses, so
+nothing your colleagues review ever contains your agent bookkeeping. See
+`policies/REPO_SPLIT.md`.
 
 ## What a day looks like
 

@@ -47,6 +47,12 @@ Never delete outside your own worktree, `.taos/scratch`, or a temp directory.
 Never `rm` with a glob, a variable, `~`, `.`, or `/` as the target. Uncertain
 ownership means keep.
 
+## The repo boundary
+
+Never commit `.taos/` anywhere. Never vendor the OS runtime into a work repo.
+Never put a private task id, a workstream name, a model name, or an agent name
+into a commit message, branch name, or PR body in a collaborator-facing repo.
+
 ## Truth
 
 Never call work done, verified, passing, safe, or ready without evidence you

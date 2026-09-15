@@ -1,0 +1,130 @@
+# The routing map: request shape -> what to read, and what to do first.
+#
+# A policy stack nobody can navigate is decoration. This file is the index an
+# agent consults instead of reading everything, and `taos policy route "<what
+# the human just asked>"` resolves it. Keys are matched as case-insensitive
+# substrings against the request; the highest-scoring routes win.
+#
+# Edit this freely. It is yours. Keep `always` tiny.
+
+version: 1
+
+# Read once per session, before anything else.
+always:
+  - AGENTS.md
+  - policies/OPERATING_LOOP.md
+  - policies/HARD_STOPS.md
+
+routes:
+
+  starting_work:
+    triggers: [work on, start, pick up, take, begin, implement, build, add, write, next task]
+    load: [policies/OPERATING_LOOP.md, policies/CLAIMS.md, policies/DECOMPOSITION.md]
+    first_actions:
+      - Run `taos status --compact`, then map the request to exactly one task.
+      - If the task is broader than this deliverable, create a child and start that.
+      - `taos start` and read the capsule before touching a file.
+
+  repeating_work:
+    triggers: [rerun, again, redo, regenerate, rebuild, retrain, reproduce, another run]
+    load: [policies/DUPLICATE_WORK.md, policies/EVIDENCE.md]
+    first_actions:
+      - Search first: `taos task find`, then the evidence on the matching task.
+      - If equivalent work already exists, report it and ask reuse, compare, or deliberately redo.
+      - Never silently produce a second copy of the same artifact.
+
+  finishing:
+    triggers: [done, finish, wrap up, ship it, close, complete, ready for review]
+    load: [policies/EVIDENCE.md, policies/HANDOFFS.md]
+    first_actions:
+      - Run `taos gate run`. A failing gate is a blocker, not a footnote.
+      - `taos finish` with a state, a reason, and evidence you can name.
+      - If anyone else continues, write the handoff first.
+
+  handing_over:
+    triggers: [hand off, handoff, give this to, switch to claude, switch to codex, other agent, take over]
+    load: [policies/HANDOFFS.md, policies/CLAIMS.md]
+    first_actions:
+      - `taos handoff template`, fill every section with facts, no placeholders.
+      - `taos finish --handoff-file ... --to <them>`; it releases your claims.
+      - Give the human the wrapper it prints. The file is the message.
+
+  blocked_or_stuck:
+    triggers: [blocked, stuck, cannot, can't, waiting on, need a decision, which should i, should we]
+    load: [policies/OPERATING_LOOP.md, policies/EVIDENCE.md]
+    first_actions:
+      - If it is a human judgment, `taos decide ask` and keep working on the rest.
+      - If it is a real blocker, `taos finish --state blocked` naming the blocker.
+      - Never stall the session waiting for an answer.
+
+  git_and_branches:
+    triggers: [branch, worktree, commit, push, merge, pull request, pr, rebase, main, master]
+    load: [policies/GIT.md, policies/HARD_STOPS.md, policies/REPO_SPLIT.md]
+    first_actions:
+      - Confirm you are on the task's branch or worktree, not a protected branch.
+      - Pushes and merges follow the configured autonomy and merge policy.
+      - No private task ids, model names, or agent names in messages a colleague reads.
+
+  tests_and_quality:
+    triggers: [test, tests, lint, format, clippy, ci, coverage, gate, failing]
+    load: [policies/GATES.md, policies/EVIDENCE.md]
+    first_actions:
+      - Run the gates as configured; do not invent a narrower command.
+      - Never edit a gate to make it pass.
+      - Record the run on the task; it is the evidence `finish` requires.
+
+  reviewing:
+    triggers: [review, check your work, double check, look again, did you miss, audit, verify]
+    load: [policies/REVIEW.md, policies/EVIDENCE.md]
+    first_actions:
+      - Exactly one bounded pass against the stated acceptance criteria.
+      - Fix only defects that change a decision; log the rest as tasks.
+      - Stop when the list is closed. Do not redesign a working interface.
+
+  fixing_the_os:
+    triggers: [policy, rule, atom, correct, you keep, every time, always does, stop doing, kernel, retro]
+    load: [policies/SELF_ITERATION.md, policies/CONTEXT.md]
+    first_actions:
+      - First occurrence: fix it and write one dated line in the principal kernel.
+      - Second occurrence: propose an atom with a check a machine can run.
+      - Never promote an atom yourself; the human accepts it.
+
+  context_and_memory:
+    triggers: [read the, catch me up, what is the state, remind me, context, where were we, resume]
+    load: [policies/CONTEXT.md]
+    first_actions:
+      - `taos capsule <ID>` before broad reads. It is the compiled answer.
+      - Read the smallest thing that answers the question.
+      - A stale kernel is a hint, never a fact. Verify before asserting.
+
+  secrets_and_danger:
+    triggers: [key, secret, credential, token, env, deploy, release, production, billing, wallet, sign]
+    load: [policies/HARD_STOPS.md]
+    first_actions:
+      - Stop. Check the human-only list before proposing anything.
+      - Never read, print, or type the value. Name the file, not its contents.
+      - Prepare the action for the human; do not execute it.
+
+  cleaning_up:
+    triggers: [clean up, delete, remove, prune, archive, stale, old files, burn]
+    load: [policies/SELF_ITERATION.md, policies/HARD_STOPS.md]
+    first_actions:
+      - `taos burn plan` shows what is genuinely past its TTL.
+      - Deletion happens only after an archive verifies its own restore.
+      - Uncertain ownership means keep.
+
+  onboarding_a_repo:
+    triggers: [new repo, another repo, link, workspace, set up, install, uninstall, remove taos]
+    load: [policies/REPO_SPLIT.md]
+    first_actions:
+      - `taos bootstrap link-workspace <path>` adds only a marked block and a link file.
+      - Existing hook files are never overwritten; a snippet is written instead.
+      - `taos bootstrap unlink-workspace <path>` removes exactly what was added.
+
+  the_panel:
+    triggers: [panel, dashboard, ui, page, open the, show me, what does the panel]
+    load: [policies/PANEL.md]
+    first_actions:
+      - The human starts and stops the panel; you do not run `taos panel on`.
+      - Everything on it is a row in `.taos/`; if it looks wrong, the store is wrong, not the page.
+      - Nothing on the panel is authority. `taos task show` is.

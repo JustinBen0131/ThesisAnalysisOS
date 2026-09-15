@@ -846,6 +846,19 @@ Added after the first end-to-end run, all driven by the principal's answers:
   (`.taos-link.json.installed` records which hook files were ours).
 - **Codex hook paths** are pinned to the absolute clone path at construct.
 - **Codex argv lists** in `tool_input.command` are accepted by the guard.
+- **Routed policies.** `policies/ROUTING.yaml` (`always` + `routes.<name>.
+  {triggers, load, first_actions}`) is the index; `taos_core/policy.py`
+  parses it with a minimal YAML subset (mappings, block lists, inline lists,
+  scalars; no dependency) and exposes `taos policy route|list|show|check`.
+  `check` fails on a missing target or an orphan policy file; the doctor
+  runs it as `policies_resolve`, and the atom `policy-layer-resolves` pins it.
+  AGENTS.md's first reflex is `status --compact`, then `policy route`, then
+  place the request. The policy set is: HARD_STOPS, OPERATING_LOOP, CLAIMS,
+  HANDOFFS, EVIDENCE, SELF_ITERATION, PANEL, REPO_SPLIT, DUPLICATE_WORK,
+  DECOMPOSITION, CONTEXT, REVIEW, GIT, GATES; each under a page.
+- **Repo split.** The OS is re-homed as the person's private repo (BOOTSTRAP
+  step zero); a work repo receives only the marked block, `.taos-link.json`,
+  and hook files written only when absent. `policies/REPO_SPLIT.md`.
 
 ## 12. Builder ownership (parallel build)
 
