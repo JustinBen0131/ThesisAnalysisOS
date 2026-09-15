@@ -271,18 +271,18 @@ def on(paths: Paths, port: Optional[int] = None, open_browser: Optional[bool] = 
     atomic_write_text(paths.panel_pid, "{0} {1}\n".format(process.pid, port), mode=0o600)
 
     url = "http://127.0.0.1:{0}/".format(port)
-    deadline = time.time() + 6.0
+    deadline = time.time() + float(os.environ.get("TAOS_PANEL_START_TIMEOUT", "30"))
     healthy = False
     while time.time() < deadline:
         if process.poll() is not None:
             break
         try:
-            with urllib.request.urlopen(url + "api/health", timeout=0.5) as response:
+            with urllib.request.urlopen(url + "api/health", timeout=1.0) as response:
                 if response.status == 200:
                     healthy = True
                     break
         except Exception:
-            time.sleep(0.15)
+            time.sleep(0.2)
 
     if not healthy:
         try:
@@ -291,9 +291,16 @@ def on(paths: Paths, port: Optional[int] = None, open_browser: Optional[bool] = 
             pass
         if paths.panel_pid.exists():
             paths.panel_pid.unlink()
+        log.flush()
+        tail = ""
+        try:
+            tail = paths.panel_log.read_text(encoding="utf-8", errors="replace")[-800:]
+        except OSError:
+            pass
         raise TaosError(
-            "the panel did not come up on port {0}. Check {1}, or try `taos panel on --port <other>`.".format(
-                port, paths.relative(paths.panel_log)
+            "the panel did not come up on port {0} (process {1}). Try `taos panel on --port <other>`. "
+            "Last log lines:\n{2}".format(
+                port, "exited {0}".format(process.returncode) if process.poll() is not None else "still starting", tail
             )
         )
 
