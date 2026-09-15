@@ -98,11 +98,18 @@ def _run_check(paths: Paths, atom: Dict[str, Any]) -> Dict[str, Any]:
         return result
 
     if kind == "taos_command_exit_zero":
+        import contextlib
+        import io
+
         from .cli import main as cli_main
 
         argv = [str(part) for part in check.get("argv", [])][1:]
+        sink = io.StringIO()
         try:
-            code = cli_main(["--home", str(paths.home)] + argv)
+            # The command's own output belongs to nobody here; hooks that call
+            # the doctor must emit exactly one JSON line on stdout.
+            with contextlib.redirect_stdout(sink), contextlib.redirect_stderr(sink):
+                code = cli_main(["--home", str(paths.home)] + argv)
         except SystemExit as exc:  # pragma: no cover - argparse escape hatch
             code = int(exc.code or 0)
         except Exception as exc:  # pragma: no cover - defensive

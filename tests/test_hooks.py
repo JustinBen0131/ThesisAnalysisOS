@@ -127,6 +127,17 @@ class TestGuard(unittest.TestCase):
         self.assert_deny(bash("git push --force origin feature"))
         self.assert_deny(bash("cat ~/.ssh/id_rsa"))
 
+    def test_session_start_emits_exactly_one_json_line(self) -> None:
+        env = dict(os.environ, TAOS_HOME=str(self.home))
+        process = subprocess.run(
+            [sys.executable, str(self.home / "hooks" / "session_start.py")],
+            input="{}", capture_output=True, text=True, env=env, cwd=str(self.home), timeout=30,
+        )
+        lines = [l for l in process.stdout.splitlines() if l.strip()]
+        self.assertEqual(len(lines), 1, process.stdout)
+        json.loads(lines[0])
+        self.assertEqual(process.stderr.strip(), "")
+
     def test_session_start_and_stop_labels(self) -> None:
         code, out, _ = run_hook(self.home, "session_start.py", {"hook_event_name": "SessionStart"})
         self.assertEqual(code, 0)
