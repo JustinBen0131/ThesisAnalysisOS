@@ -82,7 +82,13 @@ class TestPanel(unittest.TestCase):
         self.assertEqual(caught.exception.code, 404)
 
     def test_on_off_status(self) -> None:
-        result = panel_mod.on(self.paths, port=0 or self.port + 1, open_browser=False)
+        import socket
+
+        probe = socket.socket()
+        probe.bind(("127.0.0.1", 0))
+        free_port = probe.getsockname()[1]
+        probe.close()
+        result = panel_mod.on(self.paths, port=free_port, open_browser=False)
         try:
             self.assertTrue(result["running"])
             self.assertTrue(panel_mod.status(self.paths)["running"])
