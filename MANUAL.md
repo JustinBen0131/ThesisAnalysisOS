@@ -23,11 +23,20 @@ For the human. The agents read `AGENTS.md`; you read this.
 
 ## 2. Install (sixty seconds)
 
+Clone it, then re-home it as your own private repo. You are meant to rewrite
+the policies, the questions, and the guard rules; that is easier when the
+history is yours.
+
 ```bash
-git clone https://github.com/JustinBen0131/ThesisAnalysisOS.git ~/ThesisAnalysisOS
-cd ~/ThesisAnalysisOS
+git clone https://github.com/JustinBen0131/ThesisAnalysisOS.git ~/my-os
+cd ~/my-os
+rm -rf .git && git init -b main && git add -A && git commit -m "my OS"
+gh repo create <you>/<your-os-repo> --private --source=. --remote=origin --push
 codex        # or: claude
 ```
+
+(To keep pulling upstream improvements instead: `git remote rename origin
+upstream`, then create your own `origin`.)
 
 First message to the agent:
 
@@ -36,6 +45,26 @@ Read BOOTSTRAP.md in this repo and follow it exactly. Ask me the ten bootstrap q
 ```
 
 Requirements: macOS or Linux, Python 3.9+, git. Nothing is installed.
+
+### The repo split
+
+Two repos, two failure domains:
+
+- **This one, private.** The runtime, your `AGENTS.md`, your policies,
+  kernels, atoms, hooks. `.taos/` (tasks, claims, events, handoffs, gate runs)
+  is git-ignored, so your working state stays on your disk.
+- **Your work repos, shared.** They receive a four-line block in `AGENTS.md`
+  and `CLAUDE.md`, a `.taos-link.json`, and the hook files only if they did
+  not already exist. Nothing else, ever.
+
+If you do not want even those three in your team's history, exclude them
+locally rather than in `.gitignore`:
+
+```bash
+printf '.taos-link.json\n.codex/hooks.json\n' >> <work-repo>/.git/info/exclude
+```
+
+Full rules: `policies/REPO_SPLIT.md`.
 
 ## 3. Day 1
 

@@ -30,7 +30,12 @@ Workspaces:
 
 ```bash
 ./taos status --compact
+./taos policy route "<what the human just asked, in their words>"
 ```
+
+The second command names the two or three policies that apply and the first
+actions to take. Read those, not all of `policies/`. The map is
+`policies/ROUTING.yaml`; it is short and it is yours to edit.
 
 Then place the human's request before doing it:
 
@@ -113,6 +118,15 @@ When you need the human, queue it. Do not stall the session waiting.
 ```
 
 - <not constructed yet>
+
+## The repo split
+
+This OS repo is private and holds the operating state. The workspaces are
+collaborator-facing. Nothing from `.taos/` ever enters a workspace's history,
+and the OS runtime is never vendored into one: a workspace gets only the
+marked block in `AGENTS.md`/`CLAUDE.md`, `.taos-link.json`, and the hook
+files. Commit messages, branch names, and PR bodies in a workspace carry no
+model or agent names. Full rules in `policies/REPO_SPLIT.md`.
 
 ## Hard stops
 

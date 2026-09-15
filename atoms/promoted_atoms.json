@@ -46,6 +46,17 @@
       }
     },
     {
+      "id": "policy-layer-resolves",
+      "status": "active",
+      "rule": "Every route in ROUTING.yaml reaches a real policy file, and every policy file is routed to.",
+      "why": "A rule that cannot be found is not a rule; a route to a missing file is a trap.",
+      "review_date": "2027-03-01",
+      "check": {
+        "type": "taos_command_exit_zero",
+        "argv": ["taos", "policy", "check"]
+      }
+    },
+    {
       "id": "agents-md-forbids-hand-editing-state",
       "status": "active",
       "rule": "AGENTS.md always forbids editing .taos state files by hand.",

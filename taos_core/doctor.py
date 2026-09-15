@@ -179,6 +179,18 @@ def run(paths: Paths) -> Dict[str, Any]:
         _check("hooks_installed", "pass" if not missing_hooks else "warn", "missing: {0}".format(", ".join(missing_hooks) or "none"))
     )
 
+    # policy layer resolves
+    from . import policy as policy_mod
+
+    policy_problems = policy_mod.check(paths)
+    checks.append(
+        _check(
+            "policies_resolve",
+            "pass" if not policy_problems else "fail",
+            "; ".join(policy_problems) or "every route reaches a real file, every policy is routed",
+        )
+    )
+
     # secrets in state
     patterns = [re.compile(p, re.IGNORECASE) for p in config_mod.secret_patterns(paths)]
     leaks = []

@@ -2,6 +2,9 @@
 .taos/
 bootstrap/answers.json
 
+# Local notes that are not part of the OS
+SEND_TO_MAX.md
+
 # Python
 __pycache__/
 *.pyc
