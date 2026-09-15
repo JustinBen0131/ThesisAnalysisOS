@@ -85,6 +85,25 @@ DEFAULTS: Dict[str, Any] = {
     "autonomy": "edit_branches",
     "attention": {"max_decisions_per_day": 3, "quiet_hours": None},
     "self_iteration": {"cadence": "weekly", "auto_promote_atoms": False},
+    "control": {
+        "enabled": True,
+        "min_evidence": 3,
+        "step": 0.1,
+        "observed_profile": None,
+    },
+    # The human's boundary conditions. Priors for the controller, limits for the agents.
+    "resources": {
+        "agents_available": None,
+        "compute": "normal",            # constrained | normal | abundant
+        "context_available": None,      # M_available, if known
+        "context_working": None,        # M_working: what to occupy normally
+        "context_reserve": None,        # M_reserve: headroom to keep
+        "protect": [],                  # resources to spare
+    },
+    "preference": {
+        "exploration": "balanced",      # conservative | balanced | exploratory
+        "priorities": ["verified quality", "user intent", "human attention", "resources", "exploration"],
+    },
 }
 
 

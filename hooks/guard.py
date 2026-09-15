@@ -39,7 +39,7 @@ SENSITIVE_DIRS = (
     "/.docker/config.json",
 )
 
-STATE_FILES = ("tasks.json", "claims.json", "events.jsonl", "allocator.json", "decisions.json")
+STATE_FILES = ("tasks.json", "claims.json", "events.jsonl", "allocator.json", "decisions.json", "control.json")
 CAGE_FILES = (
     "hooks/guard.py",
     "hooks/session_start.py",

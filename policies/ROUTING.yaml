@@ -13,6 +13,7 @@ version: 1
 always:
   - AGENTS.md
   - policies/OBJECTIVE.md
+  - policies/CONTROL.md
   - policies/OPERATING_LOOP.md
   - policies/HARD_STOPS.md
 
@@ -121,6 +122,14 @@ routes:
       - `taos bootstrap link-workspace <path>` adds only a marked block and a link file.
       - Existing hook files are never overwritten; a snippet is written instead.
       - `taos bootstrap unlink-workspace <path>` removes exactly what was added.
+
+  the_control_law:
+    triggers: [control, envelope, allocation, exploit, probe, why did you recommend, reasoning level, model choice, cheaper, more careful]
+    load: [policies/CONTROL.md, policies/OBJECTIVE.md]
+    first_actions:
+      - The `control:` line from `taos start` is the default allocation inside the hard stops; follow it.
+      - `taos control explain <ID>` answers why, from recorded observations; never guess.
+      - The human's model or reasoning choice is an observation, not something to argue with.
 
   the_panel:
     triggers: [panel, dashboard, ui, page, open the, show me, what does the panel]

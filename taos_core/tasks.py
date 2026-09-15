@@ -35,7 +35,7 @@ PRIORITIES = ("P0", "P1", "P2", "P3")
 ID_RE = re.compile(r"^[A-Z][A-Z0-9]{1,7}-[1-9][0-9]*$")
 RELATION_TYPES = ("blocks", "blockedBy", "relatedTo")
 INVERSE = {"blocks": "blockedBy", "blockedBy": "blocks", "relatedTo": "relatedTo"}
-MUTABLE_FIELDS = ("title", "goal", "next_action", "priority", "parent_id", "labels", "branch")
+MUTABLE_FIELDS = ("title", "goal", "next_action", "priority", "parent_id", "labels", "branch", "done_when", "verification")
 _PRIORITY_ORDER = {"P0": 0, "P1": 1, "P2": 2, "P3": 3}
 
 
@@ -154,6 +154,8 @@ class TaskStore(object):
         parent_id: Optional[str] = None,
         labels: Optional[List[str]] = None,
         status: str = "next",
+        done_when: str = "",
+        verification: str = "",
     ) -> Dict[str, Any]:
         title = str(title).strip()
         if not title:
@@ -175,6 +177,8 @@ class TaskStore(object):
                 "priority": priority,
                 "goal": str(goal or ""),
                 "next_action": str(next_action or ""),
+                "done_when": str(done_when or ""),
+                "verification": str(verification or ""),
                 "parent_id": str(parent_id) if parent_id else None,
                 "labels": sorted(set(labels or [])),
                 "branch": None,
@@ -327,7 +331,15 @@ class TaskStore(object):
             self._save(data)
             return task
 
-    def add_evidence(self, task_id: str, ref: str, agent: str, note: str = "") -> Dict[str, Any]:
+    def add_evidence(
+        self,
+        task_id: str,
+        ref: str,
+        agent: str,
+        note: str = "",
+        depends_on: Optional[List[str]] = None,
+        artifact: bool = False,
+    ) -> Dict[str, Any]:
         if not str(ref or "").strip():
             raise TaosError("evidence needs a reference")
         with locked(self.paths):
@@ -336,11 +348,43 @@ class TaskStore(object):
             if task is None:
                 raise TaosError("no such task: {0}".format(task_id))
             now = utc_now()
-            task.setdefault("evidence", []).append(
-                {"ts": now, "agent": agent, "ref": str(ref), "note": str(note or "")}
-            )
+            row: Dict[str, Any] = {"ts": now, "agent": agent, "ref": str(ref), "note": str(note or "")}
+            if artifact or depends_on:
+                # A reusable work product carries a small validity contract. Unknown
+                # dependencies stay unknown: an empty list means "none declared", not "none".
+                row["artifact"] = {
+                    "depends_on": sorted(set(depends_on or [])),
+                    "dependencies_known": bool(depends_on),
+                    "valid": True,
+                    "invalidated": None,
+                    "producer": task["id"],
+                }
+            task.setdefault("evidence", []).append(row)
             task["updated_at"] = now
             events_mod.emit(self.paths, "task_update", agent, task_id=task["id"], fields=["evidence"])
+            self._save(data)
+            return task
+
+    def invalidate_artifact(self, task_id: str, ref: str, reason: str, agent: str) -> Dict[str, Any]:
+        """A known dependency changed: the artifact's consequences must be reconsidered."""
+        if not str(reason or "").strip():
+            raise TaosError("invalidation needs a reason naming what changed")
+        with locked(self.paths):
+            data = self.load()
+            task = data["tasks"].get(str(task_id))
+            if task is None:
+                raise TaosError("no such task: {0}".format(task_id))
+            hit = None
+            for row in task.get("evidence", []):
+                if row.get("ref") == str(ref) and isinstance(row.get("artifact"), dict):
+                    hit = row
+            if hit is None:
+                raise TaosError("no artifact evidence {0!r} on {1}".format(ref, task_id))
+            now = utc_now()
+            hit["artifact"]["valid"] = False
+            hit["artifact"]["invalidated"] = {"ts": now, "agent": agent, "reason": str(reason)}
+            task["updated_at"] = now
+            events_mod.emit(self.paths, "artifact_invalidate", agent, task_id=task["id"], ref=str(ref), reason=str(reason))
             self._save(data)
             return task
 
@@ -489,6 +533,10 @@ def _print_task(task: Dict[str, Any], store: TaskStore) -> None:
         print("  goal:        {0}".format(task["goal"]))
     if task.get("next_action"):
         print("  next:        {0}".format(task["next_action"]))
+    if task.get("done_when"):
+        print("  done when:   {0}".format(task["done_when"]))
+    if task.get("verification"):
+        print("  verified by: {0}".format(task["verification"]))
     if task.get("parent_id"):
         print("  parent:      {0}".format(task["parent_id"]))
     if task.get("branch"):
@@ -519,6 +567,8 @@ def _cmd_create(args: argparse.Namespace, paths: Paths) -> int:
         parent_id=args.parent,
         labels=args.label or [],
         status=args.status,
+        done_when=args.done_when or "",
+        verification=args.verification or "",
     )
     print(task["id"] if args.json else "created {0}: {1}".format(task["id"], task["title"]))
     return 0
@@ -593,8 +643,17 @@ def _cmd_comment(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def _cmd_evidence(args: argparse.Namespace, paths: Paths) -> int:
-    TaskStore(paths).add_evidence(args.task_id, args.ref, args.agent, note=args.note or "")
+    TaskStore(paths).add_evidence(
+        args.task_id, args.ref, args.agent, note=args.note or "",
+        depends_on=args.depends_on or None, artifact=bool(args.artifact),
+    )
     print("evidence added to {0}".format(args.task_id))
+    return 0
+
+
+def _cmd_invalidate(args: argparse.Namespace, paths: Paths) -> int:
+    TaskStore(paths).invalidate_artifact(args.task_id, args.ref, args.reason, args.agent)
+    print("artifact {0} on {1} marked invalid".format(args.ref, args.task_id))
     return 0
 
 
@@ -631,6 +690,8 @@ def register(subparsers: Any) -> None:
     create.add_argument("--parent", help="parent task id")
     create.add_argument("--label", action="append")
     create.add_argument("--status", default="next", choices=["next", "backlog"])
+    create.add_argument("--done-when", dest="done_when", help="the observable closure condition")
+    create.add_argument("--verification", help="how closure will be established")
     create.add_argument("--json", action="store_true")
     create.set_defaults(func=_cmd_create)
 
@@ -679,7 +740,16 @@ def register(subparsers: Any) -> None:
     evidence.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
     evidence.add_argument("--ref", required=True)
     evidence.add_argument("--note")
+    evidence.add_argument("--artifact", action="store_true", help="a reusable work product, with a validity contract")
+    evidence.add_argument("--depends-on", dest="depends_on", action="append", help="a known input the artifact depends on")
     evidence.set_defaults(func=_cmd_evidence)
+
+    invalidate = sub.add_parser("invalidate", help="mark an artifact invalid because a dependency changed")
+    invalidate.add_argument("task_id")
+    invalidate.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    invalidate.add_argument("--ref", required=True)
+    invalidate.add_argument("--reason", required=True)
+    invalidate.set_defaults(func=_cmd_invalidate)
 
     relate = sub.add_parser("relate", help="link two tasks")
     relate.add_argument("task_id")

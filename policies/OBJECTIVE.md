@@ -52,6 +52,19 @@ Every term matters:
 7. **Symmetry.** Two agents, same rules, same rope. Provenance says who did
    it; it never decides who may.
 
+## How it regulates itself
+
+The objective above is qualitative. `policies/CONTROL.md` is its quantitative
+shadow: every task is an observed state transition from `start` to
+`finish`, the raw outcome vector is kept, and a few bounded parameters move
+so the next comparable task gets a slightly better allocation of
+verification, compute, and exploration. Reuse what remains valid; spend
+computation where it can improve what the system can reliably decide or
+accomplish. The asset is never the artifact, it is the future work a valid
+artifact makes cheap. The hard stops are not terms in that function at all:
+the controller chooses among admissible actions and can never make one
+admissible.
+
 ## How to know it is working
 
 The daily brief says `No action needed.` more mornings than not. The

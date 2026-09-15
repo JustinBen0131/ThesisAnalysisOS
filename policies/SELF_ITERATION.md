@@ -49,6 +49,19 @@ plan` lists what is past it. `taos burn execute --approve` archives to
 restores byte for byte, and only then deletes. `taos burn recall` restores.
 Tasks, claims, events, config, atoms, and kernels are never burn fuel.
 
+## Three kinds of learning, kept apart
+
+- **Semantic lessons** (a thing that keeps going wrong) become atoms through
+  proposals the human accepts. This section.
+- **Quantitative operating choices** (how much verification, compute, and
+  exploration a class of task deserves) are calibrated automatically by the
+  control law in `policies/CONTROL.md`, within fixed bounds, from measured
+  outcomes. No approval is needed for those bounded numbers, and they cannot
+  reach anything a proposal or a hard stop protects.
+- **Structural changes** (a new rule, a retired mechanism, a widened
+  permission) remain proposals. The controller may not make them, and tuning
+  is never a route around them.
+
 ## Cadence
 
 The human chose `daily`, `weekly`, or `manual` at setup. Respect it. Nagging

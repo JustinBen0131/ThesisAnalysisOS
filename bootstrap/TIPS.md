@@ -17,11 +17,13 @@ me what went stale and I propose pruning it. The more of those you accept,
 the less you have to say to me, and the less of me there is. That's the
 goal: I should be smaller and quieter in a year, not bigger.
 
-**2. Say the task id, and I already know where to work.** "Work on
-<PREFIX>-3" gives me the worktree, the branch, the gates, the last handoff,
-and any decision you still owe. You never have to re-explain a task to me or
-to the other agent. If you don't know the id, describe the work and I'll
-find or create it, once, at the start.
+**2. Tell me what you want; I'll say what done means.** "Fix the login
+race" is enough. I'll turn it into a task with a finish condition and how
+I'll verify it, tell you in one line only if it isn't obvious, and you
+correct me if I drew the boundary wrong. Say the task id when you know it
+("work on <PREFIX>-3") and I already have the worktree, the branch, the
+gates, the last handoff, and any decision you still owe. If I hit something
+that has its own finish line, I'll split it out and say so once.
 
 **3. My questions land in one place, and they wait.** I won't stall a
 session on you. Anything that genuinely needs your judgment goes into the

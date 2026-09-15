@@ -177,6 +177,14 @@ def _config_from(answers: Dict[str, Any]) -> Dict[str, Any]:
         "cadence": str(answers.get("self_iteration_cadence") or "weekly"),
         "auto_promote_atoms": False,
     }
+    resources = dict(config_mod.DEFAULTS["resources"])
+    if isinstance(answers.get("resources"), dict):
+        resources.update({k: v for k, v in answers["resources"].items() if v is not None})
+    config["resources"] = resources
+    preference = dict(config_mod.DEFAULTS["preference"])
+    if isinstance(answers.get("preference"), dict):
+        preference.update({k: v for k, v in answers["preference"].items() if v is not None})
+    config["preference"] = preference
     if answers.get("agents"):
         config["agents"] = list(answers["agents"])
     if answers.get("human_only"):
@@ -374,6 +382,8 @@ def construct(paths: Paths, answers: Dict[str, Any], actor: str = "system") -> D
                 next_action=str(item.get("next_action") or ""),
                 priority=str(item.get("priority") or "P2"),
                 status="next",
+                done_when=str(item.get("done_when") or ""),
+                verification=str(item.get("verification") or ""),
             )
             created.append(task["id"])
 
