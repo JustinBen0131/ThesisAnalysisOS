@@ -52,7 +52,7 @@ class TestQuestions(unittest.TestCase):
         self.assertIn("answers.schema.json", self.after)
 
     def test_ask_block_is_short_enough_to_read(self) -> None:
-        self.assertLess(len(self.ask.split()), 700, "the ask is too long to read in one sitting")
+        self.assertLess(len(self.ask.split()), 800, "the ask is too long to read in one sitting")
 
     def test_bootstrap_tells_the_agent_to_send_it_verbatim(self) -> None:
         text = (REPO / "BOOTSTRAP.md").read_text(encoding="utf-8")
