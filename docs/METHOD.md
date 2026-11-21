@@ -184,6 +184,32 @@ What the table says:
   nobody declared as `unknown`. It cannot see an input a check has hidden
   inside a domain it did not name.
 
+### A seventh prediction, written before its mechanism existed
+
+The last row is the stated limit of the design, and an outside review after
+the release found a second road to it: a file git ignores was left out of a
+result's basis, even when a declared domain named it. The two are one gap. A
+result is filed under some bytes, and nothing made sure the check could read
+only those bytes.
+
+The repair proposed here is to make that true by construction. A check
+marked `isolated` runs in an empty folder that holds only the files its
+result is filed under. Build systems call this a sandboxed or hermetic
+action.
+
+This was written before any of that code existed, and committed on its own
+so that the history shows the order:
+
+- **P7.** With every check isolated, a check that reads a folder it did not
+  declare never passes. All 6 fail at their first run, so no result of theirs
+  is ever relied on: 0 wrong reuses where the table above has 150. With
+  correct declarations, isolation changes no count: 60 executions and 0 wrong
+  reuses at 12 domains, the same as without it.
+
+If the isolated folder lets one undeclared file through, the first half
+fails. If isolating disturbs what a correctly declared check sees, the second
+half fails.
+
 ### What it costs, and the connection to transport networks
 
 Two of the author's papers study branched transport networks with a two-term
