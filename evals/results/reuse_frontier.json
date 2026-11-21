@@ -1,0 +1,132 @@
+{
+  "checks": 6,
+  "edits": 60,
+  "environment": {
+    "platform": "macOS-27.2.1-arm64-arm-64bit",
+    "python": "3.12.10"
+  },
+  "folders": 12,
+  "predictions": {
+    "P1": {
+      "held": true,
+      "text": "with what each check reads declared correctly, no stale result is ever reused, at any granularity"
+    },
+    "P2": {
+      "held": true,
+      "text": "the number of executions equals the count derived from the edit trace exactly: nothing extra, nothing missed"
+    },
+    "P3": {
+      "held": true,
+      "text": "three tasks asking the same questions execute no more checks than one task does"
+    },
+    "P4": {
+      "held": true,
+      "text": "finer declarations never cost more executions, and stop helping once they match what the checks read"
+    },
+    "P5": {
+      "held": true,
+      "text": "a check that reads a folder it did not declare does reuse a stale result: the declaration is the limit"
+    },
+    "P6": {
+      "held": true,
+      "text": "no age window reaches both the oracle's execution count and zero stale reuse"
+    }
+  },
+  "relied_on": 360,
+  "rows": [
+    {
+      "executions": 360,
+      "policy": "rerun everything",
+      "wrong": 0
+    },
+    {
+      "executions": 180,
+      "policy": "rerun when older than 2 consultations",
+      "wrong": 30
+    },
+    {
+      "executions": 90,
+      "policy": "rerun when older than 4 consultations",
+      "wrong": 83
+    },
+    {
+      "executions": 48,
+      "policy": "rerun when older than 8 consultations",
+      "wrong": 161
+    },
+    {
+      "executions": 360,
+      "expected": 360,
+      "policy": "TAOS, 1 domain(s) declared",
+      "wrong": 0
+    },
+    {
+      "executions": 180,
+      "expected": 180,
+      "policy": "TAOS, 2 domain(s) declared",
+      "wrong": 0
+    },
+    {
+      "executions": 120,
+      "expected": 120,
+      "policy": "TAOS, 3 domain(s) declared",
+      "wrong": 0
+    },
+    {
+      "executions": 120,
+      "expected": 120,
+      "policy": "TAOS, 4 domain(s) declared",
+      "wrong": 0
+    },
+    {
+      "executions": 60,
+      "expected": 60,
+      "policy": "TAOS, 6 domain(s) declared",
+      "wrong": 0
+    },
+    {
+      "executions": 60,
+      "expected": 60,
+      "policy": "TAOS, 12 domain(s) declared",
+      "wrong": 0
+    },
+    {
+      "executions": 60,
+      "policy": "oracle (knows what every check reads)",
+      "wrong": 0
+    },
+    {
+      "executions": 60,
+      "policy": "TAOS, three tasks asking",
+      "wrong": 0
+    },
+    {
+      "executions": 29,
+      "policy": "TAOS, each check hides one folder it reads",
+      "wrong": 150
+    }
+  ],
+  "seed": 7,
+  "timing": {
+    "checks_spared_per_consultation": 5.0,
+    "seconds_per_execution": 0.005672380182735478,
+    "seconds_when_something_reran": 0.036613161915265084,
+    "upkeep": [
+      {
+        "break_even_check_seconds": 0.0030935418006265538,
+        "files": 48,
+        "seconds": 0.015467709003132768
+      },
+      {
+        "break_even_check_seconds": 0.007375116599723697,
+        "files": 480,
+        "seconds": 0.036875582998618484
+      },
+      {
+        "break_even_check_seconds": 0.05112361659994349,
+        "files": 4800,
+        "seconds": 0.25561808299971744
+      }
+    ]
+  }
+}

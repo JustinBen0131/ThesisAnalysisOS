@@ -376,6 +376,7 @@ def close_episode(paths: Paths, task: Dict[str, Any], agent: str) -> Optional[Di
         paths, "control_close", agent,
         episode_id=open_row["episode_id"], task_id=task["id"], klass=open_row["z"]["klass"],
         profile=open_row.get("observed") or open_row["recommended"], observed=bool(open_row.get("observed")),
+        recommended=open_row["recommended"], executed=open_row.get("observed"),
         evidence_kind=open_row.get("evidence_kind", "observational"),
         vector=vector, j=j, progress=progress, cost=cost, clean=is_clean(vector),
         control_version=CONTROL_VERSION,
@@ -451,14 +452,20 @@ def rebuild(paths: Paths, write: bool = False) -> Dict[str, Any]:
                 continue
             state["open"].pop(row["episode_id"], None)
             klass = state["classes"].setdefault(row["klass"], {"n": 0, "clean": 0, "profiles": {}, "recent": []})
-            prof = klass["profiles"].setdefault(row["profile"], {"n": 0, "sum_j": 0.0, "sum_progress": 0.0, "sum_cost": 0.0})
             klass["n"] += 1
             klass["clean"] += 1 if row.get("clean") else 0
             klass["recent"] = (klass.get("recent", []) + [bool(row.get("clean"))])[-20:]
-            prof["n"] += 1
-            prof["sum_j"] = round(prof["sum_j"] + float(row["j"]), 6)
-            prof["sum_progress"] = round(prof["sum_progress"] + float(row.get("progress") or 0.0), 6)
-            prof["sum_cost"] = round(prof["sum_cost"] + float(row.get("cost") or 0.0), 6)
+            if row.get("observed") is True:
+                # Only an execution that was observed teaches anything about its profile.
+                prof = klass["profiles"].setdefault(row["profile"], {"n": 0, "sum_j": 0.0, "sum_progress": 0.0, "sum_cost": 0.0})
+                prof["n"] += 1
+                prof["sum_j"] = round(prof["sum_j"] + float(row["j"]), 6)
+                prof["sum_progress"] = round(prof["sum_progress"] + float(row.get("progress") or 0.0), 6)
+                prof["sum_cost"] = round(prof["sum_cost"] + float(row.get("cost") or 0.0), 6)
+            else:
+                # A recommendation nobody saw followed still happened as an episode, and
+                # counts toward the class. It earns no profile any credit.
+                klass["unattributed"] = int(klass.get("unattributed", 0)) + 1
             klass["comparative"] = int(klass.get("comparative", 0)) + (1 if row.get("evidence_kind") == "probe" else 0)
             state["episodes"] += 1
             _tune(state, klass, cfg, row.get("id", ""))

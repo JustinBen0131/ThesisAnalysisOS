@@ -37,6 +37,9 @@ decision. `propose` queues an OS change. `brief` renders the day. `doctor`
 checks mechanical health. `kernel now` regenerates NOW from state. `atoms
 check` runs every promoted correction. `burn plan/execute/recall` archives,
 verifies, then deletes expired soma. `panel on/off` runs the loopback UI.
+`why` reads back what a task rests on and says whether each part holds,
+fails, is stale or is unknown. `task accept` records the human's acceptance
+of one version. `demo` shows all of it on a throwaway example.
 
 ## Learning loop
 

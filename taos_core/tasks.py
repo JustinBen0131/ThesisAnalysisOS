@@ -242,7 +242,14 @@ class TaskStore(object):
         actor: str,
         evidence: Optional[str] = None,
         reopen: bool = False,
+        waive: Optional[str] = None,
     ) -> Dict[str, Any]:
+        """The one place a task changes state, so the one place closure is enforced.
+
+        Review and done need every configured gate to hold for the files as
+        they are now. `waive` is the explicit exception: it needs a reason,
+        and the task is then shown as closed without verification.
+        """
         if to not in STATUSES:
             raise TaosError("status must be one of {0}".format(", ".join(STATUSES)))
         if not str(reason or "").strip():
@@ -276,6 +283,28 @@ class TaskStore(object):
                 raise TaosError("a blocked reason must name the blocker")
 
             now = utc_now()
+            waived = None
+            if to in ("review", "done"):
+                from . import gates as gates_mod
+                from . import rules as rules_mod
+
+                short = [v for v in gates_mod.standing(self.paths, task["id"]) if v["state"] != "holds"]
+                if short and not str(waive or "").strip():
+                    raise TaosError(
+                        "{0} cannot move to {1}: {2}. Run `taos gate run --task {0}` first, or waive the check with a "
+                        "reason; a waived task is shown as closed without verification.".format(
+                            task["id"], to,
+                            "; ".join("{0} is {1} ({2})".format(v["gate"], v["state"], v["reason"]) for v in short),
+                        )
+                    )
+                if short:
+                    waived = {"reason": str(waive).strip(), "gates": [{"gate": v["gate"], "state": v["state"]} for v in short]}
+                    task.setdefault("evidence", []).append(
+                        {"ts": now, "agent": actor, "ref": "gates skipped", "note": waived["reason"]}
+                    )
+                task.setdefault("closures", []).append(
+                    {"ts": now, "by": actor, "to": to, "waived": waived, "rules": rules_mod.binding(self.paths, task)}
+                )
             task["status"] = to
             task["updated_at"] = now
             if to == "done":
@@ -300,6 +329,46 @@ class TaskStore(object):
                 reason=str(reason),
                 evidence=evidence,
             )
+            self._save(data)
+            return task
+
+    def accept(self, task_id: str, by: str, note: str = "") -> Dict[str, Any]:
+        """A person accepts the result as it is now. A passing check is never acceptance.
+
+        Acceptance is bound to the files and the instructions of this moment.
+        If either changes, the acceptance is shown as given for an earlier
+        version; it does not carry over.
+        """
+        if by != "human":
+            raise TaosError("only the human accepts a result; checks passing is a different fact")
+        with locked(self.paths):
+            data = self.load()
+            task = data["tasks"].get(str(task_id))
+            if task is None:
+                raise TaosError("no such task: {0}".format(task_id))
+            if task.get("status") not in ("review", "done"):
+                raise TaosError("accept a task once it is in review or done; {0} is {1}".format(task_id, task.get("status")))
+            from . import basis as basis_mod
+            from . import gates as gates_mod
+            from . import rules as rules_mod
+
+            snap = basis_mod.snapshot(
+                gates_mod._where(self.paths, task, gates_mod.latest(self.paths, task["id"])), gates_mod._settings(self.paths)
+            )
+            if not snap["complete"]:
+                raise TaosError("cannot bind an acceptance: {0}".format(snap["reason"]))
+            now = utc_now()
+            bound = rules_mod.binding(self.paths, task)
+            # the receipt keeps the file listing, so a later reader is told which file changed
+            receipt = "{0}_{1}.json".format(task["id"], now.replace("-", "").replace(":", ""))
+            folder = self.paths.state / "acceptance"
+            folder.mkdir(parents=True, exist_ok=True)
+            atomic_write_json(folder / receipt, {"schema": "TAOS_ACCEPTANCE_V1", "task_id": task["id"], "by": by, "ts": now,
+                                                 "note": str(note or ""), "snapshot": snap, "rules": bound})
+            task["acceptance"] = {"ts": now, "by": by, "note": str(note or ""), "basis": basis_mod.digests(snap),
+                                  "rules": bound, "receipt": receipt}
+            task["updated_at"] = now
+            events_mod.emit(self.paths, "task_accept", by, task_id=task["id"])
             self._save(data)
             return task
 
@@ -352,12 +421,20 @@ class TaskStore(object):
             if artifact or depends_on:
                 # A reusable work product carries a small validity contract. Unknown
                 # dependencies stay unknown: an empty list means "none declared", not "none".
+                # Declared inputs are fingerprinted now, so a later change is seen and not remembered.
+                from . import basis as basis_mod
+                from . import gates as gates_mod
+
+                root = gates_mod._where(self.paths, task, gates_mod.latest(self.paths, task["id"]))
+                names = sorted(set(depends_on or []))
                 row["artifact"] = {
-                    "depends_on": sorted(set(depends_on or [])),
+                    "depends_on": names,
                     "dependencies_known": bool(depends_on),
                     "valid": True,
                     "invalidated": None,
                     "producer": task["id"],
+                    "root": str(root),
+                    "basis": {name: basis_mod.fingerprint(root, name) for name in names},
                 }
             task.setdefault("evidence", []).append(row)
             task["updated_at"] = now
@@ -630,9 +707,15 @@ def _cmd_update(args: argparse.Namespace, paths: Paths) -> int:
 
 def _cmd_transition(args: argparse.Namespace, paths: Paths) -> int:
     task = TaskStore(paths).transition(
-        args.task_id, args.to, args.reason, args.agent, evidence=args.evidence, reopen=args.reopen
+        args.task_id, args.to, args.reason, args.agent, evidence=args.evidence, reopen=args.reopen, waive=args.waive
     )
     print("{0} -> {1}".format(task["id"], task["status"]))
+    return 0
+
+
+def _cmd_accept(args: argparse.Namespace, paths: Paths) -> int:
+    task = TaskStore(paths).accept(args.task_id, args.by, args.note or "")
+    print("{0} accepted by {1}, for the files and instructions as they are now".format(task["id"], args.by))
     return 0
 
 
@@ -725,7 +808,14 @@ def register(subparsers: Any) -> None:
     transition.add_argument("--reason", required=True)
     transition.add_argument("--evidence")
     transition.add_argument("--reopen", action="store_true")
+    transition.add_argument("--waive", help="close without a holding check; the reason is recorded and shown")
     transition.set_defaults(func=_cmd_transition)
+
+    accept = sub.add_parser("accept", help="the human accepts the result as it is now")
+    accept.add_argument("task_id")
+    accept.add_argument("--by", default="human", choices=list(events_mod.AGENTS))
+    accept.add_argument("--note")
+    accept.set_defaults(func=_cmd_accept)
 
     comment = sub.add_parser("comment", help="add an attributed comment")
     comment.add_argument("task_id")

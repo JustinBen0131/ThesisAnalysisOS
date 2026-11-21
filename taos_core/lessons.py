@@ -3,8 +3,12 @@
 A note in a memory file is read only by whoever thinks to open it. A lesson
 carries the principal's own words, the mistake, why it mattered and where it
 applies, and it is printed at the decision point where the mistake would
-repeat. Lessons report; they never block. Every match is logged, so whether a
-lesson works is counted by its repeats, not assumed.
+repeat. Lessons report; they never block.
+
+Two different things are recorded, and never added together. Showing a
+lesson is an exposure. Making the mistake again is a repeat, and it is
+counted only when someone records it with evidence. Whether a lesson works
+is read from its repeats over its exposures, not from how often it fired.
 """
 
 from __future__ import annotations
@@ -71,37 +75,113 @@ def add(
     return lesson
 
 
-def _in_scope(lesson: Dict[str, Any], task_id: Optional[str]) -> bool:
+RESULTS = ("followed", "violated")
+
+
+def _lineage(paths: Paths, task_id: str) -> List[str]:
+    """A task id and its ancestors, nearest first. An id TAOS does not know has no ancestors."""
+    from . import tasks as tasks_mod
+
+    tasks = tasks_mod.TaskStore(paths).load()["tasks"]
+    chain, seen = [], set()
+    current: Optional[str] = str(task_id)
+    while current and current not in seen:
+        seen.add(current)
+        chain.append(current)
+        current = (tasks.get(current) or {}).get("parent_id")
+    return chain
+
+
+def _in_scope(paths: Paths, lesson: Dict[str, Any], task_id: Optional[str]) -> bool:
+    """`*`, one task, an ancestor of the task, or a project prefix (`AZ` covers `AZ-7`). Never a bare string prefix."""
     scope = lesson.get("scope") or "*"
-    return scope == "*" or (task_id is not None and str(task_id).startswith(scope))
+    if scope == "*":
+        return True
+    if task_id is None:
+        return False
+    lineage = _lineage(paths, task_id)
+    return scope in lineage or any(item.startswith(scope + "-") for item in lineage)
 
 
-def at(paths: Paths, moment: str, *, agent: str, task_id: Optional[str] = None, text: Optional[str] = None) -> List[Dict[str, Any]]:
-    """The lessons that apply at this moment. Logs one hit per match. Never raises on a match."""
+def _case(moment: str, task_id: Optional[str], text: Optional[str]) -> str:
+    """One situation, however many times it is looked at: the same moment, task and text."""
+    return "case_" + sha256_text(canonical_json([moment, task_id, text or ""]))[:12]
+
+
+def at(paths: Paths, moment: str, *, agent: str, task_id: Optional[str] = None, text: Optional[str] = None,
+       case: Optional[str] = None) -> List[Dict[str, Any]]:
+    """The lessons that apply at this moment. Never raises on a match.
+
+    Showing a lesson is an exposure and is logged as one, once per case. It
+    says the lesson was delivered. It says nothing about whether the work
+    was right; that is recorded separately with `outcome`.
+    """
     if moment not in MOMENTS:
         raise TaosError("unknown moment {0!r}; use one of: {1}".format(moment, ", ".join(MOMENTS)))
+    case = str(case or _case(moment, task_id, text))
+    log = sci.science_dir(paths) / "lesson_hits.jsonl"
+    seen = {(row.get("lesson_id"), row.get("case")) for row in read_jsonl(log)}
     hits = []
     for lesson in all_lessons(paths):
-        if moment not in lesson["moments"] or not _in_scope(lesson, task_id):
+        if moment not in lesson["moments"] or not _in_scope(paths, lesson, task_id):
             continue
         patterns = lesson.get("detect") or []
         if patterns and not any(re.search(pattern, text or "", flags=re.I) for pattern in patterns):
             continue
-        hits.append(lesson)
-        append_jsonl(sci.science_dir(paths) / "lesson_hits.jsonl",
-                     {"ts": utc_now(), "lesson_id": lesson["id"], "moment": moment, "agent": agent, "task_id": task_id})
+        hits.append(dict(lesson, case=case))
+        if (lesson["id"], case) not in seen:
+            append_jsonl(log, {"ts": utc_now(), "lesson_id": lesson["id"], "moment": moment, "agent": agent,
+                               "task_id": task_id, "case": case})
     return hits
 
 
+def outcome(paths: Paths, lesson_id: str, case: str, result: str, *, by: str, evidence: str) -> Dict[str, Any]:
+    """Record what happened in a case where a lesson applied: it was followed, or the mistake was made again.
+
+    A violation needs evidence and counts whoever reports it. "Followed" is
+    counted only when someone other than the agent that did the work says
+    so; an agent's word about its own work is kept, and labelled as that.
+    """
+    if result not in RESULTS:
+        raise TaosError("result must be one of: {0}".format(", ".join(RESULTS)))
+    sci.find(all_lessons(paths, include_retired=True), lesson_id, "lesson")
+    shown = [row for row in read_jsonl(sci.science_dir(paths) / "lesson_hits.jsonl")
+             if row.get("lesson_id") == lesson_id and row.get("case") == str(case)]
+    actor = shown[0].get("agent") if shown else None
+    row = {"ts": utc_now(), "lesson_id": lesson_id, "case": str(case), "result": result, "by": by,
+           "evidence": sci.need(evidence, "the evidence for this outcome"), "was_shown": bool(shown),
+           "source": "self-reported" if by == actor else "adjudicated"}
+    append_jsonl(sci.science_dir(paths) / "lesson_outcomes.jsonl", row)
+    events_mod.emit(paths, "lesson_outcome", by, lesson_id=lesson_id, case=str(case), result=result)
+    return row
+
+
 def repeats(paths: Paths) -> List[Dict[str, Any]]:
-    """Hits per lesson. A lesson that keeps firing has not been learned."""
-    rows = read_jsonl(sci.science_dir(paths) / "lesson_hits.jsonl")
+    """Per lesson: how often it was shown, and how often the mistake was confirmed again.
+
+    `repeats` counts confirmed violations only. `exposures` is the number of
+    distinct cases the lesson was shown in, and `unknown` is how many of
+    those nobody has adjudicated. A lesson shown a hundred times for correct
+    work has a hundred exposures and no repeats.
+    """
+    shown = read_jsonl(sci.science_dir(paths) / "lesson_hits.jsonl")
+    judged = read_jsonl(sci.science_dir(paths) / "lesson_outcomes.jsonl")
     table = []
     for lesson in all_lessons(paths, include_retired=True):
-        mine = [row for row in rows if row.get("lesson_id") == lesson["id"]]
-        table.append({"id": lesson["id"], "title": lesson["title"], "status": lesson["status"], "hits": len(mine),
+        mine = [row for row in shown if row.get("lesson_id") == lesson["id"]]
+        cases = {row.get("case") or "legacy_{0}".format(index) for index, row in enumerate(mine)}
+        latest: Dict[str, Dict[str, Any]] = {}
+        for row in judged:
+            if row.get("lesson_id") == lesson["id"]:
+                latest[row["case"]] = row
+        violated = [row for row in latest.values() if row["result"] == "violated"]
+        followed = [row for row in latest.values() if row["result"] == "followed" and row.get("source") == "adjudicated"]
+        table.append({"id": lesson["id"], "title": lesson["title"], "status": lesson["status"],
+                      "exposures": len(cases), "repeats": len(violated), "followed": len(followed),
+                      "self_reported": sum(1 for row in latest.values() if row.get("source") == "self-reported" and row["result"] == "followed"),
+                      "unknown": len(cases - set(latest)),
                       "first": mine[0]["ts"] if mine else None, "last": mine[-1]["ts"] if mine else None})
-    return sorted(table, key=lambda row: -row["hits"])
+    return sorted(table, key=lambda row: (-row["repeats"], -row["exposures"]))
 
 
 def freeze(paths: Paths, label: str, by: str = "human") -> Dict[str, Any]:
@@ -144,14 +224,14 @@ def _cmd_at(args: argparse.Namespace, paths: Paths) -> int:
     if args.text_file:
         with open(args.text_file, encoding="utf-8") as handle:
             text = handle.read()
-    hits = at(paths, args.moment, agent=args.agent, task_id=args.task, text=text)
+    hits = at(paths, args.moment, agent=args.agent, task_id=args.task, text=text, case=args.case)
     if args.json:
         print(json.dumps(hits, indent=2, sort_keys=True))
         return 0
     if not hits:
         print("no lesson applies at {0}".format(args.moment))
     for lesson in hits:
-        print("{0}  {1}".format(lesson["id"], lesson["title"]))
+        print("{0}  {1}  [{2}, {3}]".format(lesson["id"], lesson["title"], lesson["status"], lesson["case"]))
         print("    said {0}: \"{1}\"".format(lesson["said_on"], lesson["words"]))
         print("    the mistake: {0}".format(lesson["mistake"]))
         print("    why it mattered: {0}".format(lesson["why"]))
@@ -164,7 +244,14 @@ def _cmd_repeats(args: argparse.Namespace, paths: Paths) -> int:
         print(json.dumps(table, indent=2, sort_keys=True))
         return 0
     for row in table:
-        print("{0:>4} hits  {1}  {2}".format(row["hits"], row["id"], row["title"]))
+        print("{0:>3} repeated, {1} followed, {2} not judged, of {3} times shown  {4}  {5}".format(
+            row["repeats"], row["followed"], row["unknown"], row["exposures"], row["id"], row["title"]))
+    return 0
+
+
+def _cmd_outcome(args: argparse.Namespace, paths: Paths) -> int:
+    row = outcome(paths, args.lesson_id, args.case, args.result, by=args.by, evidence=args.evidence)
+    print("{0} in {1}: {2} ({3})".format(args.lesson_id, args.case, row["result"], row["source"]))
     return 0
 
 
@@ -203,12 +290,21 @@ def register(subparsers: Any) -> None:
     moment.add_argument("--task")
     moment.add_argument("--text")
     moment.add_argument("--text-file")
+    moment.add_argument("--case", help="a stable id for this situation; by default it is derived from the moment, task and text")
     moment.add_argument("--json", action="store_true")
     moment.set_defaults(func=_cmd_at)
 
-    rep = sub.add_parser("repeats", help="hits per lesson")
+    rep = sub.add_parser("repeats", help="per lesson: times shown, and times the mistake was confirmed again")
     rep.add_argument("--json", action="store_true")
     rep.set_defaults(func=_cmd_repeats)
+
+    judged = sub.add_parser("outcome", help="record whether a lesson was followed or violated in one case")
+    judged.add_argument("lesson_id")
+    judged.add_argument("--case", required=True, help="the case id printed by `lesson at`")
+    judged.add_argument("--result", required=True, choices=list(RESULTS))
+    judged.add_argument("--by", required=True, choices=agents)
+    judged.add_argument("--evidence", required=True)
+    judged.set_defaults(func=_cmd_outcome)
 
     freezer = sub.add_parser("freeze", help="write a hashed held-out copy")
     freezer.add_argument("label")

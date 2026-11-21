@@ -155,10 +155,20 @@ the guard refuses `--force` removal from agents.
 ## 7. Gates
 
 `taos gate list` shows them. `taos gate run --agent <a> --task <ID>` runs them
-in the task's worktree and records the result as evidence on the task. Without
-a passing run in the last 24 hours, `taos finish --state review|done` refuses.
-Agents can pass `--skip-gates` with a reason; the guard asks you, and the skip
-is recorded as evidence so it never hides.
+in the task's worktree and records the result as evidence on the task. Each
+result is kept with a fingerprint of the files the gate read. A task cannot
+move to review or done, by any route, unless every gate holds on the files as
+they are now: an old pass on unchanged files counts, a fresh pass on files
+edited since does not. Agents can pass `--skip-gates` with a reason; the guard
+asks you, and the task is shown as closed without a holding check until the
+gates pass.
+
+`taos why <ID>` shows everything a task rests on and whether each part still
+holds: its checks, the instructions it was closed under, its work products
+and their inputs, your acceptance. `taos why` alone lists what no longer
+holds across all closed work. When you have looked at a result and accept it,
+say so with `taos task accept <ID>`. That is recorded for that exact version,
+and an edit afterwards does not inherit it. See `policies/GATES.md`.
 
 Change the gates by editing `.taos/config.json` under `"gates"`.
 

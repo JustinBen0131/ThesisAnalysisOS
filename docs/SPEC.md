@@ -831,7 +831,7 @@ Added after the first end-to-end run, all driven by the principal's answers:
   `taos gate run --agent A --task ID [--workspace P]` runs them in the task's
   worktree (or workspace when the worktree does not exist yet), writes
   `.taos/gates/<ID>_<ts>.json`, and attaches evidence. `finish --state
-  review|done` refuses without a passing run in the last 24 h unless
+  review|done` refuses unless every gate holds (see 11c) or
   `--skip-gates` (recorded as evidence; the guard asks).
 - **Autonomy.** `config.autonomy = propose_only|edit_branches|push_branches_open_prs`
   changes the guard: pushes denied / asked / allowed to non-protected branches;
@@ -909,6 +909,75 @@ Added after the first end-to-end run, all driven by the principal's answers:
   by the doctor (`control_state`). `taos control status|explain|rebuild|
   frontier`. SessionStart injects one status line. `pause` suppresses it.
   Never written into a linked workspace.
+
+## 11c. Amendments in v1.2: what a record stood on (binding)
+
+One primitive, in `taos_core/basis.py`: a recorded result is compared with
+what it stood on and answered `holds | fails | stale | unknown`, with a
+reason. `unknown` is never coerced to another value. A whole is as good as
+the worst of its parts (`basis.worst`).
+
+- **Fingerprints.** `basis.snapshot(root, settings)` hashes the workspace
+  (tracked and untracked-not-ignored files in git, every file otherwise;
+  `.git`, `.taos` and caches excluded), grouped by `config.basis.domains =
+  {name: [patterns]}`, less `config.basis.ignore = [patterns]`. A file no
+  domain claims is filed under `(undeclared)`. Above 20,000 files or 512 MB
+  the snapshot is incomplete and everything that needs it is `unknown`.
+- **Gates.** `config.gates[]` may carry `depends_on: [domain]` and
+  `max_age_hours`. A receipt is `TAOS_GATE_RUN_V2`: each result carries
+  `basis` (domain digests), `definition` (hash of the command, `depends_on`
+  and the basis settings), `ran_at`, and where they apply `reused_from` and
+  `changed_during_run`; the record carries the `snapshot`.
+  `.taos/gate_results.json` files every result under hash(definition, basis).
+  `gates.standing(paths, task)` answers from it first, so a result is shared
+  by every task whose files are the same bytes. `gate run` reuses holding
+  results unless `--force`. A gate naming an undeclared domain is `unknown`.
+  A result whose inputs changed while it ran is `unknown` and is not filed.
+- **Closure.** `TaskStore.transition` is the only writer of a task's status.
+  It refuses `review|done` unless every configured gate holds, or
+  `waive="<reason>"` is given (CLI `--waive`, `finish --skip-gates`, panel
+  `waive`). Each closure appends `task.closures[] = {ts, by, to, waived,
+  rules}`, where `rules` is `{rule_id: sha256}` for the instructions that
+  governed the task that day.
+- **Acceptance.** `TaskStore.accept(task_id, by, note)` (CLI `taos task
+  accept`) is refused for agents. It binds `task.acceptance = {ts, by, note,
+  basis, rules, receipt}` and writes `.taos/acceptance/<ID>_<ts>.json` with
+  the snapshot.
+- **Work products.** `add_evidence(..., depends_on=[paths])` stores
+  `artifact.basis = {path: sha256|null}` and `artifact.root`. No declared
+  inputs means `unknown`.
+- **Standing.** `standing.of_task(paths, task)` returns `{task, status,
+  closed, accepted, state, parts[], next[], instructions[]}`; a part has
+  `kind` in `closure|check|artifact|acceptance|lease`.
+  `standing.everything(paths)` covers every task in `review|done`, lapsed
+  leases and kernels that are not fresh. CLI: `taos why [TASK] [--json]
+  [--check]`; `--check` exits 1 when something does not hold.
+  `lifecycle.capsule` carries `standing`; `start` adds the lessons for the
+  moment `join`; `finish` returns `standing` and the lessons for `stop`. The
+  capsule text prints `stands:`, `told:` and `lesson:` lines.
+- **Rules.** A rule governs a scope on a day when the day is inside
+  `[said_on, expires]`, the rule covers the scope, and no rule that
+  supersedes it is in force that day for that scope. `rule governing <scope>
+  [--on D] [--known-by D]`; a date must exist on the calendar.
+  `superseded_by` is no longer written or read. `rules.for_task` uses the
+  task id and its labels as scopes.
+- **Lessons.** `lesson at` logs one exposure per case (moment, task, text)
+  and prints the case id. `lesson outcome <id> --case C --result
+  followed|violated --by A --evidence E` records what happened; a `followed`
+  reported by the agent that did the work is kept as self-reported and not
+  counted. `lesson repeats` rows carry `exposures, repeats, followed,
+  self_reported, unknown`. Scope is `*`, a task id, an ancestor or a project
+  prefix; never a bare string prefix.
+- **Other records.** `claims.heartbeat` refuses a lapsed lease and marks it;
+  `acquire` ends lapsed overlapping leases. `control.rebuild` credits a
+  profile only when its execution was observed, else `unattributed`.
+  `replay.label` reads labels strictly and reports `unlabelled`.
+  `changes.score` needs receipts or `source=`. `anchors.predict` is
+  write-once. `lifecycle.start` checks blockers before it claims anything.
+- **Demo and evaluations.** `taos demo [--keep]` builds a throwaway home from
+  `examples/measurement`. `evals/at_revision.py`, `evals/mutations.py` and
+  `evals/reuse_frontier.py` are described in `docs/METHOD.md`;
+  `tests/test_evals.py` runs a small case of the last two.
 
 ## 12. Builder ownership (parallel build)
 

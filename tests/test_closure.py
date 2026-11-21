@@ -51,7 +51,7 @@ class TestClosureAndArtifacts(unittest.TestCase):
         with self.assertRaises(TaosError):
             self.store.transition(parent["id"], "blocked", "blocked by " + child["id"], "codex")
             lifecycle_mod.start(self.paths, agent="claude", task_id=parent["id"], session_label="s")
-        self.store.transition(child["id"], "done", "fixed", "codex", evidence="commit abc")
+        self.store.transition(child["id"], "done", "fixed", "codex", evidence="commit abc", waive="closure is not under test here")
         self.assertEqual(self.store.blockers(parent["id"]), [])
 
     def test_artifact_validity_contract(self) -> None:

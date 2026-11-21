@@ -44,7 +44,7 @@ class TestChanges(ScienceCase):
             change_id = self._register()
             changes.seal(self.paths, change_id, "codex")
             scored = changes.score(self.paths, change_id, grader="claude", observed=observed,
-                                   control_observed=control_observed)
+                                   control_observed=control_observed, source="timed with the benchmark script")
             self.assertEqual(scored["score"]["verdict"], verdict)
         record = changes.track_record(self.paths)
         self.assertEqual((record["CONFIRMED"], record["REFUTED"], record["CONTROL_MOVED"]), (1, 1, 1))
@@ -52,10 +52,10 @@ class TestChanges(ScienceCase):
     def test_builder_cannot_grade_and_draft_cannot_be_scored(self) -> None:
         change_id = self._register()
         with self.assertRaises(TaosError):
-            changes.score(self.paths, change_id, grader="claude", observed=5.0, control_observed=1000.0)
+            changes.score(self.paths, change_id, grader="claude", observed=5.0, control_observed=1000.0, source="timed")
         changes.seal(self.paths, change_id, "codex")
         with self.assertRaises(TaosError):
-            changes.score(self.paths, change_id, grader="codex", observed=5.0, control_observed=1000.0)
+            changes.score(self.paths, change_id, grader="codex", observed=5.0, control_observed=1000.0, source="timed")
 
     def test_edit_after_seal_is_caught(self) -> None:
         change_id = self._register()
@@ -64,7 +64,7 @@ class TestChanges(ScienceCase):
         data["changes"][0]["prediction"]["high"] = 99.0  # move the goalposts after sealing
         sci.save(self.paths, "changes", data)
         with self.assertRaises(TaosError):
-            changes.score(self.paths, change_id, grader="claude", observed=30.0, control_observed=1000.0)
+            changes.score(self.paths, change_id, grader="claude", observed=30.0, control_observed=1000.0, source="timed")
 
     def test_receipts_are_counted_into_the_score(self) -> None:
         change_id = self._register()
@@ -73,7 +73,7 @@ class TestChanges(ScienceCase):
         changes.seal(self.paths, change_id, "codex")
         for value in (4.0, 6.0, 5.0):
             changes.receipt(self.paths, change_id, "codex", value)
-        scored = changes.score(self.paths, change_id, grader="human", observed=5.0, control_observed=1000.0)
+        scored = changes.score(self.paths, change_id, grader="human", observed=5.0, control_observed=1000.0, source="timed")
         self.assertEqual(scored["score"]["receipts"], 3)
 
     def test_bad_prediction_range_is_refused(self) -> None:
@@ -98,7 +98,8 @@ class TestLessons(ScienceCase):
         hits = lessons.at(self.paths, "reply", agent="codex", text="The cause is LIKELY the calibration")
         self.assertEqual([hit["id"] for hit in hits], [lesson["id"]])
         lessons.at(self.paths, "statement", agent="claude", text="likely")
-        self.assertEqual(lessons.repeats(self.paths)[0]["hits"], 2)
+        row = lessons.repeats(self.paths)[0]
+        self.assertEqual((row["exposures"], row["repeats"], row["unknown"]), (2, 0, 2))   # shown twice, judged never
 
     def test_scope_and_retire(self) -> None:
         lesson = self._add(scope="AZ-7", detect=None)
