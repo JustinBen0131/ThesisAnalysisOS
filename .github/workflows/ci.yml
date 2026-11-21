@@ -12,6 +12,14 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python: ["3.9", "3.12"]
+        exclude:
+          # ubuntu-latest is Ubuntu 26.04, which has no Python 3.9 build.
+          - os: ubuntu-latest
+            python: "3.9"
+        include:
+          # Keep the Linux 3.9 floor on the newest image that still has one.
+          - os: ubuntu-24.04
+            python: "3.9"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
