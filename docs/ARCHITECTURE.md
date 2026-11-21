@@ -48,7 +48,11 @@
 | `tasks` | the task store and every task mutation |
 | `claims` | scope-local leases |
 | `lifecycle` | `start`, `finish`, `capsule`, lanes |
-| `gates` | run and record the must-pass commands |
+| `basis` | the one comparison: a recorded result against what it stood on (`holds`, `fails`, `stale`, `unknown`) |
+| `gates` | run the must-pass commands; file each result under the check and the bytes it read |
+| `standing` | `taos why`: every record a task rests on, read back against the present |
+| `rules`, `lessons`, `changes`, `replay`, `bank`, `anchors` | the science layer (`docs/METHOD.md`) |
+| `demo` | `taos demo`, and the scratch home the evaluations use |
 | `handoff` | template, validate, write, wrapper |
 | `decisions`, `proposals` | the human queues |
 | `telemetry` | sanitized labels |
@@ -67,7 +71,9 @@ Every module registers its own subcommands; `cli.py` never knows the verbs.
 - Overlapping live claims by different agents conflict; same-agent re-acquire
   refreshes; takeover needs stale plus reason.
 - A handoff without the header or a section is refused.
-- `finish --state review` without a fresh gate pass is refused when gates exist.
+- No route moves a task to `review` or `done` unless every gate holds on the
+  files as they are; a pass on files edited since does not count.
+- `unknown` is never reported as `holds`, as `fails` or as zero.
 - The guard denies secret reads, force pushes, store edits, cage edits, and
   writes into the other agent's lane; asks on push; allows `ls`; never crashes.
 - Panel writes without the token are 403; path traversal on handoffs is 404.

@@ -1,0 +1,3 @@
+line: black, 1.2 pt
+markers: open circles
+font: 10 pt

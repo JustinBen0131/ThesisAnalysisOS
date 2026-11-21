@@ -144,6 +144,14 @@ def compact_status(paths: Paths, max_lines: int = 25) -> str:
         )
     )
     try:
+        from . import standing as standing_mod
+
+        short = sorted({row["task"] for row in standing_mod.everything(paths)["rows"] if row.get("task")})
+        if short:
+            lines.append("Closed work that no longer stands as recorded: {0}. Ask `taos why`.".format(", ".join(short[:6])))
+    except Exception:   # orientation must never fail because one record cannot be read
+        pass
+    try:
         from . import control as control_mod
 
         if control_mod.settings(paths).get("enabled", True):

@@ -15,10 +15,12 @@ How the system is changed and checked. The reasons are in `docs/METHOD.md`.
 4. **Run the lessons.** Before a reply to an outside reader, a stated cause, a
    submission, a deletion or an install, run `taos lesson at <moment>` and
    read what it prints. A lesson does not block; ignoring one is a decision
-   you own.
+   you own. Being shown a lesson is not breaking it: when you know how the
+   case ended, record it with `taos lesson outcome`.
 5. **Save instructions as their original words.** Use `taos rule add` with the
    date, the scope and the expiry. Before acting on an instruction, ask
-   `taos rule governing <scope>`. Never act on a summary of a rule.
+   `taos rule governing <scope>`, with `--on <date>` when the question is about
+   a past day. Never act on a summary of a rule.
 6. **Two anchors before an adjustment.** Do not change a treatment, or call an
    anomaly resolved, because a number moved to a pleasing value. Record what
    the reference method does, what a control reads and a prediction, with
@@ -26,3 +28,6 @@ How the system is changed and checked. The reasons are in `docs/METHOD.md`.
 7. **Qualify the reader.** A decision-bank run counts only if the reader passed
    its controls and the pass lines were sealed first.
 8. **Small samples are counts.** Write "3 of 26", not a percentage.
+9. **Say what you do not know.** A result `holds`, `fails`, is `stale` or is
+   `unknown`. Never report `unknown` as fine, as failed or as zero. Before
+   relying on finished work, ask `taos why <ID>`.

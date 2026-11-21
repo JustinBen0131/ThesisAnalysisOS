@@ -67,6 +67,9 @@ def anchor_control(paths: Paths, adjustment_id: str, *, where: str, value: float
 def predict(paths: Paths, adjustment_id: str, *, low: float, high: float) -> Dict[str, Any]:
     if low > high:
         raise TaosError("the predicted range must run low to high")
+    # A prediction is written once. One that can be revised after the result is in is not a prediction.
+    if sci.find(all_adjustments(paths), adjustment_id, "adjustment").get("prediction"):
+        raise TaosError("{0} already has a prediction; open a new adjustment to predict again".format(adjustment_id))
     return _update(paths, adjustment_id, "prediction", {"low": float(low), "high": float(high), "made_at": utc_now()})
 
 

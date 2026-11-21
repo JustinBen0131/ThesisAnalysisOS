@@ -106,7 +106,9 @@ class TestControlLaw(Base):
         # an under-sampled admissible profile keeps a bounded chance: bonus > 0 for n=0 profiles
         candidates = {c["profile"]: c for c in rec["basis"]["candidates"]}
         self.assertGreater(candidates["frontier"]["bonus"], 0.0)
-        self.assertGreater(candidates["frontier"]["bonus"], candidates["careful"]["bonus"])
+        # nothing here was observed to run under any profile, so no profile has earned evidence of its own
+        self.assertEqual(candidates["careful"]["n"], 0)
+        self.assertEqual(candidates["frontier"]["bonus"], candidates["careful"]["bonus"])
         # now failures
         for index in range(4):
             task = self.new_task("Parser task fail {0}".format(index))

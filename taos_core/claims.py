@@ -163,6 +163,15 @@ class ClaimStore(object):
                     taken_over=taken_over,
                 )
 
+            # Granting a scope ends every lapsed lease on it, whoever held it: two
+            # rows must never both read as the owner of one scope.
+            for claim in data["claims"]:
+                if claim.get("status") != "live" or self._is_fresh(claim, timestamp):
+                    continue
+                if any(scopes_conflict(mine, theirs) for mine in wanted for theirs in claim.get("scopes", [])):
+                    claim["status"] = "lapsed"
+                    claim["released_at"] = timestamp
+
             for claim in data["claims"]:
                 if claim.get("agent") != agent or claim.get("status") != "live":
                     continue
@@ -207,6 +216,16 @@ class ClaimStore(object):
                     raise TaosError("claim {0} belongs to {1}".format(claim_id, claim.get("agent")))
                 if claim.get("status") != "live":
                     raise TaosError("claim {0} is {1}".format(claim_id, claim.get("status")))
+                # A lease that lapsed is over. Its holder asks again with `acquire`, which
+                # checks under this lock whether someone else holds the scope by now.
+                if not self._is_fresh(claim, now or utc_now()):
+                    claim["status"] = "lapsed"
+                    claim["released_at"] = now or utc_now()
+                    events_mod.emit(self.paths, "claim_lapse", agent, claim_id=claim["id"], scopes=claim.get("scopes"))
+                    self._save(data)
+                    raise TaosError(
+                        "claim {0} lapsed without a heartbeat and cannot be revived; acquire the scope again".format(claim_id)
+                    )
                 claim["heartbeat_at"] = now or utc_now()
                 events_mod.emit(self.paths, "claim_heartbeat", agent, claim_id=claim["id"], scopes=claim.get("scopes"))
                 self._save(data)

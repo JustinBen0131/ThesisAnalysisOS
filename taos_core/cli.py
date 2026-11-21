@@ -17,6 +17,7 @@ from . import changes as changes_mod
 from . import claims as claims_mod
 from . import control as control_mod
 from . import decisions as decisions_mod
+from . import demo as demo_mod
 from . import doctor as doctor_mod
 from . import events as events_mod
 from . import gates as gates_mod
@@ -30,6 +31,7 @@ from . import projections as projections_mod
 from . import proposals as proposals_mod
 from . import replay as replay_mod
 from . import rules as rules_mod
+from . import standing as standing_mod
 from . import tasks as tasks_mod
 from . import telemetry as telemetry_mod
 from . import usage as usage_mod
@@ -37,7 +39,9 @@ from .paths import Paths
 from .util import TaosError
 
 MODULES = (
+    demo_mod,
     projections_mod,
+    standing_mod,
     doctor_mod,
     tasks_mod,
     claims_mod,
@@ -67,7 +71,9 @@ MODULES = (
 
 EPILOG = """\
 start here:
+  taos demo                        the idea in a minute, on a small example
   taos status                      where everything stands
+  taos why                         what was recorded and no longer holds, and why
   taos task list                   what exists
   taos start --agent codex --task AZ-7 --session "AZ-7 | short label"
   taos finish --agent codex --task AZ-7 --state review --reason "..." --session "..."

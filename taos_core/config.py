@@ -207,6 +207,27 @@ def validate(config: Dict[str, Any]) -> List[str]:
     gates_value = config.get("gates", [])
     if not isinstance(gates_value, list) or any(not isinstance(g, dict) or not g.get("command") for g in gates_value):
         problems.append("config.gates must be a list of {name, command}")
+        gates_value = []
+    settings = config.get("basis", {})
+    domains = settings.get("domains", {}) if isinstance(settings, dict) else None
+    ignore = settings.get("ignore", []) if isinstance(settings, dict) else None
+    patterns = lambda value: isinstance(value, list) and all(isinstance(item, str) and item for item in value)  # noqa: E731
+    if not isinstance(domains, dict) or not all(patterns(value) for value in domains.values()):
+        problems.append("config.basis.domains must map a name to a list of file patterns")
+        domains = {}
+    if not patterns(ignore):
+        problems.append("config.basis.ignore must be a list of file patterns")
+    for gate in gates_value:
+        depends = gate.get("depends_on")
+        if depends is not None and not (patterns(depends) and depends):
+            problems.append("config.gates: depends_on must be a non-empty list of domain names")
+        elif depends and set(depends) - set(domains):
+            # an undeclared domain has no files, so a check that depends on it would never be seen to go stale
+            problems.append("config.gates: depends_on names {0}, which config.basis.domains does not declare".format(
+                ", ".join(sorted(set(depends) - set(domains)))))
+        limit = gate.get("max_age_hours")
+        if limit is not None and (isinstance(limit, bool) or not isinstance(limit, (int, float)) or limit <= 0):
+            problems.append("config.gates: max_age_hours must be a positive number")
     return problems
 
 

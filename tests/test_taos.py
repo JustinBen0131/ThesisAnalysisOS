@@ -119,7 +119,7 @@ class TestTasks(Base):
             self.store.transition("CMP-1", "done", "finished", "codex")
         with self.assertRaises(TaosError):
             self.store.transition("CMP-1", "blocked", "hard", "codex")
-        task = self.store.transition("CMP-1", "done", "finished", "codex", evidence="commit abc")
+        task = self.store.transition("CMP-1", "done", "finished", "codex", evidence="commit abc", waive="no check applies to this fixture")
         self.assertEqual(task["status"], "done")
         self.assertFalse(task["hot"])
         with self.assertRaises(TaosError):
@@ -131,7 +131,7 @@ class TestTasks(Base):
         self.store.relate("CMP-2", "blockedBy", "CMP-1", "codex")
         self.assertEqual(self.store.get("CMP-1")["relations"]["blocks"], ["CMP-2"])
         self.assertEqual(self.store.blockers("CMP-2"), ["CMP-1"])
-        self.store.transition("CMP-1", "done", "x", "codex", evidence="e")
+        self.store.transition("CMP-1", "done", "x", "codex", evidence="e", waive="closure is not under test here")
         self.assertEqual(self.store.blockers("CMP-2"), [])
         self.store.relate("CMP-2", "blockedBy", "CMP-1", "codex", remove=True)
         self.assertEqual(self.store.get("CMP-1")["relations"]["blocks"], [])

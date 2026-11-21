@@ -14,7 +14,9 @@ from . import events as events_mod
 from . import gates as gates_mod
 from . import handoff as handoff_mod
 from . import kernels as kernels_mod
+from . import lessons as lessons_mod
 from . import projections as projections_mod
+from . import standing as standing_mod
 from . import tasks as tasks_mod
 from . import telemetry as telemetry_mod
 from .paths import Paths
@@ -107,6 +109,14 @@ def start(
     store = tasks_mod.TaskStore(paths)
     task = store.get(task_id)
 
+    # Refuse before taking anything: a start that fails must leave no session mapping and no claim behind.
+    if task.get("status") == "blocked" and store.blockers(task["id"]):
+        raise TaosError(
+            "{0} is blocked by {1}. Clear or re-point the blocker before starting.".format(
+                task["id"], ", ".join(store.blockers(task["id"]))
+            )
+        )
+
     session_key = slugify(session_label)
     if len(session_key) < 3:
         session_key = slugify("{0}-{1}".format(task["id"], session_key or agent))
@@ -170,6 +180,8 @@ def start(
     data = capsule(paths, task["id"])
     data["lane"] = lane
     data["control"] = control
+    # the moment a lesson is for is the moment it is delivered; showing it is logged as an exposure, nothing more
+    data["lessons"] = lessons_mod.at(paths, "join", agent=agent, task_id=task["id"])
     return data
 
 
@@ -190,16 +202,17 @@ def finish(
     store = tasks_mod.TaskStore(paths)
     task = store.get(task_id)
 
-    if state in ("review", "done") and config_mod.gates(paths):
-        if not gates_mod.fresh_pass(paths, task["id"]):
-            if not skip_gates:
-                raise TaosError(
-                    "{0} has no passing gate run in the last {1:.0f}h. Run `taos gate run --agent {2} --task {0}` "
-                    "first, or pass --skip-gates with a reason that names why.".format(
-                        task["id"], gates_mod.FRESH_HOURS, agent
-                    )
+    # Closure is decided in one place, TaskStore.transition. Ask it first, so a
+    # refused finish writes no comment and no handoff.
+    if state in ("review", "done") and not skip_gates:
+        short = [v for v in gates_mod.standing(paths, task["id"]) if v["state"] != "holds"]
+        if short:
+            raise TaosError(
+                "{0} cannot move to {1}: {2}. Run `taos gate run --agent {3} --task {0}` first, or pass --skip-gates "
+                "with a reason that names why.".format(
+                    task["id"], state, "; ".join("{0} is {1} ({2})".format(v["gate"], v["state"], v["reason"]) for v in short), agent
                 )
-            store.add_evidence(task["id"], "gates skipped", agent, note=reason)
+            )
 
     if comment:
         store.comment(task["id"], comment, agent, session_label, evidence=None)
@@ -218,7 +231,7 @@ def finish(
             session=session_label,
         )
 
-    task = store.transition(task["id"], state, reason, agent, evidence=evidence)
+    task = store.transition(task["id"], state, reason, agent, evidence=evidence, waive=reason if skip_gates else None)
 
     from . import control as control_mod
 
@@ -256,6 +269,8 @@ def finish(
         "handoff": str(handoff_path) if handoff_path else None,
         "wrapper": handoff_mod.wrapper(handoff_path, to_agent) if handoff_path and to_agent else None,
         "control": control_result,
+        "standing": standing_mod.of_task(paths, task["id"]),
+        "lessons": lessons_mod.at(paths, "stop", agent=agent, task_id=task["id"]),
     }
 
 
@@ -298,8 +313,15 @@ def capsule(paths: Paths, task_id: str) -> Dict[str, Any]:
         "handoff_head": handoff_head,
         "kernels": kernels_mod.freshness(paths),
         "gates": {"configured": [g.get("name") or g["command"] for g in config_mod.gates(paths)], "latest": gates_mod.latest(paths, task["id"])},
+        "standing": standing_mod.of_task(paths, task["id"]),
         "next_action": task.get("next_action", ""),
     }
+
+
+def _lesson_lines(lessons: Optional[List[Dict[str, Any]]]) -> List[str]:
+    """A lesson is shown in the words it was given, with the case id an outcome is recorded against."""
+    return ["lesson:    {0}: \"{1}\"  ({2}, said {3}, case {4})".format(
+        lesson["title"], lesson["words"], lesson["id"], lesson["said_on"], lesson["case"]) for lesson in lessons or []]
 
 
 def capsule_text(data: Dict[str, Any]) -> str:
@@ -327,13 +349,12 @@ def capsule_text(data: Dict[str, Any]) -> str:
         from . import control as control_mod
 
         lines.append(control_mod.control_line(data["control"]))
-    gates = data.get("gates") or {}
-    if gates.get("configured"):
-        latest = gates.get("latest")
-        if latest:
-            lines.append("gates:     last run {0} {1}".format(latest.get("ran_at"), "passed" if latest.get("ok") else "FAILED"))
-        else:
-            lines.append("gates:     {0} (not run yet; required before review)".format(", ".join(gates["configured"])))
+    view = data.get("standing") or {}
+    for line in standing_mod.lines(view) if view else []:
+        lines.append("stands:    {0}".format(line))
+    for rule in view.get("instructions") or []:
+        lines.append("told:      \"{0}\"  ({1}, said {2})".format(rule["quote"], rule["id"], rule["said_on"]))
+    lines.extend(_lesson_lines(data.get("lessons")))
     if data.get("blockers"):
         lines.append("blocked by: {0}".format(", ".join(data["blockers"])))
     for claim in data.get("claims", []):
@@ -395,6 +416,10 @@ def _cmd_finish(args: argparse.Namespace, paths: Paths) -> int:
     if result.get("control"):
         control = result["control"]
         print("control:   episode closed, j={0} {1}".format(control["j"], "clean" if control["clean"] else "not clean"))
+    for line in standing_mod.lines(result["standing"]):
+        print("stands:    {0}".format(line))
+    for line in _lesson_lines(result.get("lessons")):
+        print(line)
     if result.get("wrapper"):
         print("")
         print(result["wrapper"])

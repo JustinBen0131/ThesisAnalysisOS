@@ -105,8 +105,21 @@ def receipts(paths: Paths, change_id: str) -> List[Dict[str, Any]]:
 
 
 def score(
-    paths: Paths, change_id: str, *, grader: str, observed: float, control_observed: float, note: Optional[str] = None
+    paths: Paths, change_id: str, *, grader: str, observed: float, control_observed: float, note: Optional[str] = None,
+    source: Optional[str] = None,
 ) -> Dict[str, Any]:
+    """Grade a sealed prediction. The observed number must come from somewhere.
+
+    Either the change wrote receipts while it was in use, or the grader says
+    how the number was measured (`source`). The verdict records which: counted
+    from receipts, or attested by the grader. A number from nowhere is refused.
+    """
+    counted = len(receipts(paths, change_id))
+    if not counted and not str(source or "").strip():
+        raise TaosError(
+            "{0} has no receipts, so say where the observed number came from: pass a source naming the measurement, "
+            "its window and how it was computed".format(change_id)
+        )
     with locked(paths):
         data = sci.load(paths, "changes", "changes")
         change = sci.find(data["changes"], change_id, "change")
@@ -125,7 +138,9 @@ def score(
             "verdict": verdict,
             "observed": float(observed),
             "control_observed": float(control_observed),
-            "receipts": len(receipts(paths, change_id)),
+            "receipts": counted,
+            "measured": "counted from receipts" if counted else "attested by the grader",
+            "source": str(source).strip() if source else None,
             "grader": grader,
             "scored_at": utc_now(),
             "note": note,
@@ -176,11 +191,11 @@ def _cmd_receipt(args: argparse.Namespace, paths: Paths) -> int:
 
 def _cmd_score(args: argparse.Namespace, paths: Paths) -> int:
     change = score(paths, args.change_id, grader=args.grader, observed=args.observed,
-                   control_observed=args.control_observed, note=args.note)
+                   control_observed=args.control_observed, note=args.note, source=args.source)
     result = change["score"]
-    print("{0}: {1}. Predicted {2} to {3} {4}, observed {5}.".format(
+    print("{0}: {1}. Predicted {2} to {3} {4}, observed {5} ({6}).".format(
         change["id"], result["verdict"], change["prediction"]["low"], change["prediction"]["high"],
-        change["target"]["unit"], result["observed"]))
+        change["target"]["unit"], result["observed"], result["measured"]))
     return 0
 
 
@@ -237,6 +252,7 @@ def register(subparsers: Any) -> None:
     scorer.add_argument("--grader", required=True, choices=agents)
     scorer.add_argument("--observed", required=True, type=float)
     scorer.add_argument("--control-observed", required=True, type=float)
+    scorer.add_argument("--source", help="how the observed number was measured; required when the change wrote no receipts")
     scorer.add_argument("--note")
     scorer.set_defaults(func=_cmd_score)
 

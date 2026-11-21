@@ -178,6 +178,7 @@ class _Handler(BaseHTTPRequestHandler):
                     "human",
                     evidence=body.get("evidence"),
                     reopen=bool(body.get("reopen")),
+                    waive=body.get("waive"),
                 )
                 projections_mod.refresh(self.paths)
                 self._json({"ok": True, "task": task})
