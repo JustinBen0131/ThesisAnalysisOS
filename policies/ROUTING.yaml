@@ -91,6 +91,14 @@ routes:
       - Second occurrence: propose an atom with a check a machine can run.
       - Never promote an atom yourself; the human accepts it.
 
+  changing_and_measuring:
+    triggers: [predict, prediction, control, baseline, limit, brake, guard, threshold, anomaly, looks wrong, expires, this week, replay, lesson]
+    load: [policies/SCIENCE.md]
+    first_actions:
+      - Changing how the OS works: `taos change register` and `taos change seal` before you build.
+      - A new limit or brake: `taos replay` on recorded history first; report harm caught and ordinary work stopped.
+      - Before a reply, a stated cause, a submission, a deletion or an install: `taos lesson at <moment>`.
+
   context_and_memory:
     triggers: [read the, catch me up, what is the state, remind me, context, where were we, resume]
     load: [policies/CONTEXT.md]

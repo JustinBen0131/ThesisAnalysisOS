@@ -7,10 +7,13 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
+from . import anchors as anchors_mod
 from . import atoms as atoms_mod
+from . import bank as bank_mod
 from . import bootstrap as bootstrap_mod
 from . import brief as brief_mod
 from . import burn as burn_mod
+from . import changes as changes_mod
 from . import claims as claims_mod
 from . import control as control_mod
 from . import decisions as decisions_mod
@@ -19,11 +22,14 @@ from . import events as events_mod
 from . import gates as gates_mod
 from . import handoff as handoff_mod
 from . import kernels as kernels_mod
+from . import lessons as lessons_mod
 from . import lifecycle as lifecycle_mod
 from . import panel as panel_mod
 from . import policy as policy_mod
 from . import projections as projections_mod
 from . import proposals as proposals_mod
+from . import replay as replay_mod
+from . import rules as rules_mod
 from . import tasks as tasks_mod
 from . import telemetry as telemetry_mod
 from . import usage as usage_mod
@@ -49,6 +55,12 @@ MODULES = (
     policy_mod,
     control_mod,
     usage_mod,
+    changes_mod,
+    lessons_mod,
+    replay_mod,
+    bank_mod,
+    rules_mod,
+    anchors_mod,
     panel_mod,
     bootstrap_mod,
 )

@@ -74,13 +74,31 @@ not in a stalled chat.
 | `kernels/` | distilled context with a fingerprint and an expiry |
 | `atoms/` | corrections a machine can check, run by `taos doctor` |
 | `policies/` | the rules, each under a page |
+| `taos change`, `lesson`, `replay`, `bank`, `rule`, `anchor` | the science layer: how you know the system is getting better (`docs/METHOD.md`) |
 | `MANUAL.md` | the manual for the human |
 | `docs/SPEC.md` | the binding spec for anyone changing the OS |
+
+## The science layer
+
+The parts above keep two agents from colliding. These six keep the system
+honest about itself. Each came from a measured failure; the measurements are
+in `docs/METHOD.md`.
+
+```bash
+./taos change register ...   # say what a change will move, and a control that must not, before making it
+./taos change score ...      # graded by someone who did not build it; refuted predictions are kept
+./taos lesson at reply ...   # your past corrections, printed at the moment they apply
+./taos replay --history h.jsonl --field gib --threshold 8 --threshold 16
+                             # size a new limit on your own history: harm caught against ordinary work stopped
+./taos bank score answers.json   # replay past decisions; a reader counts only after passing controls
+./taos rule governing plots  # the instructions in force today, as their dated original words
+./taos anchor resolve ...    # refused without a reference, a control and a prediction
+```
 
 ## Lineage
 
 This is the generalized second version of an operating layer that ran a
-two-agent physics thesis for a year: hundreds of tasks, both agents in daily
+two-agent physics thesis through 2026: hundreds of tasks, both agents in daily
 use, every collision and every lost handoff paid for once. What survived is
 here; what did not is in `docs/LINEAGE.md`.
 
