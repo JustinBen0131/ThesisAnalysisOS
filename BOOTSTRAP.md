@@ -123,6 +123,13 @@ vendor the OS into their work repo, say no and point at that file.
    ./taos bootstrap construct --agent <codex|claude>
    ```
 
+   Among other things this probes what token telemetry the machine writes
+   (Claude transcripts under `~/.claude/projects/`, Codex rollouts under
+   `~/.codex/sessions/`) and records the answer in the config. Report what it
+   found in one line; do not ask the human about tokens, prices, or quotas.
+   If neither is readable, say so plainly: the controller runs on its own
+   signals and those fields stay null.
+
    This writes `.taos/config.json`, renders `AGENTS.md` and `CLAUDE.md` for
    this person, writes the project and principal kernels, creates the first
    tasks, links the workspaces, pins the Codex hook paths, renders the first

@@ -1,0 +1,13 @@
+{
+  "schema": "TAOS_RATES_V1",
+  "currency": "USD",
+  "as_of": "2026-09-15",
+  "note": "Published list prices per million tokens, not per-user. Used only to turn observed token counts into an estimated cost; the result is always labelled 'estimated', never 'billed'. Prices move: edit this file, or delete a row to make cost null for that model. Nothing asks you to maintain it.",
+  "models": {
+    "claude-opus-5": {"input": 15.0, "cached": 1.5, "cache_write": 18.75, "output": 75.0},
+    "claude-sonnet-5": {"input": 3.0, "cached": 0.3, "cache_write": 3.75, "output": 15.0},
+    "claude-haiku-4-5": {"input": 1.0, "cached": 0.1, "cache_write": 1.25, "output": 5.0},
+    "gpt-5.5": {"input": 1.25, "cached": 0.125, "cache_write": 1.25, "output": 10.0}
+  },
+  "default": null
+}

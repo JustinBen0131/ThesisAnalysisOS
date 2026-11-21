@@ -414,6 +414,25 @@ def construct(paths: Paths, answers: Dict[str, Any], actor: str = "system") -> D
             except TaosError as exc:
                 linked.append({"path": workspace["path"], "error": str(exc)})
 
+    # What token telemetry this machine actually writes. Evidence, at setup, once.
+    telemetry_probe: Dict[str, Any] = {}
+    try:
+        from . import usage as usage_mod
+
+        primary = None
+        for workspace in config.get("workspaces") or []:
+            if workspace.get("primary"):
+                primary = Path(workspace["path"])
+        telemetry_probe = usage_mod.probe(paths, primary)
+        config["telemetry"] = {
+            "probed_at": telemetry_probe["probed_at"],
+            "token_usage": {name: bool(data.get("available")) for name, data in telemetry_probe["adapters"].items()},
+        }
+        atomic_write_json(paths.config_file, config)
+        events_mod.emit(paths, "usage_probe", actor, adapters=config["telemetry"]["token_usage"])
+    except Exception:
+        telemetry_probe = {}
+
     for name in ("OS_KERNEL", "PROJECT_KERNEL", "PRINCIPAL_KERNEL"):
         try:
             kernels_mod.index_refresh(paths, name, "taos")
@@ -438,6 +457,7 @@ def construct(paths: Paths, answers: Dict[str, Any], actor: str = "system") -> D
         "tasks_created": created,
         "proposals_seeded": seeded,
         "workspaces_linked": linked,
+        "telemetry": telemetry_probe,
         "doctor": report,
     }
 
@@ -628,6 +648,12 @@ def _cmd_construct(args: argparse.Namespace, paths: Paths) -> int:
             print("workspace {0}: {1}".format(linked.get("path"), linked["error"]))
         else:
             print("linked {0} ({1})".format(linked["path"], ", ".join("{0} {1}".format(k, v) for k, v in linked["hooks"].items()) or "docs only"))
+    adapters = (report.get("telemetry") or {}).get("adapters") or {}
+    for name, data in sorted(adapters.items()):
+        if data.get("available"):
+            print("token usage: {0} readable ({1} rows in the newest session)".format(name, data.get("sample_rows")))
+        else:
+            print("token usage: {0} not readable here; those fields stay null".format(name))
     print("")
     print("doctor: {0}".format("green" if report["doctor"]["ok"] else "failing"))
     for check in report["doctor"]["checks"]:

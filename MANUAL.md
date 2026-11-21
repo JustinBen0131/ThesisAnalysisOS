@@ -180,6 +180,22 @@ From then on `taos doctor` and every brief check it. Lessons that cannot be
 checked go into `kernels/PRINCIPAL_KERNEL.md` instead, by the agent, as one
 line each.
 
+## 8a. Changing the system like an experiment
+
+Six commands turn "I think this helped" into a record. The reasons are in
+`docs/METHOD.md`; the binding rules are in `policies/SCIENCE.md`.
+
+| When | Run |
+|---|---|
+| Before you change how the system works | `taos change register`, then `taos change seal` |
+| After the change has run for its window | `taos change score` (another agent, or you) |
+| You corrected the same thing twice | `taos lesson add`, with your words and the moment it applies |
+| An agent is about to reply, submit, delete or install | `taos lesson at <moment>` |
+| You want a new limit or brake | `taos replay` on your own history first |
+| You saved an instruction that has a deadline or a scope | `taos rule add --expires ... --scope ...` |
+| A number looks wrong, or suspiciously right | `taos anchor open`, then both anchors and a prediction |
+| A new model, or a big change to the system | `taos bank score` on your past decisions |
+
 ## 9. The panel
 
 `./taos panel on` / `./taos panel off` / `./taos panel status`. Loopback only,
