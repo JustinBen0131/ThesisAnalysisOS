@@ -127,6 +127,9 @@ def score(paths: Paths, reader: str, answers: Dict[str, Dict[str, str]], by: str
             "arms": per_arm, "paired": len(paired), "gains": gains, "losses": losses,
             "sign_test_p": sign_test(gains, losses),
             "reading": ("counts" if qualified else "does not count: the reader failed its controls"),
+            # the answers themselves are kept, so the score can be recomputed and not only believed
+            "answers": {arm: dict(answers.get(arm, {})) for arm in ARMS},
+            "answers_sha256": sha256_text(canonical_json(answers)),
         }
         data["runs"].append(result)
         sci.save(paths, "bank", data)

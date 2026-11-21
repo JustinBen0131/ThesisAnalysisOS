@@ -972,7 +972,8 @@ the worst of its parts (`basis.worst`).
   `acquire` ends lapsed overlapping leases. `control.rebuild` credits a
   profile only when its execution was observed, else `unattributed`.
   `replay.label` reads labels strictly and reports `unlabelled`.
-  `changes.score` needs receipts or `source=`. `anchors.predict` is
+  `changes.score` needs receipts or `source=`. `bank.score` keeps the answers
+  it scored and their hash. `anchors.predict` is
   write-once. `lifecycle.start` checks blockers before it claims anything.
 - **Demo and evaluations.** `taos demo [--keep]` builds a throwaway home from
   `examples/measurement`. `evals/at_revision.py`, `evals/mutations.py` and

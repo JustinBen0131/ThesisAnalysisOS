@@ -36,6 +36,7 @@ cannot rerun it. **not claimed** is listed so nobody has to guess.
 | A lapsed lease is over | `ClaimStore.heartbeat`, `acquire` | `tests/test_counterexamples.py::TestALeaseEnds` | tested |
 | A refused start takes nothing | `lifecycle.start` | `test_a_refused_start_takes_nothing` | tested |
 | A label is read strictly and a missing one is counted apart | `replay.label` | `test_the_text_false_is_not_read_as_true`, `test_an_unlabelled_case_is_not_counted_as_harmless` | tested |
+| A decision-bank run keeps the answers it scored and their hash, so the score can be recomputed | `bank.score` | the bank test in `tests/test_science.py` | tested |
 | A change is not confirmed by a number with no source, and a prediction is written once | `changes.score`, `anchors.predict` | the last two tests in `tests/test_counterexamples.py` | tested |
 
 ## Measurements

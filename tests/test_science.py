@@ -175,6 +175,8 @@ class TestBank(ScienceCase):
         with self.assertRaises(TaosError):
             bank.add_case(self.paths, request="late", passage="p", source="s", options=["A", "B"], expected="A")
         result = bank.score(self.paths, "reader-1", answers)
+        self.assertEqual(result["answers"]["O"], answers.get("O", {}))     # the raw answers stay with the score
+        self.assertEqual(len(result["answers_sha256"]), 64)
         self.assertTrue(result["qualified"])
         self.assertEqual((result["arms"]["U"]["right"], result["arms"]["O"]["right"]), (1, 4))
         self.assertEqual((result["gains"], result["losses"]), (3, 0))
