@@ -48,6 +48,8 @@ STATES = ("holds", "stale", "fails", "unknown")
 HEX64 = re.compile(r"[0-9a-f]{64}")
 SOURCE = re.compile(r"https://github\.com/JustinBen0131/ThesisAnalysisOS/(issues|pull)/[1-9][0-9]*")
 ISSUES = "https://github.com/JustinBen0131/ThesisAnalysisOS/issues"
+FEEDBACK_FORM = "workflow-feedback.yml"
+FEEDBACK_URL = ISSUES + "/new?template=" + FEEDBACK_FORM
 ACCEPTED = Path(__file__).resolve().parents[1] / "exchange" / "accepted"
 HISTORY = Path(__file__).resolve().parents[1] / "exchange" / "history"
 PROJECT = {"source": "project", "origin": "ThesisAnalysisOS project"}
@@ -634,6 +636,7 @@ def write_exchange(out, catalog, url=""):
         (folder / "entries" / (row["id"] + ".md")).write_text(entry_markdown(row, rows, url), encoding="utf-8")
     (folder / "index.md").write_text(protocol_markdown(index, url), encoding="utf-8")
     (folder / "exchange.css").write_text(EXCHANGE_CSS, encoding="utf-8")
+    copyfile(Path(__file__).resolve().parents[1] / ".github" / "ISSUE_TEMPLATE" / FEEDBACK_FORM, folder / FEEDBACK_FORM)
     copyfile(__file__, folder / "exchange.py")
     copyfile(Path(__file__).with_name("research_notes.py"), folder / "research_notes.py")
     return index
@@ -749,6 +752,11 @@ def protocol_markdown(index, url=""):
 
     check = index["self_check"]
     out = ["# Research exchange", ""] + front_door(index, url, "../").split("\n")[2:] + [
+           "## Workflow feedback", "",
+           "Think of one task. What did you try, how did it end, and how did you check the result? "
+           "A moment when you got stuck is as useful as one that went smoothly. Browsing the example counts too.", "",
+           "[Open the optional GitHub questionnaire](" + FEEDBACK_URL + ") or [read its questions](" + FEEDBACK_FORM + "). "
+           "A person reviews the answers and chooses whether to submit them as a public issue.", "",
            "## Details, only if you need them", "",
            "If you are an AI assistant reading this for someone: " + index["for_assistants"] + " The exchange keeps no accounts, "
            "accepts no posts, and never infers authorship or agreement from visits.", "",
@@ -940,6 +948,11 @@ def exchange_html(index):
         '<p class="lead">' + esc(index["lead"]) + '</p><p class="x-note">' + esc(index["notice"]) + "</p></div></section>"
         '<section class="plain"><div class="wrap"><p class="x-legend">' + legend + "</p>"
         + "".join(thread(root) for root in roots) +
+        '<details class="x-more" id="workflow-feedback"><summary>How did the OS work on your task?</summary>'
+        '<p>Think of one moment when your assistant found the evidence, had to repeat a step, or got stuck. '
+        'Which part of the OS helped, and how could you tell? You can also answer if you only explored the example.</p>'
+        '<p><a href="' + FEEDBACK_URL + '">Open the short questionnaire on GitHub</a>. '
+        'You choose what to share. Submitting creates a public issue.</p></details>'
         '<details class="x-more"><summary>How do we know the marks are right?</summary>'
         "<p>Every time this site is built, each data file is changed in a copy. Every answer resting on it must go out of "
         "date, and nothing else may move.</p>"

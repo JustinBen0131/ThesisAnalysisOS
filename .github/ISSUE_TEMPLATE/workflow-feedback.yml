@@ -1,0 +1,60 @@
+name: Research OS workflow feedback
+description: Describe one attempt and what you could verify afterward.
+title: "[Workflow feedback] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Think of one task. A useful detail is the moment you found what you needed, had to correct something, or got stuck. Share only what can be public. Your answers become a public GitHub issue when you submit.
+  - type: dropdown
+    id: setting
+    attributes:
+      label: Where did you try the OS?
+      options:
+        - Browsing the website
+        - Running the bundled example
+        - Using one assistant on my own project
+        - Using multiple assistants on my own project
+        - Working without an assistant
+    validations:
+      required: true
+  - type: dropdown
+    id: task
+    attributes:
+      label: What were you trying to do?
+      options:
+        - Find the evidence behind a result
+        - Decide what to rerun after a change
+        - Pick up work from another person or assistant
+        - Set up or run a check
+        - Something else
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: How did that attempt end?
+      options:
+        - Finished on the first try
+        - Finished after correcting or repeating a step
+        - Got stuck
+        - Still working on it
+        - Only explored the site
+    validations:
+      required: true
+  - type: dropdown
+    id: verification
+    attributes:
+      label: How did you check the outcome?
+      options:
+        - Ran a check or compared the data myself
+        - Inspected a source file or saved result
+        - Read the assistant's answer
+        - Have not checked
+        - No result to check
+  - type: textarea
+    id: observation
+    attributes:
+      label: Which step made a difference?
+      description: What helped, slowed you down, or would have made the next step easier? A short example or public evidence link is enough.
+      placeholder: I was trying to … At the point where … I could tell because …
