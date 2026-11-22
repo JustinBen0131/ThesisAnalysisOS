@@ -158,7 +158,8 @@ ul.three em { font-style: normal; font-weight: 600; color: var(--ink); }
 @keyframes written { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 .intro { max-width: 44rem; margin: 1.3rem 0 0; }
-.runplay { margin: 1.5rem 0 0; }
+.runplay { display: flex; align-items: center; flex-wrap: wrap; gap: .7rem 1.2rem; margin: 1.25rem 0 0; }
+.runplay a { font: 550 .9rem/1.45 var(--sans); }
 .runplay .button { padding: 0.6rem 1.05rem; font-size: 0.92rem; }
 .stepper { margin-top: 1.3rem; }
 .stepnav { display: flex; flex-wrap: wrap; gap: 0.45rem; margin: 0 0 1.3rem; padding: 0; list-style: none; }
@@ -180,6 +181,31 @@ ul.three em { font-style: normal; font-weight: 600; color: var(--ink); }
   background: transparent; color: var(--ink); cursor: pointer; }
 .walk button.next { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .walk button:disabled { opacity: 0.35; cursor: default; }
+.step.demo-scene { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 1.1rem clamp(1.5rem, 4vw, 4rem); }
+.stepper.live .demo-scene { min-height: 0; }
+.demo-scene .step-story { max-width: 46ch; margin: 0; }
+.demo-scene .walk { margin-top: 1rem; }
+.demo-facts { margin: 0; padding: .15rem 1.2rem; border: 1px solid var(--line); border-radius: .6rem;
+  background: var(--panel); color: var(--panel-ink); }
+.demo-facts > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: .8rem;
+  align-items: baseline; padding: .65rem 0; border-bottom: 1px solid var(--line); }
+.demo-facts > div:last-child { border-bottom: 0; }
+.demo-facts dt { font: 500 .87rem/1.4 var(--sans); color: var(--panel-soft); }
+.demo-facts dd { margin: 0; text-align: right; overflow-wrap: anywhere; font: 600 .96rem/1.42 var(--sans); font-variant-numeric: tabular-nums; }
+.demo-proof, .demo-comparison { grid-column: 1 / -1; min-width: 0; border-top: 1px solid var(--line); }
+.demo-proof summary, .demo-comparison summary { width: fit-content; padding: .7rem 0; font: 600 .94rem/1.4 var(--sans); cursor: pointer; }
+.demo-comparison p { max-width: 66ch; }
+.demo-comparison table { width: 100%; margin-bottom: .75rem; border-collapse: collapse; }
+.demo-comparison caption { text-align: left; color: var(--soft); padding-bottom: .4rem; }
+.demo-comparison td, .demo-comparison th { padding: .5rem .4rem; vertical-align: top; overflow-wrap: anywhere; text-align: left; }
+.demo-proof .term { max-width: 100%; }
+.demo-proof .source-link { margin-top: .6rem; }
+.demo-own { margin-top: 1rem; }
+.demo-own summary { width: fit-content; cursor: pointer; font-weight: 600; }
+.demo-own p { max-width: 52ch; margin-top: .6rem; }
+@media (max-width: 48rem) {
+  .step.demo-scene { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+}
 
 .chip { display: inline-flex; align-items: center; gap: 0.42rem; font: 700 0.84rem/1 var(--sans); padding: 0.34rem 0.62rem;
   border: 1.5px solid currentColor; border-radius: 5px; background: rgba(255, 255, 255, 0.03); white-space: nowrap; }

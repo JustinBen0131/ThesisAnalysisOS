@@ -233,9 +233,11 @@ def _file_examples(src, claims, studies, threshold):
     ):
         path = f"taos_core/templates/{stem}.md.tmpl"
         files[path] = _example("documented", text, src.link(path, snippet, "Read the setup instructions"))
-    passage = "One swing is measured again, and data/swings.csv changes."
+    passage = _one((line for line in src.lines("README.md")
+                    if re.match(r"^\s*stale\s+", line) and "data/swings.csv" in line),
+                   "README demo result naming the changed timing file")
     files["README.md"] = _example("documented",
-        f'The README walks through a changed input. “{passage}” The next check status names that file as the reason the old pass is outdated.',
+        "The README shows which file changed when one swing was measured again. The saved fit used the earlier timing.",
         src.link("README.md", passage, "Read the README example"),
         src.test("it_runs_from_a_clean_copy_and_shows_each_idea_with_real_output", "stale    check fit: analysis changed: data/swings.csv"))
     files["docs/CLAIMS.md"] = claims["No row of this file"]

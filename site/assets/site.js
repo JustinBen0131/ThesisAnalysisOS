@@ -43,7 +43,10 @@
       var item = document.createElement("li");
       var button = document.createElement("button");
       button.type = "button";
-      button.innerHTML = "<span>" + (index + 1) + "</span>" + step.getAttribute("data-short");
+      var numeral = document.createElement("span");
+      numeral.textContent = String(index + 1);
+      button.append(numeral, step.getAttribute("data-short"));
+      button.setAttribute("aria-controls", step.id);
       button.addEventListener("click", function () { choose(index); });
       item.appendChild(button);
       nav.appendChild(item);
@@ -72,10 +75,10 @@
     }
     function playbackLabel() {
       if (!play) { return; }
-      var label = "▶ Watch it run";
+      var label = "▶ Play the steps";
       if (timer) { label = "❚❚ Pause"; }
-      else if (current === steps.length - 1) { label = "↻ Replay run"; }
-      else if (current > 0) { label = "▶ Continue run"; }
+      else if (current === steps.length - 1) { label = "↻ Replay the steps"; }
+      else if (current > 0) { label = "▶ Continue"; }
       play.textContent = label;
       play.setAttribute("aria-pressed", String(Boolean(timer)));
     }
@@ -95,23 +98,26 @@
       }
     }
     function playStep() {
-      var lines = steps[current].querySelectorAll(".term pre > span");
-      Array.prototype.forEach.call(lines, function (line, k) {
-        line.style.animation = "none"; void line.offsetWidth;
-        line.style.animation = "written 0.42s " + (k * 0.16).toFixed(2) + "s both";
-      });
       if (current === steps.length - 1) { pause(); return; }
-      timer = window.setTimeout(function () { show(current + 1, true); playStep(); }, 5400);
+      var scene = steps[current];
+      var reading = scene.querySelector(".step-story").textContent + " " + scene.querySelector("dl").textContent;
+      var milliseconds = Math.min(15500, Math.max(6500, 1200 + 300 * reading.trim().split(/\s+/).length));
+      timer = window.setTimeout(function () { show(current + 1, true); playStep(); }, milliseconds);
       playbackLabel();
     }
     function followFragment(onLoad) {
-      var match = /^#run-(\d+)$/.exec(location.hash);
-      if (match || onLoad) { show(match ? Number(match[1]) - 1 : 0, false); }
+      var index = steps.findIndex(function (step) { return "#" + step.id === location.hash; });
+      if (index >= 0 || onLoad) { show(index >= 0 ? index : 0, false); }
       pause();
-      if (!onLoad && match && "#" + steps[current].id === location.hash) {
+      if (!onLoad && index >= 0) {
         steps[current].scrollIntoView({block: "start", behavior: "instant"});
       }
     }
+    steps.forEach(function (step) {
+      step.querySelectorAll("details").forEach(function (detail) {
+        detail.addEventListener("toggle", function () { if (detail.open) { pause(); } });
+      });
+    });
     nav.addEventListener("keydown", function (event) {
       if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") { return; }
       choose(current + (event.key === "ArrowRight" ? 1 : -1));

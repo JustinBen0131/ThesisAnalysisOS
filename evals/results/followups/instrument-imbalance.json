@@ -583,7 +583,7 @@
   "scope": "A deterministic arithmetic demonstration on chosen fictional readings. The equal-group mean gives A and B equal weight. Pooling weights each group by its count of known faults. The results do not estimate population performance or how often these corrections occur.",
   "sources": {
     "evals/replay_instrument_imbalance.py": "1ab7349a0acfdebb4e5888cac1e6095e9a9e2cd9e1768b21b71db6f1b34373a0",
-    "evals/results/model_evaluation.json": "b1ab76c3ece97f5e55e09af1b7b6735a959f39ef2ba7cb9e16e7232719275763",
+    "evals/results/model_evaluation.json": "dfef95ff424e8a95a59e91cb1de900b568c02240e3db060efac65200d171b9ea",
     "examples/model_evaluation/a.csv": "7d8067525c66ce5346d2732f37f86da19e599663220ee245439a2be0c935a4e2",
     "examples/model_evaluation/b.csv": "19c200941878010a3a77805a58a985193c20cbc1f12d4719925a5eeceef05f3b",
     "examples/model_evaluation/model.py": "4b6304a340abbd51e2a39bf5f81782b6f5f3d4ad68300e4eae7e5d4a0bf7cdf0",

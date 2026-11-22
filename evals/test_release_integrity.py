@@ -1,5 +1,6 @@
 """Checks for the policy applied to generated pages and the integrity of a saved release."""
 
+import copy
 import json
 from pathlib import Path
 import sys
@@ -9,7 +10,8 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "site"))
 from film_player import PUBLIC_MEDIA_DIR, film_files, opening_link, render_player
 from release_integrity import browser_policy, script_hash, verify_homepage_film, verify_manifest, write_manifest
-from build import broken, GITHUB
+from build import broken, GITHUB, REPO, load_audit
+import demo_walkthrough
 
 
 class TestBrowserPolicy(unittest.TestCase):
@@ -31,6 +33,55 @@ class TestBrowserPolicy(unittest.TestCase):
             browser_policy(analytics, "index.html", set(), False)
         page = '<script src="assets/site.js"></script>'
         self.assertIn("api.github.com", browser_policy(page, "index.html", set(), False))
+
+
+class TestDemoWalkthrough(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.record = demo_walkthrough.capture(REPO)
+        cls.audit = load_audit(REPO)
+
+    def test_all_commands_survive_changes_to_the_narration(self):
+        record = copy.deepcopy(self.record)
+        for moment in record["moments"]:
+            moment["idea"] = "An independently edited heading"
+            for step in moment["steps"]:
+                if step["kind"] == "say":
+                    step["text"] = "An independently edited explanation"
+        scenes = demo_walkthrough.chapters(record, self.audit)
+        original = [step["command"] for m in record["moments"] for step in m["steps"] if step["kind"] == "run"]
+        rendered = [line[2:] for scene in scenes for line in scene.lines if line.startswith("$ ")]
+        self.assertEqual(rendered, original)
+        self.assertEqual([s.anchor for s in scenes], ["run-1", "run-2", "run-3", "run-4", "run-5", "run-6",
+                                                      "run-reminder", "run-7"])
+        self.assertEqual([row[1:4] for row in scenes[2].comparisons],
+                         [("2.21 s", "9.75 ± 0.02 m/s²", "Passes"),
+                          ("2.2995 s", "9.44 ± 0.18 m/s²", "Below 9.6 m/s²")])
+
+    def test_a_plausible_reported_fit_must_agree_with_the_readings(self):
+        record = copy.deepcopy(self.record)
+        fit = next(step for step in record["moments"][0]["steps"] if "measured" in step)
+        fit["measured"]["g"] = 9.81
+        fit["expected"] = [s.replace("9.82", "9.81") for s in fit["expected"]]
+        fit["printed"] = [s.replace("9.82", "9.81") for s in fit["printed"]]
+        with self.assertRaisesRegex(ValueError, "independent fit"):
+            demo_walkthrough.chapters(record, self.audit)
+        audit = copy.deepcopy(self.audit)
+        next(case for case in audit["cases"] if case["id"] == "row-6-1.05")["se"] = 0.17
+        with self.assertRaisesRegex(ValueError, "independent fit"):
+            demo_walkthrough.chapters(self.record, audit)
+
+    def test_the_saved_pass_and_the_fresh_check_are_checked_separately(self):
+        record = copy.deepcopy(self.record)
+        stale = next(s for s in record["moments"][0]["steps"] if s.get("id") == "timing-edited")
+        stale["answer"] = "holds"
+        with self.assertRaisesRegex(ValueError, "timing-edited"):
+            demo_walkthrough.chapters(record, self.audit)
+        audit = copy.deepcopy(self.audit)
+        comparison = next(case for case in audit["cases"] if case["id"] == "row-6-1.05")
+        comparison["fresh_exit"] = 0
+        with self.assertRaisesRegex(ValueError, "larger correction"):
+            demo_walkthrough.chapters(self.record, audit)
 
 
 class TestHomepageFilm(unittest.TestCase):

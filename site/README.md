@@ -62,6 +62,13 @@ It neither edits the files nor executes a check. The pendulum values beside it
 come from the saved audit. The page still shows the recorded demo and source links
 with JavaScript disabled. The site uses system fonts and static files.
 
+The recorded walkthrough invokes `./taos demo --json` once per build. The web
+page, Markdown page and downloadable `records/demo.json` share that run.
+The builder checks both estimates and their standard errors from the six
+input rows using the independent calculation in the measurement audit.
+The timing chapter compares the small CLI correction with the larger one
+in the opening animation. Each row links to the run that produced it.
+
 **AI operating system demo** plays a 1 minute 40 second film about a transit operator
 preparing the morning bus report. The player opens on its poster just before **How
 to read a saved check**. A reader can start it from the opening link or press **Play
