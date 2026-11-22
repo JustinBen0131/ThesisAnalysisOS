@@ -31,9 +31,11 @@ import re
 import shutil
 import subprocess
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 from string import Template
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import unquote, urljoin, urlsplit
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
@@ -542,7 +544,7 @@ $canonical<link rel="stylesheet" href="${root}assets/style.css">
 $reuse_styles
 <link rel="license" href="${root}license.txt">
 <link rel="icon" href="${root}assets/favicon.svg" type="image/svg+xml">
-<link rel="alternate" type="text/markdown" href="index.md" title="This page as Markdown">
+$markdown_head
 <link rel="describedby" type="application/json" href="${root}research-catalog.json" title="Research datasets and evidence">
 <link rel="describedby" type="text/plain" href="${root}llms.txt" title="Research guide for AI agents">
 <link rel="alternate" type="application/feed+json" href="${root}exchange/feed.json" title="Research questions and replies">
@@ -564,7 +566,7 @@ ${study_links}
 $body
 </main>
 <footer class="foot"><div class="wrap">
-<p>Source for this build · <a href="$source_link"><code>$short</code></a> · $built UTC</p>
+<p><a href="${root}source/">Source for this build · <code>$short</code></a> · $built UTC</p>
 <p id="standing" data-src="${root}standing.json"><span class="lead-in">Comparison with public main</span> $neutral
 <span class="nojs">Enable JavaScript to compare the source files.</span></p>
 <p class="small">Independent research by Justin Bennett, a physics Ph.D. candidate at the University of Illinois
@@ -572,7 +574,7 @@ Urbana-Champaign working across experimental nuclear physics, machine learning, 
 Bennett developed this prototype from the software he used to coordinate two AI assistants on his thesis analysis.
 It is not affiliated with any employer or product. The software is open source under the <a rel="license" href="${root}license.txt">Apache License 2.0</a>.</p>
 <p class="small links"><span>Author <a rel="me" href="$author_github">GitHub</a> &middot; <a rel="me" href="$author_linkedin">LinkedIn</a></span>
-<span>Project <a href="$github">Repository</a> &middot; $agent_footer<a href="index.md">This page as Markdown</a></span></p>
+<span>Project <a href="$github">Repository</a>$agent_footer$markdown_footer</span></p>
 </div></footer>
 <script src="${root}assets/site.js" defer></script>
 ${scripts}${analytics}</body>
@@ -599,7 +601,10 @@ def shell(ctx: Dict[str, Any], root: str, title: str, body: str, url: str, path:
     return SHELL.substitute(
         page_class="home" if path == "" else "document", card=card, title=esc(title),
         description=esc(dataset["abstract"] if dataset else DESCRIPTION), root=root, github=GITHUB, body=body,
-        study_links=study_links, source_link=esc(root + "source/" if dataset else GITHUB + "/commit/" + ctx["revision"]),
+        study_links=study_links,
+        markdown_head=('<link rel="alternate" type="text/markdown" href="index.md" title="This page as Markdown">'
+                       if path != "404.html" else ""),
+        markdown_footer=(' &middot; <a href="index.md">This page as Markdown</a>' if path != "404.html" else ""),
         reuse_styles='<link rel="stylesheet" href="assets/reuse.css">' if not path else "",
         analytics=(f'<script type="module" src="{BEACON_SCRIPT}" '
                    """data-cf-beacon='{"token":"4d73a9ec7d20404a82e7a8e2f480a27f"}'></script>\n"""
@@ -608,7 +613,7 @@ def shell(ctx: Dict[str, Any], root: str, title: str, body: str, url: str, path:
         canonical='<link rel="canonical" href="{0}">\n'.format(esc(url + path)) if url else "",
         linked=json.dumps(linked).replace("</", "<\\/"), revision=esc(ctx["revision"]), short=esc(ctx["revision"][:7]),
         built=esc(ctx["built"]), neutral=chip("unknown", "not asked yet"), scripts=scripts,
-        agent_footer=(f'<a class="agent-entrance" href="{esc(root)}llms.txt">For AI agents</a> &middot; ' if path else ""),
+        agent_footer=(f' &middot; <a class="agent-entrance" href="{esc(root)}llms.txt">For AI agents</a>' if path else ""),
         author_github=AUTHOR_GITHUB, author_linkedin=AUTHOR_LINKEDIN)
 
 
@@ -1171,21 +1176,50 @@ def evidence_markdown(ctx: Dict[str, Any]) -> str:
 
 # ---------------------------------------------------------------- write, then check what was written
 
-LINK = re.compile(r'(?:href|src)="([^"]+)"')
+class PageLinks(HTMLParser):
+    def __init__(self, path):
+        super().__init__()
+        self.targets = []
+        self.ids = set()
+        self.feed(path.read_text(encoding="utf-8"))
+        self.close()
+
+    def handle_starttag(self, tag, attrs):
+        for name, value in attrs:
+            if value and name in {"href", "src", "poster"}:
+                self.targets.append(value)
+            if name == "id":
+                self.ids.add(value)
 
 
-def broken(out: Path) -> List[str]:
-    """Links inside the built pages that lead to no file."""
+def broken(out: Path, url: str = "", revision: str = "") -> List[str]:
+    """Check site links and anchors as a browser resolves them, including nested 404s."""
+    base = url or "https://offline.invalid/"
+    site = urlsplit(base)
+    out = out.resolve()
+    pages = {path: PageLinks(path) for path in sorted(out.rglob("*.html"))}
     problems = []
-    for page in sorted(out.rglob("*.html")):
-        for target in LINK.findall(page.read_text(encoding="utf-8")):
-            if re.match(r"^(https?:|mailto:|#|data:)", target):
+    for page, links in pages.items():
+        document = page.relative_to(out).as_posix()
+        address = urljoin(base, "missing/nested/page" if document == "404.html" else document)
+        for target in links.targets:
+            link = urlsplit(urljoin(address, target))
+            if revision and link.geturl().split("#", 1)[0] == GITHUB + "/commit/" + revision:
+                problems.append(f"{document}: {target} should open the bundled source")
                 continue
-            path = (page.parent / target.split("#")[0]).resolve() if target.split("#")[0] else page
+            if (link.scheme, link.netloc) != (site.scheme, site.netloc):
+                continue
+            resource = unquote(link.path)
+            if not resource.startswith(site.path):
+                problems.append(f"{document}: {target} leaves the site directory")
+                continue
+            path = page if target.startswith("#") else (out / resource[len(site.path):]).resolve()
             if path.is_dir():
-                path = path / "index.html"
-            if not path.is_file():
-                problems.append("{0}: {1}".format(page.relative_to(out), target))
+                path /= "index.html"
+            if not path.is_relative_to(out) or not path.is_file():
+                problems.append(f"{document}: {target}")
+            elif link.fragment and path in pages and unquote(link.fragment) not in pages[path].ids:
+                problems.append(f"{document}: {target} has no matching anchor")
     return problems
 
 
@@ -1362,7 +1396,7 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     protect_pages(out, private_film=bool(files), analytics=ctx["public_analytics"])
     agent_guide.study_versions(out, datasets, ctx["revision"])
     write("research-audit.json", json.dumps(verify_research_guide(out, writing_report=True), indent=2) + "\n")
-    problems = [problem for problem in broken(out) if not problem.startswith("404.html")]
+    problems = broken(out, url, ctx["revision"])
     if problems:
         raise SystemExit("links that lead nowhere:\n  " + "\n  ".join(problems))
     write_manifest(out, ctx["revision"])
