@@ -1,0 +1,68 @@
+name: Research OS workflow feedback
+description: Describe one attempt and what you could verify afterward.
+title: "[Workflow feedback] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Think of one task. A useful detail is the moment you found what you needed, had to correct something, or got stuck. Share only what can be public. Your answers become a public GitHub issue when you submit.
+  - type: dropdown
+    id: setting
+    attributes:
+      label: Where did you try the OS?
+      options:
+        - Browsing the website
+        - Running the bundled example
+        - Using one assistant on my own project
+        - Using multiple assistants on my own project
+        - Working without an assistant
+    validations:
+      required: true
+  - type: dropdown
+    id: task
+    attributes:
+      label: What were you trying to do?
+      options:
+        - Find the evidence behind a result
+        - Decide what to rerun after a change
+        - Pick up work from another person or assistant
+        - Set up or run a check
+        - Something else
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: At that step, what happened?
+      options:
+        - Found earlier work I could safely reuse
+        - Caught a result that needed checking again
+        - Relied on a result I later found was out of date
+        - Repeated work I later found was still usable
+        - Had to reconstruct the evidence or ask someone to intervene
+        - Finished another kind of task
+        - Could not tell whether the result was usable
+        - Only explored the site
+    validations:
+      required: true
+  - type: dropdown
+    id: verification
+    attributes:
+      label: How did you check the outcome?
+      options:
+        - Ran a check or compared the data myself
+        - Inspected a source file or saved result
+        - Read the assistant's answer
+        - Have not checked
+        - No result to check
+  - type: textarea
+    id: observation
+    attributes:
+      label: What should a fresh assistant do with the same inputs?
+      description: Give one step you would keep or change and one result that would show it worked. If you ran your own copy, a public file, software version or saved check helps someone repeat it.
+      placeholder: Only the timing file changed. The next assistant should rerun the gravity fit and reuse the instrument comparison. I would check which two tasks it ran or skipped.
+  - type: input
+    id: website-build
+    attributes:
+      label: Website version
+      description: The public site fills this in so the maintainer can reopen the exact version you saw. You can leave it blank.

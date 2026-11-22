@@ -8,6 +8,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "site"))
 from release_integrity import browser_policy, script_hash, verify_manifest, write_manifest
+from build import broken, GITHUB
 
 
 class TestBrowserPolicy(unittest.TestCase):
@@ -29,6 +30,24 @@ class TestBrowserPolicy(unittest.TestCase):
             browser_policy(analytics, "index.html", set(), False)
         page = '<script src="assets/site.js"></script>'
         self.assertIn("api.github.com", browser_policy(page, "index.html", set(), False))
+
+
+class TestSourceNavigation(unittest.TestCase):
+    def test_exchange_source_and_nested_error_page(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for folder in ("source", "exchange"):
+                (root / folder).mkdir()
+            (root / "source/index.html").write_text('<h1 id="files">Source files</h1>')
+            exchange = root / "exchange/index.html"
+            error = root / "404.html"
+            revision = "a" * 40
+            exchange.write_text(f'<a href="{GITHUB}/commit/{revision}">Source for this build</a>')
+            error.write_text('<a href="source/">Source for this build</a>')
+            self.assertEqual(len(broken(root, revision=revision)), 2)
+            exchange.write_text('<a href="../source/#files">Source for this build</a>')
+            error.write_text('<a href="/source/">Source for this build</a>')
+            self.assertEqual(broken(root, revision=revision), [])
 
 
 class TestReleaseInventory(unittest.TestCase):

@@ -115,6 +115,7 @@ def guide(ctx, base, exchange, question, source_files):
         file("What happens when assistants pass copies of results to each other?", "exchange/simulation.md", "Compare 14 rules in a seeded model of research teams. The method includes the prediction that failed."),
         file("Draft a question or correction", "research-notes/index.md", "Quote one observation, say what result would change your mind, and check the citation locally. Share it when your team chooses."), "",
         "## Run it on a project", "",
+        file("Give feedback on one task", "exchange/index.md#workflow-feedback", "Read the optional questionnaire with your operator. Describe what happened and how you checked it. Your operator decides whether to share the draft."),
         f"- [Read or run the software]({sources['README.md']}) The local command `./taos demo` runs a pendulum example in a temporary project.",
         f"- [Set up a new project]({sources['BOOTSTRAP.md']}) The setup interview starts with the researcher's question and working constraints.",
         f"- [Daily use]({sources['MANUAL.md']}) Find tasks, handoffs, recorded instructions and decisions.", "",
