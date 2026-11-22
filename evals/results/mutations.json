@@ -21,7 +21,7 @@
         "taos_core/config.py": "1ac43a15335c5609de4e556efa3e4f4debff34f3e1da2fc8b933a7b881486260",
         "taos_core/control.py": "97fd04c23f0700c240c99f7c4a5ded853cac50bedc1754320f725e2abd4d3dcd",
         "taos_core/decisions.py": "6b1e90507696573a62ae18c8b0dc198ad8a13b91d1c65b0a261e1c40246540f4",
-        "taos_core/demo.py": "7b15a091b69005b79f307ac9436cbd5b25bc50e6492e0ecd4bc2b7bed5c05ef4",
+        "taos_core/demo.py": "0de7aef3974f90da0eb7b9fe3247a721b4764f19d474fdebeaf234443addaac8",
         "taos_core/doctor.py": "b9b6e95be0ec332688f8876a1fd8a7ac321e2474dc1735b2f703524e0dbe3b42",
         "taos_core/events.py": "81b4d7b216ab41303c6da429d3a5dbb958ff1ee51d1fa4ba3da57797ed0f044e",
         "taos_core/gates.py": "2d42b5fe1761d03e510053faa35198ee09ec6db10e5fd9fb5082f0b9751fcd30",
@@ -46,7 +46,7 @@
         "tests/test_closure.py": "0b93407007d4a03aedbe25fb63ae5b52b34b35799352ab5a34b33129da8253b3",
         "tests/test_control.py": "f12461a59d092ebe1dab483815acf2a2e4f93e648a6b4d0826d4779f59f99ae9",
         "tests/test_counterexamples.py": "e6f35d8c643bf98bea33ef3e9e5826fca85c2ecf43788b6100f50123301520cc",
-        "tests/test_demo.py": "2ebbd25116d3316dcf3688e65cd202b953d32e80b733d875b6c8731b536cfab3",
+        "tests/test_demo.py": "e19fcece3ab88af7c013b765b694af20d8bd9dc54c28fba454ae0b06c92882e9",
         "tests/test_evals.py": "2afcefcd9d082161678e72f7da2aabea57eb44207fe0db0694071c471c6a15e3",
         "tests/test_hooks.py": "39b71aa1449d53548f448204d01a1e939c3e01b29510213dfb1a7fac33f6ba3c",
         "tests/test_panel.py": "f48403f27c097ced229528beb54840285d1df02bafbd90b92930ccd7d4eebabb",
@@ -57,7 +57,7 @@
         "tests/test_taos.py": "5ebb7e36da7972e42f9c6d6b3afd7eda63bdd37fc5c8048250086bb1a8a9b187",
         "tests/test_usage.py": "9368338dede3f7da1b6d29250a8d6a5d72a59d7b5cf23a0b720b884b10ac5222"
       },
-      "sha256": "276327c691f994e66927eb7bed3ddb8beff962aaa916bb010ec27168ffea3939"
+      "sha256": "3999edd13b467fc519b5adcd83271f9c7a331f6bcd7bcab21ae6e52a34565c5e"
     },
     "patterns": [
       "evals/mutations.py",

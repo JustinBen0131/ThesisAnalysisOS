@@ -76,33 +76,50 @@ cd ThesisAnalysisOS
 ./taos demo
 ```
 
-The demo creates a temporary project, fits the acceleration due to gravity
-(`g`) from six pendulum swings and runs a check on the result. Watch what
-happens after one swing is measured again. The old pass becomes stale and the
-output names the input that changed. Here is an excerpt.
+The demo builds a temporary project, fits the acceleration due to gravity
+(`g`) from six pendulum swings, and asks the record about that result as the
+files and instructions around it change. This is everything it prints.
 
 ```text
-$ taos why PEN-1
-    holds    closure: codex moved it to done on 2026-11-21; the same instructions govern
-    holds    check fit: passed 2026-11-21T22:26:19Z; nothing it tested has changed
-    PEN-1 stands as recorded. No person has accepted it yet.
+TAOS keeps every result with what it stood on. Asked later, it answers holds,
+stale, fails or unknown, and says why.
+Here: six pendulum swings, a fit for g, and a check that the fit is sane.
 
-One swing is measured again, and data/swings.csv changes.
-$ taos why PEN-1
-    stale    check fit: analysis changed: data/swings.csv
-    PEN-1 does not stand as recorded: stale.
+1  A result holds until what it stood on changes
+   holds   the fit passes its check and the task closes: g = 9.82 +/- 0.02
+   holds   the plot style is edited, which the check never read
+   stale   one swing is measured again: data/swings.csv changed
 
-Another task needs the same check on the same files. It is not run twice.
-$ taos gate run --task PEN-2 --agent claude
-    held  fit          not rerun: nothing it tested has changed since 2026-11-21T22:26:19Z
+2  A pass belongs to the files, not to the task
+   ok      the check runs again on the new swing: g = 9.75 +/- 0.02
+   held    a second task asks the same check of the same files: not run twice
 
-A second check reads figures/style.txt, but says it depends only on the analysis. It is marked
-isolated, so it runs in an empty folder that holds only the files it declared.
-$ taos gate run --task PEN-2 --agent claude
-    FAIL  style        exit 2
-    grep: figures/style.txt: No such file or directory
-    isolated: it could read only analysis. A file it could not find is one it did not declare.
+3  An instruction keeps its date
+           February 10: "Use the tape-measured lengths" is in force
+           March 2: "Use the laser-measured lengths" is in force
+   stale   the task closed before either was recorded, and its closure says so
+
+4  Acceptance is of one version
+           a person reads the fit and accepts the result
+   stale   the code is edited afterwards: the acceptance was of the old version
+
+5  A reminder shown is not a mistake repeated
+           a new agent starts and is told the lesson in the person's own words
+           asked later: 0 repeated, 0 followed, 1 not judged, of 1 times shown
+
+6  A check passes only on what it declared
+   FAIL    a check reads figures/style.txt but declared only the analysis
+   ok      the declaration is corrected and the same check passes
+
+18 commands ran in 0.5 s, and the record gave all 26 answers expected of it.
+Each row is a real command and its answer. See them all: taos demo --full
+Nothing of yours was touched. `taos demo --keep` leaves the folder in place.
 ```
+
+`./taos demo --full` shows each command and what it printed, and
+`./taos demo --json` gives the same run to a program. Every command in the
+script carries the words the record should answer with. If the record answers
+differently, the demo stops and says so.
 
 ## The idea
 
@@ -160,7 +177,7 @@ or recorded experiments. The table summarizes the public checks.
 | The tests detect each of the 20 seeded faults in this run | 20 protections removed one at a time; 20 of 20 removals are caught | `python3 evals/mutations.py` |
 | Tracking the folders each check read avoided stale reuse on this synthetic workload | 60 edits, 360 results relied on: 60 executions and 0 wrong reuses, the same as an oracle; age limits gave 180 to 48 executions with 30 to 161 wrong reuses | `python3 evals/reuse_frontier.py` |
 | Omitting an input folder allowed obsolete reuse in the open run and prevented the check from passing in the isolated run | 150 wrong reuses in 360 in the open; isolated, 0 of 366 runs passed, so nothing was reused | same |
-| The whole suite passes | 151 tests, Python 3.9 and 3.12, Linux and macOS | `./taos selftest` |
+| The whole suite passes | 154 tests, Python 3.9 and 3.12, Linux and macOS | `./taos selftest` |
 | This page says what the recorded runs say | every row of `docs/CLAIMS.md` and every number above, read back against the code as it is | `python3 evals/claims.py` |
 
 **How to verify the numbers.** Each run is stored in `evals/results/`

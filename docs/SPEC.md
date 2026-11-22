@@ -980,8 +980,13 @@ the worst of its parts (`basis.worst`).
   `changes.score` needs receipts or `source=`. `bank.score` keeps the answers
   it scored and their hash. `anchors.predict` is
   write-once. `lifecycle.start` checks blockers before it claims anything.
-- **Demo and evaluations.** `taos demo [--keep]` builds a throwaway home from
-  `examples/measurement`. `evals/at_revision.py`, `evals/mutations.py` and
+- **Demo and evaluations.** `taos demo [--keep] [--full | --brief | --json]`
+  builds a throwaway home from `examples/measurement` and plays a script of
+  six ideas against it. Each command in the script carries the words the
+  record should answer with, and the demo exits non-zero if the record
+  answers differently. A terminal gets one line per answer, a pipe or
+  `--full` gets every command and what it printed, and `--json` gets the
+  run as a `TAOS_DEMO_V1` record. `evals/at_revision.py`, `evals/mutations.py` and
   `evals/reuse_frontier.py` are described in `docs/METHOD.md`; given
   `--write`, each stores its numbers in `evals/results/<name>.json` with
   `measured_on`, the bytes of the code it measured (`evals/measured.py`).
