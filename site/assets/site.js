@@ -100,7 +100,9 @@
     function playStep() {
       if (current === steps.length - 1) { pause(); return; }
       var scene = steps[current];
-      var reading = scene.querySelector(".step-story").textContent + " " + scene.querySelector("dl").textContent;
+      var reading = Array.from(scene.querySelectorAll(".step-story, dt, dd"), function (item) {
+        return item.textContent;
+      }).join(" ");
       var milliseconds = Math.min(15500, Math.max(6500, 1200 + 300 * reading.trim().split(/\s+/).length));
       timer = window.setTimeout(function () { show(current + 1, true); playStep(); }, milliseconds);
       playbackLabel();

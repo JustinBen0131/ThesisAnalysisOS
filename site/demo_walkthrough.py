@@ -151,7 +151,7 @@ def chapters(record, audit):
               "The plot style changed. The fit uses the timing data and analysis code. Those files still match its saved check.",
               (("File edited", "figures/style.txt"), ("Gravity estimate", initial_fit), ("Earlier pass", "Still usable")),
               "taos_core/basis.py", transcript(standing[first:second])),
-        Scene("run-3", "Correct a timing", "Set the old pass aside",
+        Scene("run-3", "Correct a timing", "One timing changed. Check the fit again.",
               f"The {at_length} pendulum took {new_period}, up from {old_period}. The saved check used the earlier timing. "
               "Run the check on the corrected data before using the result.",
               (("Earlier timing", old_period), ("Corrected timing", new_period), ("Earlier pass", "Check again")),
@@ -179,19 +179,23 @@ def chapters(record, audit):
 
 
 COMPARE_TITLE = "Would a larger timing correction still pass?"
-COMPARE_NOTE = ("Both corrections set aside the original pass. The fresh check tests the new estimate. "
+COMPARE_NOTE = ("The original check used the first timing. Each correction needs its own check. "
                 "For these six readings, the estimate must be above 9.6 and below 10.0 m/s², "
                 "with a standard error of 0.20 m/s² or less.")
 
 
 def comparison_html(trials):
-    rows = "".join(f'<tr><th scope="row"><a href="{html.escape(url)}">{html.escape(name)}</a></th>'
-                   f'<td>{html.escape(period)}</td><td>{html.escape(fit)}</td><td>{html.escape(answer)}</td></tr>'
-                   for name, period, fit, answer, url in trials)
+    labels = ("New timing", "Gravity ± standard error", "Fresh check")
+    rows = []
+    for name, period, fit, answer, url in trials:
+        cells = "".join(f'<td><span class="comparison-label" aria-hidden="true">{label}</span>'
+                        f'<span class="comparison-value">{html.escape(value)}</span></td>'
+                        for label, value in zip(labels, (period, fit, answer)))
+        rows.append(f'<tr><th scope="row"><a href="{html.escape(url)}">{html.escape(name)}</a></th>{cells}</tr>')
     return (f'<details class="demo-comparison"><summary>{COMPARE_TITLE}</summary><p>{COMPARE_NOTE}</p>'
             '<table><caption>Two corrections to the same swing</caption><thead><tr><th scope="col">Run</th>'
             '<th scope="col">New timing</th><th scope="col">Gravity ± standard error</th>'
-            '<th scope="col">Fresh check</th></tr></thead><tbody>' + rows + '</tbody></table></details>')
+            '<th scope="col">Fresh check</th></tr></thead><tbody>' + "".join(rows) + '</tbody></table></details>')
 
 
 def comparison_markdown(trials):

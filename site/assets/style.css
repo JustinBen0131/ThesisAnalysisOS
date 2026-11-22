@@ -198,6 +198,9 @@ ul.three em { font-style: normal; font-weight: 600; color: var(--ink); }
 .demo-comparison table { width: 100%; margin-bottom: .75rem; border-collapse: collapse; }
 .demo-comparison caption { text-align: left; color: var(--soft); padding-bottom: .4rem; }
 .demo-comparison td, .demo-comparison th { padding: .5rem .4rem; vertical-align: top; overflow-wrap: anywhere; text-align: left; }
+.demo-comparison tbody tr { border-top: 1px solid var(--line); }
+.comparison-label { display: none; }
+.comparison-value { font-variant-numeric: tabular-nums; }
 .demo-proof .term { max-width: 100%; }
 .demo-proof .source-link { margin-top: .6rem; }
 .demo-own { margin-top: 1rem; }
@@ -205,6 +208,16 @@ ul.three em { font-style: normal; font-weight: 600; color: var(--ink); }
 .demo-own p { max-width: 52ch; margin-top: .6rem; }
 @media (max-width: 48rem) {
   .step.demo-scene { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+}
+@media (max-width: 36rem) {
+  .demo-comparison table, .demo-comparison caption, .demo-comparison tbody, .demo-comparison tr,
+  .demo-comparison th[scope="row"] { display: block; }
+  .demo-comparison thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .demo-comparison tbody tr { padding: .5rem 0; }
+  .demo-comparison th[scope="row"] { padding: .35rem 0; }
+  .demo-comparison td { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; padding: .27rem 0; }
+  .comparison-label { display: inline; color: var(--panel-soft); font-size: .86rem; }
+  .comparison-value { text-align: right; white-space: nowrap; }
 }
 
 .chip { display: inline-flex; align-items: center; gap: 0.42rem; font: 700 0.84rem/1 var(--sans); padding: 0.34rem 0.62rem;
