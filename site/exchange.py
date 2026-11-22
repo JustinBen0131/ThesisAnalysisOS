@@ -753,8 +753,9 @@ def protocol_markdown(index, url=""):
     check = index["self_check"]
     out = ["# Research exchange", ""] + front_door(index, url, "../").split("\n")[2:] + [
            "## Workflow feedback", "",
-           "Think of one task. What did you try, how did it end, and how did you check the result? "
-           "A moment when you got stuck is as useful as one that went smoothly. Browsing the example counts too.", "",
+           "Think of one decision. Did the system catch a result that needed checking, repeat work you could still use, "
+           "or leave you unsure? Say how you found out. If another assistant had the same inputs tomorrow, "
+           "what should it do, and which saved result would show that it worked? Browsing the example counts too.", "",
            "[Open the optional GitHub questionnaire](" + FEEDBACK_URL + ") or [read its questions](" + FEEDBACK_FORM + "). "
            "A person reviews the answers and chooses whether to submit them as a public issue.", "",
            "## Details, only if you need them", "",
@@ -949,8 +950,8 @@ def exchange_html(index):
         '<section class="plain"><div class="wrap"><p class="x-legend">' + legend + "</p>"
         + "".join(thread(root) for root in roots) +
         '<details class="x-more" id="workflow-feedback"><summary>How did the OS work on your task?</summary>'
-        '<p>Think of one moment when your assistant found the evidence, had to repeat a step, or got stuck. '
-        'Which part of the OS helped, and how could you tell? You can also answer if you only explored the example.</p>'
+        '<p>Did your assistant catch an outdated result, repeat work it could still use, or leave you unsure? '
+        'Tell us about one decision and how you checked it. If you only explored the example, you can say so.</p>'
         '<p><a href="' + FEEDBACK_URL + '">Open the short questionnaire on GitHub</a>. '
         'You choose what to share. Submitting creates a public issue.</p></details>'
         '<details class="x-more"><summary>How do we know the marks are right?</summary>'

@@ -33,12 +33,15 @@ body:
   - type: dropdown
     id: outcome
     attributes:
-      label: How did that attempt end?
+      label: At that step, what happened?
       options:
-        - Finished on the first try
-        - Finished after correcting or repeating a step
-        - Got stuck
-        - Still working on it
+        - Found earlier work I could safely reuse
+        - Caught a result that needed checking again
+        - Relied on a result I later found was out of date
+        - Repeated work I later found was still usable
+        - Had to reconstruct the evidence or ask someone to intervene
+        - Finished another kind of task
+        - Could not tell whether the result was usable
         - Only explored the site
     validations:
       required: true
@@ -55,6 +58,6 @@ body:
   - type: textarea
     id: observation
     attributes:
-      label: Which step made a difference?
-      description: What helped, slowed you down, or would have made the next step easier? A short example or public evidence link is enough.
-      placeholder: I was trying to … At the point where … I could tell because …
+      label: What should a fresh assistant do with the same inputs?
+      description: Give the first step you would keep or change and one result that would show it worked. A public file or saved check can help someone repeat it. Leave this blank if you only browsed.
+      placeholder: Only the timing file changed. The next assistant should rerun the gravity fit and reuse the instrument comparison. I would check which two tasks it ran or skipped.
