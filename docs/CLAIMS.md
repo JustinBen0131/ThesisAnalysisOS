@@ -1,20 +1,20 @@
 # Claims
 
-Every claim this repository makes about itself, with the code that
-implements it, the test that checks it, and its status. A claim with no row
-here should not appear anywhere else.
+Use this register to find the source of a public software claim. Each row names
+the code and a check, or the experiment that produced a number. A claim with
+no row here should not appear elsewhere.
 
-This file is checked. `python3 evals/claims.py` reads every row back against
-the repository as it is: a row that names code or a test that is not there,
-or a number the recorded run does not contain, `fails`; a number measured on
-code that has changed since is `stale`. CI runs it with `--strict`.
+**Tested** identifies behavior covered by a named test. The readback confirms
+the named code and test exist. Run `./taos selftest` to execute the test suite.
+**Measured** identifies a result from a recorded experiment. The data in
+[`evals/results/`](../evals/results/) include fingerprints of the source files.
+**Reported** identifies an observation from the private project whose data are
+unavailable here. **Not claimed** lists questions the evidence leaves open.
 
-Status words: **tested** means a test in `tests/` fails if the claim stops
-being true. **measured** means a number from one recorded run, kept in
-`evals/results/` with the bytes of the code it was measured on, and the
-command that reproduces it. **reported** means a result from the private
-system this was generalized from; the data is not in this repository and you
-cannot rerun it. **not claimed** is listed so nobody has to guess.
+`python3 evals/claims.py --strict` is the check used in CI. A missing named
+reference or a number that disagrees with the recorded run returns `fails`.
+Changed source files can make a measured result `stale`. If the script cannot
+find a compatible recorded run, it returns `unknown`.
 
 (Leases on work are also called claims here. Those are in
 `policies/CLAIMS.md`.)

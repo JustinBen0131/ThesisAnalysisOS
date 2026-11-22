@@ -1,0 +1,915 @@
+{
+  "does_not_cover": [
+    "No real assistant took part. The rates of editing and reuse are invented; the variations show how the table moves when they change.",
+    "Every rerun is taken to give the right answer, and a fingerprint check is taken to cost far less than a rerun.",
+    "A copy is taken to report truthfully what it stood on. A sender that misreports is not modelled.",
+    "Edits arrive independently of each other and are never undone.",
+    "Each input is declared or left out independently of the others."
+  ],
+  "generator": "SplitMix64, integer draws only",
+  "kind": "model, not a measurement",
+  "parameters": {
+    "assistants": 12,
+    "change_per_file_per_step_ppm": 1500,
+    "declared_percent": [
+      100,
+      90,
+      75,
+      50,
+      25,
+      0
+    ],
+    "edit_changes_result_percent": 70,
+    "files": 80,
+    "max_inputs": 6,
+    "popularity_power": 2,
+    "results": 60,
+    "secondhand_percent": 50,
+    "seed": 20261122,
+    "steps": 240,
+    "timer_steps": [
+      5,
+      10,
+      20,
+      40,
+      80,
+      160
+    ],
+    "use_per_step_percent": 50,
+    "worlds": 40
+  },
+  "predictions": [
+    {
+      "held": true,
+      "text": "With every input declared, checking fingerprints first never repeats an outdated result. This is true by construction: a failure would mean a mistake in the model."
+    },
+    {
+      "held": true,
+      "text": "With every input declared, checking fingerprints first reruns less than half as often as rerunning every time."
+    },
+    {
+      "held": true,
+      "text": "With half the inputs declared, it repeats fewer than half as many outdated results as repeating the copy."
+    },
+    {
+      "held": true,
+      "text": "With three quarters of the inputs declared, no timer setting does at least as well on both counts."
+    },
+    {
+      "held": false,
+      "text": "With a quarter of the inputs declared, some timer setting does at least as well on both counts."
+    }
+  ],
+  "question": "What happens when assistants pass results to each other?",
+  "rows": [
+    {
+      "fingerprint_checks": 0,
+      "highest_world_per_10000": 3208,
+      "label": "repeat the copy",
+      "lowest_world_per_10000": 1069,
+      "needless_reruns": 0,
+      "outdated_per_10000_uses": 2152,
+      "outdated_uses": 12345,
+      "reruns": 12378,
+      "reruns_per_1000_uses": 216,
+      "rule": "trust",
+      "setting": 0
+    },
+    {
+      "fingerprint_checks": 0,
+      "highest_world_per_10000": 40,
+      "label": "rerun when the copy is older than 5 steps",
+      "lowest_world_per_10000": 0,
+      "needless_reruns": 33588,
+      "outdated_per_10000_uses": 9,
+      "outdated_uses": 53,
+      "reruns": 51850,
+      "reruns_per_1000_uses": 904,
+      "rule": "timer",
+      "setting": 5
+    },
+    {
+      "fingerprint_checks": 0,
+      "highest_world_per_10000": 134,
+      "label": "rerun when the copy is older than 10 steps",
+      "lowest_world_per_10000": 0,
+      "needless_reruns": 29741,
+      "outdated_per_10000_uses": 33,
+      "outdated_uses": 192,
+      "reruns": 47973,
+      "reruns_per_1000_uses": 836,
+      "rule": "timer",
+      "setting": 10
+    },
+    {
+      "fingerprint_checks": 0,
+      "highest_world_per_10000": 248,
+      "label": "rerun when the copy is older than 20 steps",
+      "lowest_world_per_10000": 21,
+      "needless_reruns": 23989,
+      "outdated_per_10000_uses": 96,
+      "outdated_uses": 552,
+      "reruns": 42127,
+      "reruns_per_1000_uses": 734,
+      "rule": "timer",
+      "setting": 20
+    },
+    {
+      "fingerprint_checks": 0,
+      "highest_world_per_10000": 495,
+      "label": "rerun when the copy is older than 40 steps",
+      "lowest_world_per_10000": 96,
+      "needless_reruns": 16808,
+      "outdated_per_10000_uses": 279,
+      "outdated_uses": 1601,
+      "reruns": 34611,
+      "reruns_per_1000_uses": 603,
+      "rule": "timer",
+      "setting": 40
+    },
+    {
+      "fingerprint_checks": 0,
+      "highest_world_per_10000": 1212,
+      "label": "rerun when the copy is older than 80 steps",
+      "lowest_world_per_10000": 290,
+      "needless_reruns": 9338,
+      "outdated_per_10000_uses": 648,
+      "outdated_uses": 3716,
+      "reruns": 26270,
+      "reruns_per_1000_uses": 458,
+      "rule": "timer",
+      "setting": 80
+    },
+    {
+      "fingerprint_checks": 0,
+      "highest_world_per_10000": 2009,
+      "label": "rerun when the copy is older than 160 steps",
+      "lowest_world_per_10000": 694,
+      "needless_reruns": 3373,
+      "outdated_per_10000_uses": 1374,
+      "outdated_uses": 7881,
+      "reruns": 18580,
+      "reruns_per_1000_uses": 324,
+      "rule": "timer",
+      "setting": 160
+    },
+    {
+      "beaten_by_timer": [],
+      "fingerprint_checks": 44986,
+      "highest_world_per_10000": 0,
+      "label": "check fingerprints first, 100% of inputs declared",
+      "lowest_world_per_10000": 0,
+      "needless_reruns": 2145,
+      "outdated_per_10000_uses": 0,
+      "outdated_uses": 0,
+      "reruns": 20419,
+      "reruns_per_1000_uses": 356,
+      "rule": "standing",
+      "setting": 100
+    },
+    {
+      "beaten_by_timer": [],
+      "fingerprint_checks": 44986,
+      "highest_world_per_10000": 1234,
+      "label": "check fingerprints first, 90% of inputs declared",
+      "lowest_world_per_10000": 0,
+      "needless_reruns": 1883,
+      "outdated_per_10000_uses": 261,
+      "outdated_uses": 1500,
+      "reruns": 19566,
+      "reruns_per_1000_uses": 341,
+      "rule": "standing",
+      "setting": 90
+    },
+    {
+      "beaten_by_timer": [],
+      "fingerprint_checks": 44986,
+      "highest_world_per_10000": 1545,
+      "label": "check fingerprints first, 75% of inputs declared",
+      "lowest_world_per_10000": 35,
+      "needless_reruns": 1559,
+      "outdated_per_10000_uses": 554,
+      "outdated_uses": 3177,
+      "reruns": 18565,
+      "reruns_per_1000_uses": 324,
+      "rule": "standing",
+      "setting": 75
+    },
+    {
+      "beaten_by_timer": [],
+      "fingerprint_checks": 44986,
+      "highest_world_per_10000": 2393,
+      "label": "check fingerprints first, 50% of inputs declared",
+      "lowest_world_per_10000": 418,
+      "needless_reruns": 1062,
+      "outdated_per_10000_uses": 1047,
+      "outdated_uses": 6005,
+      "reruns": 16732,
+      "reruns_per_1000_uses": 292,
+      "rule": "standing",
+      "setting": 50
+    },
+    {
+      "beaten_by_timer": [],
+      "fingerprint_checks": 44986,
+      "highest_world_per_10000": 2732,
+      "label": "check fingerprints first, 25% of inputs declared",
+      "lowest_world_per_10000": 844,
+      "needless_reruns": 570,
+      "outdated_per_10000_uses": 1549,
+      "outdated_uses": 8888,
+      "reruns": 14704,
+      "reruns_per_1000_uses": 256,
+      "rule": "standing",
+      "setting": 25
+    },
+    {
+      "beaten_by_timer": [],
+      "fingerprint_checks": 44986,
+      "highest_world_per_10000": 3208,
+      "label": "check fingerprints first, 0% of inputs declared",
+      "lowest_world_per_10000": 1069,
+      "needless_reruns": 0,
+      "outdated_per_10000_uses": 2152,
+      "outdated_uses": 12345,
+      "reruns": 12378,
+      "reruns_per_1000_uses": 216,
+      "rule": "standing",
+      "setting": 0
+    },
+    {
+      "fingerprint_checks": 0,
+      "highest_world_per_10000": 0,
+      "label": "rerun every time",
+      "lowest_world_per_10000": 0,
+      "needless_reruns": 39090,
+      "outdated_per_10000_uses": 0,
+      "outdated_uses": 0,
+      "reruns": 57364,
+      "reruns_per_1000_uses": 1000,
+      "rule": "recheck",
+      "setting": 0
+    }
+  ],
+  "uses": 57364,
+  "variations": [
+    {
+      "change": "files change half as often",
+      "rows": [
+        {
+          "outdated_per_10000_uses": 1118,
+          "reruns_per_1000_uses": 216,
+          "rule": "trust",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 9,
+          "reruns_per_1000_uses": 904,
+          "rule": "timer",
+          "setting": 5
+        },
+        {
+          "outdated_per_10000_uses": 17,
+          "reruns_per_1000_uses": 835,
+          "rule": "timer",
+          "setting": 10
+        },
+        {
+          "outdated_per_10000_uses": 44,
+          "reruns_per_1000_uses": 734,
+          "rule": "timer",
+          "setting": 20
+        },
+        {
+          "outdated_per_10000_uses": 134,
+          "reruns_per_1000_uses": 602,
+          "rule": "timer",
+          "setting": 40
+        },
+        {
+          "outdated_per_10000_uses": 324,
+          "reruns_per_1000_uses": 457,
+          "rule": "timer",
+          "setting": 80
+        },
+        {
+          "outdated_per_10000_uses": 718,
+          "reruns_per_1000_uses": 325,
+          "rule": "timer",
+          "setting": 160
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 290,
+          "rule": "standing",
+          "setting": 100
+        },
+        {
+          "outdated_per_10000_uses": 100,
+          "reruns_per_1000_uses": 283,
+          "rule": "standing",
+          "setting": 90
+        },
+        {
+          "outdated_per_10000_uses": 316,
+          "reruns_per_1000_uses": 274,
+          "rule": "standing",
+          "setting": 75
+        },
+        {
+          "outdated_per_10000_uses": 528,
+          "reruns_per_1000_uses": 254,
+          "rule": "standing",
+          "setting": 50
+        },
+        {
+          "outdated_per_10000_uses": 737,
+          "reruns_per_1000_uses": 236,
+          "rule": "standing",
+          "setting": 25
+        },
+        {
+          "outdated_per_10000_uses": 1118,
+          "reruns_per_1000_uses": 216,
+          "rule": "standing",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 1000,
+          "rule": "recheck",
+          "setting": 0
+        }
+      ],
+      "setting_changed": {
+        "change_per_file_per_step_ppm": 750
+      },
+      "uses": 14424,
+      "worlds": 10
+    },
+    {
+      "change": "files change twice as often",
+      "rows": [
+        {
+          "outdated_per_10000_uses": 3543,
+          "reruns_per_1000_uses": 210,
+          "rule": "trust",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 21,
+          "reruns_per_1000_uses": 902,
+          "rule": "timer",
+          "setting": 5
+        },
+        {
+          "outdated_per_10000_uses": 60,
+          "reruns_per_1000_uses": 836,
+          "rule": "timer",
+          "setting": 10
+        },
+        {
+          "outdated_per_10000_uses": 192,
+          "reruns_per_1000_uses": 732,
+          "rule": "timer",
+          "setting": 20
+        },
+        {
+          "outdated_per_10000_uses": 531,
+          "reruns_per_1000_uses": 603,
+          "rule": "timer",
+          "setting": 40
+        },
+        {
+          "outdated_per_10000_uses": 1275,
+          "reruns_per_1000_uses": 457,
+          "rule": "timer",
+          "setting": 80
+        },
+        {
+          "outdated_per_10000_uses": 2411,
+          "reruns_per_1000_uses": 318,
+          "rule": "timer",
+          "setting": 160
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 453,
+          "rule": "standing",
+          "setting": 100
+        },
+        {
+          "outdated_per_10000_uses": 293,
+          "reruns_per_1000_uses": 432,
+          "rule": "standing",
+          "setting": 90
+        },
+        {
+          "outdated_per_10000_uses": 733,
+          "reruns_per_1000_uses": 403,
+          "rule": "standing",
+          "setting": 75
+        },
+        {
+          "outdated_per_10000_uses": 1495,
+          "reruns_per_1000_uses": 351,
+          "rule": "standing",
+          "setting": 50
+        },
+        {
+          "outdated_per_10000_uses": 2478,
+          "reruns_per_1000_uses": 285,
+          "rule": "standing",
+          "setting": 25
+        },
+        {
+          "outdated_per_10000_uses": 3543,
+          "reruns_per_1000_uses": 210,
+          "rule": "standing",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 1000,
+          "rule": "recheck",
+          "setting": 0
+        }
+      ],
+      "setting_changed": {
+        "change_per_file_per_step_ppm": 3000
+      },
+      "uses": 14506,
+      "worlds": 10
+    },
+    {
+      "change": "no copy is taken from another assistant",
+      "rows": [
+        {
+          "outdated_per_10000_uses": 1440,
+          "reruns_per_1000_uses": 397,
+          "rule": "trust",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 6,
+          "reruns_per_1000_uses": 929,
+          "rule": "timer",
+          "setting": 5
+        },
+        {
+          "outdated_per_10000_uses": 18,
+          "reruns_per_1000_uses": 877,
+          "rule": "timer",
+          "setting": 10
+        },
+        {
+          "outdated_per_10000_uses": 60,
+          "reruns_per_1000_uses": 801,
+          "rule": "timer",
+          "setting": 20
+        },
+        {
+          "outdated_per_10000_uses": 182,
+          "reruns_per_1000_uses": 697,
+          "rule": "timer",
+          "setting": 40
+        },
+        {
+          "outdated_per_10000_uses": 502,
+          "reruns_per_1000_uses": 576,
+          "rule": "timer",
+          "setting": 80
+        },
+        {
+          "outdated_per_10000_uses": 971,
+          "reruns_per_1000_uses": 463,
+          "rule": "timer",
+          "setting": 160
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 501,
+          "rule": "standing",
+          "setting": 100
+        },
+        {
+          "outdated_per_10000_uses": 119,
+          "reruns_per_1000_uses": 492,
+          "rule": "standing",
+          "setting": 90
+        },
+        {
+          "outdated_per_10000_uses": 315,
+          "reruns_per_1000_uses": 480,
+          "rule": "standing",
+          "setting": 75
+        },
+        {
+          "outdated_per_10000_uses": 679,
+          "reruns_per_1000_uses": 454,
+          "rule": "standing",
+          "setting": 50
+        },
+        {
+          "outdated_per_10000_uses": 997,
+          "reruns_per_1000_uses": 430,
+          "rule": "standing",
+          "setting": 25
+        },
+        {
+          "outdated_per_10000_uses": 1440,
+          "reruns_per_1000_uses": 397,
+          "rule": "standing",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 1000,
+          "rule": "recheck",
+          "setting": 0
+        }
+      ],
+      "setting_changed": {
+        "secondhand_percent": 0
+      },
+      "uses": 14196,
+      "worlds": 10
+    },
+    {
+      "change": "a first copy is always taken from another assistant when one exists",
+      "rows": [
+        {
+          "outdated_per_10000_uses": 3190,
+          "reruns_per_1000_uses": 41,
+          "rule": "trust",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 14,
+          "reruns_per_1000_uses": 876,
+          "rule": "timer",
+          "setting": 5
+        },
+        {
+          "outdated_per_10000_uses": 43,
+          "reruns_per_1000_uses": 791,
+          "rule": "timer",
+          "setting": 10
+        },
+        {
+          "outdated_per_10000_uses": 144,
+          "reruns_per_1000_uses": 673,
+          "rule": "timer",
+          "setting": 20
+        },
+        {
+          "outdated_per_10000_uses": 387,
+          "reruns_per_1000_uses": 523,
+          "rule": "timer",
+          "setting": 40
+        },
+        {
+          "outdated_per_10000_uses": 953,
+          "reruns_per_1000_uses": 357,
+          "rule": "timer",
+          "setting": 80
+        },
+        {
+          "outdated_per_10000_uses": 1774,
+          "reruns_per_1000_uses": 218,
+          "rule": "timer",
+          "setting": 160
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 215,
+          "rule": "standing",
+          "setting": 100
+        },
+        {
+          "outdated_per_10000_uses": 182,
+          "reruns_per_1000_uses": 200,
+          "rule": "standing",
+          "setting": 90
+        },
+        {
+          "outdated_per_10000_uses": 478,
+          "reruns_per_1000_uses": 182,
+          "rule": "standing",
+          "setting": 75
+        },
+        {
+          "outdated_per_10000_uses": 1160,
+          "reruns_per_1000_uses": 144,
+          "rule": "standing",
+          "setting": 50
+        },
+        {
+          "outdated_per_10000_uses": 2266,
+          "reruns_per_1000_uses": 93,
+          "rule": "standing",
+          "setting": 25
+        },
+        {
+          "outdated_per_10000_uses": 3190,
+          "reruns_per_1000_uses": 41,
+          "rule": "standing",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 1000,
+          "rule": "recheck",
+          "setting": 0
+        }
+      ],
+      "setting_changed": {
+        "secondhand_percent": 100
+      },
+      "uses": 14485,
+      "worlds": 10
+    },
+    {
+      "change": "every edit changes the result",
+      "rows": [
+        {
+          "outdated_per_10000_uses": 2941,
+          "reruns_per_1000_uses": 215,
+          "rule": "trust",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 18,
+          "reruns_per_1000_uses": 905,
+          "rule": "timer",
+          "setting": 5
+        },
+        {
+          "outdated_per_10000_uses": 67,
+          "reruns_per_1000_uses": 838,
+          "rule": "timer",
+          "setting": 10
+        },
+        {
+          "outdated_per_10000_uses": 159,
+          "reruns_per_1000_uses": 736,
+          "rule": "timer",
+          "setting": 20
+        },
+        {
+          "outdated_per_10000_uses": 435,
+          "reruns_per_1000_uses": 605,
+          "rule": "timer",
+          "setting": 40
+        },
+        {
+          "outdated_per_10000_uses": 976,
+          "reruns_per_1000_uses": 458,
+          "rule": "timer",
+          "setting": 80
+        },
+        {
+          "outdated_per_10000_uses": 1941,
+          "reruns_per_1000_uses": 322,
+          "rule": "timer",
+          "setting": 160
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 365,
+          "rule": "standing",
+          "setting": 100
+        },
+        {
+          "outdated_per_10000_uses": 218,
+          "reruns_per_1000_uses": 353,
+          "rule": "standing",
+          "setting": 90
+        },
+        {
+          "outdated_per_10000_uses": 528,
+          "reruns_per_1000_uses": 337,
+          "rule": "standing",
+          "setting": 75
+        },
+        {
+          "outdated_per_10000_uses": 1195,
+          "reruns_per_1000_uses": 306,
+          "rule": "standing",
+          "setting": 50
+        },
+        {
+          "outdated_per_10000_uses": 2117,
+          "reruns_per_1000_uses": 261,
+          "rule": "standing",
+          "setting": 25
+        },
+        {
+          "outdated_per_10000_uses": 2941,
+          "reruns_per_1000_uses": 215,
+          "rule": "standing",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 1000,
+          "rule": "recheck",
+          "setting": 0
+        }
+      ],
+      "setting_changed": {
+        "edit_changes_result_percent": 100
+      },
+      "uses": 14239,
+      "worlds": 10
+    },
+    {
+      "change": "four edits in ten change the result",
+      "rows": [
+        {
+          "outdated_per_10000_uses": 1602,
+          "reruns_per_1000_uses": 215,
+          "rule": "trust",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 7,
+          "reruns_per_1000_uses": 905,
+          "rule": "timer",
+          "setting": 5
+        },
+        {
+          "outdated_per_10000_uses": 25,
+          "reruns_per_1000_uses": 838,
+          "rule": "timer",
+          "setting": 10
+        },
+        {
+          "outdated_per_10000_uses": 67,
+          "reruns_per_1000_uses": 736,
+          "rule": "timer",
+          "setting": 20
+        },
+        {
+          "outdated_per_10000_uses": 200,
+          "reruns_per_1000_uses": 605,
+          "rule": "timer",
+          "setting": 40
+        },
+        {
+          "outdated_per_10000_uses": 454,
+          "reruns_per_1000_uses": 458,
+          "rule": "timer",
+          "setting": 80
+        },
+        {
+          "outdated_per_10000_uses": 940,
+          "reruns_per_1000_uses": 322,
+          "rule": "timer",
+          "setting": 160
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 365,
+          "rule": "standing",
+          "setting": 100
+        },
+        {
+          "outdated_per_10000_uses": 63,
+          "reruns_per_1000_uses": 353,
+          "rule": "standing",
+          "setting": 90
+        },
+        {
+          "outdated_per_10000_uses": 268,
+          "reruns_per_1000_uses": 337,
+          "rule": "standing",
+          "setting": 75
+        },
+        {
+          "outdated_per_10000_uses": 534,
+          "reruns_per_1000_uses": 306,
+          "rule": "standing",
+          "setting": 50
+        },
+        {
+          "outdated_per_10000_uses": 1123,
+          "reruns_per_1000_uses": 261,
+          "rule": "standing",
+          "setting": 25
+        },
+        {
+          "outdated_per_10000_uses": 1602,
+          "reruns_per_1000_uses": 215,
+          "rule": "standing",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 1000,
+          "rule": "recheck",
+          "setting": 0
+        }
+      ],
+      "setting_changed": {
+        "edit_changes_result_percent": 40
+      },
+      "uses": 14239,
+      "worlds": 10
+    },
+    {
+      "change": "every result is reused equally often",
+      "rows": [
+        {
+          "outdated_per_10000_uses": 1997,
+          "reruns_per_1000_uses": 240,
+          "rule": "trust",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 5,
+          "reruns_per_1000_uses": 929,
+          "rule": "timer",
+          "setting": 5
+        },
+        {
+          "outdated_per_10000_uses": 20,
+          "reruns_per_1000_uses": 873,
+          "rule": "timer",
+          "setting": 10
+        },
+        {
+          "outdated_per_10000_uses": 67,
+          "reruns_per_1000_uses": 785,
+          "rule": "timer",
+          "setting": 20
+        },
+        {
+          "outdated_per_10000_uses": 221,
+          "reruns_per_1000_uses": 661,
+          "rule": "timer",
+          "setting": 40
+        },
+        {
+          "outdated_per_10000_uses": 567,
+          "reruns_per_1000_uses": 511,
+          "rule": "timer",
+          "setting": 80
+        },
+        {
+          "outdated_per_10000_uses": 1277,
+          "reruns_per_1000_uses": 359,
+          "rule": "timer",
+          "setting": 160
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 398,
+          "rule": "standing",
+          "setting": 100
+        },
+        {
+          "outdated_per_10000_uses": 166,
+          "reruns_per_1000_uses": 383,
+          "rule": "standing",
+          "setting": 90
+        },
+        {
+          "outdated_per_10000_uses": 377,
+          "reruns_per_1000_uses": 363,
+          "rule": "standing",
+          "setting": 75
+        },
+        {
+          "outdated_per_10000_uses": 889,
+          "reruns_per_1000_uses": 323,
+          "rule": "standing",
+          "setting": 50
+        },
+        {
+          "outdated_per_10000_uses": 1462,
+          "reruns_per_1000_uses": 280,
+          "rule": "standing",
+          "setting": 25
+        },
+        {
+          "outdated_per_10000_uses": 1997,
+          "reruns_per_1000_uses": 240,
+          "rule": "standing",
+          "setting": 0
+        },
+        {
+          "outdated_per_10000_uses": 0,
+          "reruns_per_1000_uses": 1000,
+          "rule": "recheck",
+          "setting": 0
+        }
+      ],
+      "setting_changed": {
+        "popularity_power": 1
+      },
+      "uses": 14315,
+      "worlds": 10
+    }
+  ]
+}

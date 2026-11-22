@@ -1,0 +1,95 @@
+<style>
+.film-record { width: 100%; max-width: max(22rem, calc(177.78vh - 14.23rem));
+  max-width: max(22rem, calc(177.78svh - 14.23rem)); margin: .25rem auto 0; }
+.film-record > summary { display: flex; gap: .65em; align-items: center; width: fit-content; max-width: 100%;
+  min-height: 2.75rem; padding: .35rem .25rem .35rem 0; list-style: none; cursor: pointer;
+  -webkit-tap-highlight-color: rgba(227,189,106,.15); color: var(--link); font: 550 1rem/1.4 var(--sans); }
+.film-record > summary::-webkit-details-marker { display: none; }
+.film-record > summary::after { content: ""; flex: none; width: .44em; height: .44em; margin-top: -.2em;
+  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); }
+.film-record[open] > summary::after { transform: rotate(225deg); margin-top: .25em; }
+@media (hover: hover) { .film-record > summary:hover span { text-decoration: underline; text-underline-offset: .2em; } }
+.film-record-body { display: grid; max-width: 50rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 1.25rem clamp(1.5rem, 5vw, 4rem); padding-top: .8rem; border-top: 1px solid var(--edge); }
+.film-record h3 { margin: 0 0 .6rem; font: 400 1.42rem/1.2 var(--serif); }
+.film-record-body > :first-child { container-type: inline-size; }
+.film-record table { font: 450 .94rem/1.35 var(--sans); font-variant-numeric: tabular-nums; }
+.film-record th, .film-record td { padding: .4rem .28rem; text-align: right; border-bottom: 1px solid var(--line); }
+.film-record th:first-child { padding-left: 0; text-align: left; }
+.film-record td:last-child, .film-record th:last-child { padding-right: 0; }
+.film-record thead th { color: var(--soft); font-size: .84em; font-weight: 500; }
+.film-record tbody th { font-weight: 450; }
+.film-record td:last-child { font-family: var(--mono); }
+.film-record tr:last-child td:last-child { font-weight: 650; }
+@container (max-width: 15rem) {
+  .film-record table, .film-record tbody { display: block; }
+  .film-record thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .film-record tbody tr { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: .16em .45em;
+    padding: .44em 0; border-bottom: 1px solid var(--edge); }
+  .film-record tbody th, .film-record tbody td { padding: 0; border: 0; }
+  .film-record tbody th { grid-column: 1 / -1; color: var(--soft); }
+  .film-record tbody td:first-of-type { text-align: left; }
+  .film-record tbody td { white-space: nowrap; }
+}
+.film-record p { margin: .65rem 0 0; color: var(--soft); font: 400 .95rem/1.5 var(--sans); }
+.film-record .trip { color: var(--ink); font: 500 .93em var(--mono); }
+.film-record blockquote { margin: .1rem 0 .65rem; padding-left: .75rem; border-left: 2px solid var(--link);
+  color: var(--ink); font: 400 1.12rem/1.4 var(--serif); }
+.film-record a { display: inline-block; align-content: center; min-height: 2.75rem; padding: .5rem 0; font: 500 .94rem/1.45 var(--sans); }
+</style>
+<details class="film-record" id="dispatch-record">
+<summary><span>Check the operator’s count</span></summary>
+<div class="film-record-body">
+  <div>
+    <h3 id="dispatch-monday">Monday’s on-time rate</h3>
+    <table role="table" aria-labelledby="dispatch-monday">
+      <thead role="rowgroup"><tr role="row"><th scope="col">Source</th><th scope="col">On time</th><th scope="col">Rate</th></tr></thead>
+      <tbody role="rowgroup">
+        <tr role="row"><th scope="row">Departure log</th><td>16 of 18</td><td>89%</td></tr>
+        <tr role="row"><th scope="row">Full timetable</th><td>16 of 20</td><td>80%</td></tr>
+      </tbody>
+    </table>
+    <p>The <time class="trip" datetime="07:10">07:10</time> (M17) and <time class="trip" datetime="07:22">07:22</time> (M19) were on the timetable. Dispatch marked both canceled.</p>
+  </div>
+  <div>
+    <h3>What carried into Tuesday</h3>
+    <blockquote>“Check every scheduled bus before reporting.”</blockquote>
+    <p><span class="trip">T04</span> and <span class="trip">T11</span> still needed dispatch records. Tuesday’s rate stayed pending.</p>
+    <a href="#run-5">Trace a saved rule in the pendulum example</a>
+  </div>
+</div>
+</details>
+<script>
+// The example's deferred script reveals the requested chapter on hashchange.
+document.addEventListener("DOMContentLoaded", function () {
+  var record = document.getElementById("dispatch-record"), link = record.querySelector("a");
+  var returnPlace = null;
+  link.addEventListener("click", function (event) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) { return; }
+    returnPlace = {url: location.href, top: link.getBoundingClientRect().top};
+    var film = document.getElementById("preview-film");
+    if (!film.paused) { film.pause(); }
+    // WebKit can reload a fragment link after the private entry redirects to the homepage.
+    var from = location.href;
+    if (location.hash !== link.hash) {
+      try { history.pushState(history.state, "", link.hash); } catch (_) { return; }
+    }
+    event.preventDefault();
+    window.dispatchEvent(new HashChangeEvent("hashchange", {oldURL: from, newURL: location.href}));
+  });
+  window.addEventListener("hashchange", function (event) {
+    if (!returnPlace) { return; }
+    if (event.newURL === link.href) {
+      document.querySelector(link.hash).focus({preventScroll: true});
+    } else if (event.newURL === returnPlace.url && /^#run-\d+$/.test(new URL(event.oldURL).hash) && record.open) {
+      var top = returnPlace.top;
+      returnPlace = null;
+      // Changing the active example above the film can change its height before Back restores the page.
+      link.focus({preventScroll: true});
+      window.scrollBy({top: link.getBoundingClientRect().top - top, behavior: "instant"});
+    } else {
+      returnPlace = null;
+    }
+  });
+}, {once: true});
+</script>

@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software or build on its ideas, please cite it as below.
+  The software license and attribution notice are in LICENSE and NOTICE.
+title: "ThesisAnalysisOS: what still holds?"
+abstract: >-
+  An operating layer for scientific research done with AI agents. Every
+  result an agent records is kept with what it stood on, so that later the
+  system can say whether it still holds, and why.
+type: software
+authors:
+  - family-names: Bennett
+    given-names: Justin
+repository-code: "https://github.com/JustinBen0131/ThesisAnalysisOS"
+url: "https://whatstillholds.com/"
+license: Apache-2.0
+license-url: "https://www.apache.org/licenses/LICENSE-2.0"
+version: "1.1.0"
+date-released: "2026-11-21"
+keywords:
+  - research software
+  - AI agents
+  - provenance
+  - reproducibility
+  - truth maintenance

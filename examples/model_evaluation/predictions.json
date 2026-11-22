@@ -1,0 +1,223 @@
+{
+  "design": "instrument-qc-v1",
+  "cell_order": [
+    "tp",
+    "fn",
+    "fp",
+    "tn"
+  ],
+  "positive_class": "reference_fault = 1",
+  "checks": [
+    "A",
+    "B",
+    "pooled"
+  ],
+  "baseline_counts": {
+    "A": [
+      3,
+      1,
+      1,
+      3
+    ],
+    "B": [
+      3,
+      1,
+      1,
+      3
+    ],
+    "pooled": [
+      6,
+      2,
+      2,
+      6
+    ]
+  },
+  "cases": [
+    {
+      "id": "figure-caption",
+      "edits": [
+        {
+          "file": "caption.txt",
+          "value": "QC overview, revised caption"
+        }
+      ],
+      "counts": {
+        "A": [
+          3,
+          1,
+          1,
+          3
+        ],
+        "B": [
+          3,
+          1,
+          1,
+          3
+        ],
+        "pooled": [
+          6,
+          2,
+          2,
+          6
+        ]
+      },
+      "sensitivity_direction": [
+        "same",
+        "same",
+        "same"
+      ],
+      "old_stale": [],
+      "execute": [],
+      "fail": []
+    },
+    {
+      "id": "correct-a-score",
+      "edits": [
+        {
+          "file": "a.csv",
+          "id": "A03",
+          "score": 50
+        }
+      ],
+      "counts": {
+        "A": [
+          2,
+          2,
+          1,
+          3
+        ],
+        "B": [
+          3,
+          1,
+          1,
+          3
+        ],
+        "pooled": [
+          5,
+          3,
+          2,
+          6
+        ]
+      },
+      "sensitivity_direction": [
+        "down",
+        "same",
+        "down"
+      ],
+      "old_stale": [
+        "A",
+        "pooled"
+      ],
+      "execute": [
+        "A",
+        "pooled"
+      ],
+      "fail": [
+        "A",
+        "pooled"
+      ]
+    },
+    {
+      "id": "offsetting-score-corrections",
+      "edits": [
+        {
+          "file": "a.csv",
+          "id": "A03",
+          "score": 50
+        },
+        {
+          "file": "b.csv",
+          "id": "B04",
+          "score": 70
+        }
+      ],
+      "counts": {
+        "A": [
+          2,
+          2,
+          1,
+          3
+        ],
+        "B": [
+          4,
+          0,
+          1,
+          3
+        ],
+        "pooled": [
+          6,
+          2,
+          2,
+          6
+        ]
+      },
+      "sensitivity_direction": [
+        "down",
+        "up",
+        "same"
+      ],
+      "old_stale": [
+        "A",
+        "B",
+        "pooled"
+      ],
+      "execute": [
+        "A",
+        "B",
+        "pooled"
+      ],
+      "fail": [
+        "A"
+      ]
+    },
+    {
+      "id": "shared-threshold",
+      "edits": [
+        {
+          "file": "policy.json",
+          "threshold": 75
+        }
+      ],
+      "counts": {
+        "A": [
+          2,
+          2,
+          1,
+          3
+        ],
+        "B": [
+          2,
+          2,
+          1,
+          3
+        ],
+        "pooled": [
+          4,
+          4,
+          2,
+          6
+        ]
+      },
+      "sensitivity_direction": [
+        "down",
+        "down",
+        "down"
+      ],
+      "old_stale": [
+        "A",
+        "B",
+        "pooled"
+      ],
+      "execute": [
+        "A",
+        "B",
+        "pooled"
+      ],
+      "fail": [
+        "A",
+        "B",
+        "pooled"
+      ]
+    }
+  ]
+}

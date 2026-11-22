@@ -1,0 +1,7 @@
+{
+  "flag_if_score_at_least": 60,
+  "minimum_sensitivity": {
+    "numerator": 3,
+    "denominator": 4
+  }
+}
