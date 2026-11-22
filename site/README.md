@@ -64,6 +64,7 @@ with JavaScript disabled. The site uses system fonts and static files.
 
 The recorded walkthrough invokes `./taos demo --json` once per build. The web
 page, Markdown page and downloadable `records/demo.json` share that run.
+The CLI’s own renderer writes the short terminal view at `records/demo.txt` from the same record.
 The builder checks both estimates and their standard errors from the six
 input rows using the independent calculation in the measurement audit.
 The timing chapter compares the small CLI correction with the larger one

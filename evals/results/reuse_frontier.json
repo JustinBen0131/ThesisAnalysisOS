@@ -8,7 +8,7 @@
   "folders": 12,
   "measured_on": {
     "files": {
-      "count": 37,
+      "count": 38,
       "files": {
         "evals/reuse_frontier.py": "4ee947bc46570ecbbe7f2c727cb2891b7e60374c7866be3c35e799e76c40c45e",
         "taos_core/__init__.py": "66629c3555bb4a5eb5d6ab16af575f0adf6b656cfd82f59dea5b15e19a40326c",
@@ -26,7 +26,7 @@
         "taos_core/config.py": "1ac43a15335c5609de4e556efa3e4f4debff34f3e1da2fc8b933a7b881486260",
         "taos_core/control.py": "97fd04c23f0700c240c99f7c4a5ded853cac50bedc1754320f725e2abd4d3dcd",
         "taos_core/decisions.py": "6b1e90507696573a62ae18c8b0dc198ad8a13b91d1c65b0a261e1c40246540f4",
-        "taos_core/demo.py": "0de7aef3974f90da0eb7b9fe3247a721b4764f19d474fdebeaf234443addaac8",
+        "taos_core/demo.py": "0c7b714cb6d335de33a2b7ab1e4e242d6c468aaac426abda55e7512b885b7cb9",
         "taos_core/doctor.py": "b9b6e95be0ec332688f8876a1fd8a7ac321e2474dc1735b2f703524e0dbe3b42",
         "taos_core/events.py": "81b4d7b216ab41303c6da429d3a5dbb958ff1ee51d1fa4ba3da57797ed0f044e",
         "taos_core/gates.py": "2d42b5fe1761d03e510053faa35198ee09ec6db10e5fd9fb5082f0b9751fcd30",
@@ -34,6 +34,7 @@
         "taos_core/kernels.py": "466bfcdec7898db676579129eefb028f1680aad750d85aa8d934236b7c887623",
         "taos_core/lessons.py": "d737e85bef1dbdaa6e8a33f2d4ba6a51cf9d0e65247c6d15dddf5daf22a346e1",
         "taos_core/lifecycle.py": "d309fae74256aaa04ce4c3d5e89de19e5edfa7966aedc874bd718ec6811d9404",
+        "taos_core/page.py": "cf09cca7059469e2ce5e33d59546b7ad70f97feb97fe8c9588389b6eac11d9df",
         "taos_core/panel.py": "a4ed83d4f43d719aa3ea9aaa3010a53e20e26420a8470decb43b3b06e71e37a5",
         "taos_core/paths.py": "d41c61f44638550b4f481213efcfeefe6cbb2bddd971f45c3ca5c3608b965e19",
         "taos_core/policy.py": "e5fa7af8a5a80a32d638b8923226900e0ccabef91b3957b882b1cf542e7c6439",
@@ -48,7 +49,7 @@
         "taos_core/usage.py": "5a4f311e66da6be035f55403ae4f58e95e74c4b505b51661c05c0af2bf367a1c",
         "taos_core/util.py": "e02eb73a86172fcf632efed3f27bf9d1d8253d54ba0f3bc788101672bae2dba0"
       },
-      "sha256": "61b0b6755f08af6e96d9d06c78f2ce0dcf6a01c2286c323b31f7d63832192fb5"
+      "sha256": "052168002a6d4906b8f8d50a1e6ffce2491555919abdc9b6d1ae979301e11783"
     },
     "patterns": [
       "evals/reuse_frontier.py",
@@ -174,29 +175,29 @@
   "timing": {
     "checks_spared_per_consultation": 5.0,
     "isolating_one_execution": {
-      "high_seconds": 0.015874415985308588,
-      "low_seconds": 0.013775875995634124,
-      "median_seconds": 0.01487500048824586,
+      "high_seconds": 0.017835666018072516,
+      "low_seconds": 0.015503417002037168,
+      "median_seconds": 0.016793624512501992,
       "network_and_workspace_closed": true,
       "pairs": 40
     },
-    "seconds_per_execution": 0.008708395299285517,
-    "seconds_when_something_reran": 0.031198107590598594,
+    "seconds_per_execution": 0.007952990310247212,
+    "seconds_when_something_reran": 0.04489782745513367,
     "upkeep": [
       {
-        "break_even_check_seconds": 0.0029683665954507886,
+        "break_even_check_seconds": 0.0036816084000747653,
         "files": 48,
-        "seconds": 0.014841832977253944
+        "seconds": 0.018408042000373825
       },
       {
-        "break_even_check_seconds": 0.008246508397860453,
+        "break_even_check_seconds": 0.010283116600476205,
         "files": 480,
-        "seconds": 0.04123254198930226
+        "seconds": 0.05141558300238103
       },
       {
-        "break_even_check_seconds": 0.06288455839967355,
+        "break_even_check_seconds": 0.07020672500366346,
         "files": 4800,
-        "seconds": 0.31442279199836776
+        "seconds": 0.35103362501831725
       }
     ]
   }

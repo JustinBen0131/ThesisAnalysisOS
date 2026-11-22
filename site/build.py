@@ -25,6 +25,7 @@ import argparse
 import datetime
 import hashlib
 import html
+import io
 import json
 import os
 import re
@@ -46,6 +47,7 @@ sys.path.insert(0, str(HERE))  # support loaders that import the builder by file
 import claims as read_back  # noqa: E402  (evals/claims.py)
 import measured  # noqa: E402
 import demo_walkthrough  # noqa: E402
+from taos_core.demo import write as write_terminal_demo  # noqa: E402
 from reuse_play import recorded_comparison, reuse_play  # noqa: E402
 from visitor_claims import visitor_claim_title  # noqa: E402
 from policy_evidence import attach_policy_evidence  # noqa: E402
@@ -881,7 +883,9 @@ Run this command to check the claim list against the current checkout.</p>
 <path class="copy-check" d="m5 12 4.4 4.4L19 7"/></svg></button>
 <span class="copy-status" role="status" aria-live="polite"></span>
 </div>
-<p class="small">The demo runs offline in a temporary folder. Add <code>--json</code> to get the same run as data.</p>
+<p class="small"><a href="records/demo.txt">Preview the terminal output</a>. The demo runs offline in a temporary folder.
+Add <code>--keep</code> to explore the files afterwards,
+or <code>--json</code> to read the run in a program.</p>
 <details class="demo-own"><summary>Try your own pendulum readings</summary>
 <p>Start with a CSV containing <code>length_m</code> and <code>period_s</code>.
 The audit tests how the estimate changes when a reading changes.
@@ -1233,6 +1237,10 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     write("claims.json", json.dumps({"repository": NAME, "revision": ctx["revision"], "built": ctx["built"],
                                      "check": "python3 evals/claims.py --json", "rows": ctx["rows"]}, indent=2, sort_keys=True) + "\n")
     write("records/demo.json", json.dumps(ctx["demo_record"], ensure_ascii=False, indent=2) + "\n")
+    terminal_view = io.StringIO()
+    write_terminal_demo(ctx["demo_record"], terminal_view, full=False, width=80, color=False)
+    # Some static hosts serve text/plain without a charset. Mark UTF-8 so the terminal border survives a direct visit.
+    write("records/demo.txt", "\ufeff" + terminal_view.getvalue())
     write("standing.json", json.dumps({"repository": NAME, "branch": "main", "revision": ctx["revision"], "built": ctx["built"],
                                        "stands_on": ctx["stands_on"]}, indent=2, sort_keys=True) + "\n")
     write("graph.json", json.dumps({
