@@ -27,7 +27,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: build
-        run: python3 site/build.py --out _site --ref "$GITHUB_SHA" --url "https://justinben0131.github.io/ThesisAnalysisOS/"
+        run: python3 site/build.py --out _site --ref "$GITHUB_SHA" --url "https://whatstillholds.com/"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

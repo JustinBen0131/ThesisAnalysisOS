@@ -3,7 +3,7 @@
 **Every result an agent records is kept with what it stood on, so that later
 the system can say whether it still holds, and why.**
 
-[See a recorded run in the browser](https://justinben0131.github.io/ThesisAnalysisOS/),
+[See a recorded run in the browser](https://whatstillholds.com/),
 with every claim read back against the code.
 
 A result that carries only a date can be trusted by age or not at all. A
