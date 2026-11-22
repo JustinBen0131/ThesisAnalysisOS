@@ -13,7 +13,7 @@ differently, so the demo is a check as well as a show.
 One run, three readers. A person at a terminal gets one screen: a line for
 each thing that happened, led by the answer the record gave. `--full`, or a
 pipe, gets every command and what it printed. `--json` gets the same run as
-a record a program can read.
+a record a program can read. How a page is drawn is `taos_core/page.py`.
 """
 
 from __future__ import annotations
@@ -29,7 +29,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import textwrap
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,6 +37,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 from . import bootstrap as bootstrap_mod
 from . import lessons as lessons_mod
 from . import rules as rules_mod
+from .page import PROMISE, SHADE, write
 from .paths import Paths
 from .util import TaosError
 
@@ -47,10 +47,7 @@ OS_PARTS = ("taos", "taos_core", "hooks", "kernels", "atoms", "policies", "boots
 STATES = ("holds", "fails", "stale", "unknown")
 SCHEMA = "TAOS_DEMO_V1"
 EXAMPLE = "Here: six pendulum swings, a fit for g, and a check that the fit is sane."
-PROMISE = "TAOS keeps every result with what it stood on. Asked later, it answers holds, stale, fails or unknown, and says why."
 FIT = re.compile(r"g = (\S+) \+/- (\S+) (\S+) from (\d+) swings")
-SHADE = {"holds": "32", "ok": "32", "held": "32", "stale": "33", "fails": "31", "FAIL": "31", "unknown": "2"}
-BOLD, DIM = "1", "2"
 
 
 def scratch_home(tmp: Path, *, workspace: Path, project: str, prefix: str, gates: List[Any], tasks: List[Any]) -> Paths:
@@ -307,89 +304,8 @@ def play(paths: Paths) -> Dict[str, Any]:
                 steps.append(_run(paths, work, step))
         moments.append({"number": number, "id": moment.id, "idea": moment.idea, "answered": moment.answered, "steps": steps})
     runs = [step for moment in moments for step in moment["steps"] if step["kind"] == "run"]
-    return {"schema": SCHEMA, "example": EXAMPLE, "promise": PROMISE, "moments": moments,
+    return {"schema": SCHEMA, "example": EXAMPLE, "promise": " ".join(PROMISE), "moments": moments,
             "commands": len(runs), "checked": sum(len(step["expected"]) for step in runs)}
-
-
-class Page(object):
-    """Writes for a person. Piped, every line is plain and whole. On a terminal it is folded to the width and shaded."""
-
-    def __init__(self, out: Any, width: Optional[int], color: bool):
-        self.out, self.width, self.color = out, width, color
-
-    def ink(self, code: str, text: str) -> str:
-        return "\x1b[{0}m{1}\x1b[0m".format(code, text) if self.color and code else text
-
-    def states(self, text: str) -> str:
-        return re.sub(r"\b({0})\b".format("|".join(STATES)), lambda found: self.ink(SHADE[found.group(1)], found.group(1)), text)
-
-    def fold(self, text: str, hang: int = 0) -> List[str]:
-        if not self.width or len(text) <= self.width:
-            return [text]
-        return textwrap.wrap(text, self.width, subsequent_indent=" " * hang, break_long_words=False, break_on_hyphens=False)
-
-    def line(self, text: str = "") -> None:
-        self.out.write(text + "\n")
-
-    def prose(self, text: str, code: str = "", states: bool = False) -> None:
-        for part in self.fold(text):
-            self.line(self.states(part) if states else self.ink(code, part))
-
-    def printed(self, text: str) -> None:
-        """A line a command printed: indented, its continuation under its second word, its leading answer shaded."""
-        lead = re.match(r"\S+\s+", text)
-        parts = self.fold("    " + text, hang=4 + min(len(lead.group(0)), 11) if lead else 6)
-        answer = re.match(r"(\s+)({0})(\s)".format("|".join(SHADE)), parts[0])
-        if answer:
-            parts[0] = answer.group(1) + self.ink(SHADE[answer.group(2)], answer.group(2)) + parts[0][answer.end(2):]
-        for part in parts:
-            self.line(part)
-
-
-def short(page: Page, record: Dict[str, Any]) -> None:
-    """One screen: each idea, and under it a row for each answer, led by the word the record gave."""
-    for moment in record["moments"]:
-        page.line()
-        page.line(page.ink(BOLD, "{0}  {1}".format(moment["number"], moment["idea"])))
-        for step in moment["steps"]:
-            if step.get("brief"):
-                answer = step.get("answer", "")
-                page.line("   {0} {1}".format(page.ink(SHADE.get(answer, ""), answer.ljust(7)), step["brief"]))
-
-
-def transcript(page: Page, record: Dict[str, Any]) -> None:
-    """Everything: each command as it was run and what it printed, then the six ideas with what the record answered."""
-    for moment in record["moments"]:
-        page.line()
-        page.prose("{0}. {1}".format(moment["number"], moment["idea"]), BOLD)
-        page.line()
-        for index, step in enumerate(moment["steps"]):
-            if step["kind"] == "say":
-                if index:
-                    page.line()
-                page.prose(step["text"])
-            else:
-                page.line(page.ink(DIM, "$ " + step["command"]))
-                for text in step["printed"]:
-                    page.printed(text)
-    page.line()
-    page.prose("What the record answered", BOLD)
-    page.line()
-    pad = max(len(moment["idea"]) for moment in record["moments"])
-    for moment in record["moments"]:
-        page.line("  {0}  {1}  {2}".format(moment["number"], moment["idea"].ljust(pad), page.states(moment["answered"])))
-
-
-def write(record: Dict[str, Any], out: Any, *, full: bool = True, width: Optional[int] = None, color: bool = False,
-          closing: Tuple[str, ...] = ()) -> None:
-    """The run as a page for a person: the promise, the short page or the transcript, and how it ended."""
-    page = Page(out, width, color)
-    page.prose(record["promise"], states=True)
-    page.prose(record["example"])
-    (transcript if full else short)(page, record)
-    page.line()
-    for text in closing:
-        page.line(text)
 
 
 def run(out: Any = None, keep: bool = False, as_json: bool = False, full: Optional[bool] = None,
@@ -398,8 +314,8 @@ def run(out: Any = None, keep: bool = False, as_json: bool = False, full: Option
     out = out or sys.stdout
     terminal = bool(getattr(out, "isatty", lambda: False)())
     full = not terminal if full is None else full
-    if width is None and (terminal or not full):           # the short page is set for 80 columns wherever it goes
-        width = max(80, min(shutil.get_terminal_size().columns, 100)) if terminal else 80
+    if width is None and (terminal or not full):           # a terminal's own width; the short page is set for 80
+        width = min(shutil.get_terminal_size().columns, 100) if terminal else 80
     if color is None:
         color = (terminal or bool(os.environ.get("FORCE_COLOR"))) and not os.environ.get("NO_COLOR")
     tmp = Path(tempfile.mkdtemp(prefix="taos-demo-"))

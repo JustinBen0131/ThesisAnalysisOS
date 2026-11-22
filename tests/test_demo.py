@@ -12,7 +12,7 @@ from unittest import mock
 
 from helpers import REPO
 
-from taos_core import demo
+from taos_core import demo, page
 from taos_core.util import TaosError
 
 EXAMPLE = REPO / "examples" / "measurement"
@@ -62,6 +62,21 @@ class TestDemo(unittest.TestCase):
         readme = (REPO / "README.md").read_text(encoding="utf-8")                # and the front page shows this page
         for line in lines:
             self.assertIn(timed.split(line)[0].rstrip(), readme)
+
+    def test_the_opener_draws_the_name_in_a_box_and_falls_back_to_plain_letters(self) -> None:
+        lines = played(full=False).splitlines()
+        self.assertEqual([len(line) for line in lines[:5]], [80] * 5)           # a box, closed on every side
+        self.assertEqual((lines[0][0], lines[0][-1], lines[4][0], lines[4][-1]), ("┌", "┐", "└", "┘"))
+        self.assertEqual([line[3:18] for line in lines[1:4]], list(page.MARK))  # the mark, three rows high
+        self.assertIn("holds, stale, fails or unknown", lines[3])               # beside the four answers it stands for
+        shaded = played(full=False, color=True).splitlines()[1]
+        self.assertEqual(re.findall(r"\x1b\[(\d+)m[╺┏]", shaded), ["32", "33", "31", "2"])   # one shade for each letter
+        narrow = played(full=False, width=60).splitlines()                      # a narrow window gets it without the box
+        self.assertEqual((narrow[0], max(len(line) for line in narrow) <= 60), (page.MARK[0], True))
+        plain = io.TextIOWrapper(io.BytesIO(), encoding="ascii")                # a stream that cannot draw the box
+        self.assertEqual(demo.run(out=plain, full=False), 0)
+        plain.flush()
+        self.assertIn("|  TAOS ", plain.buffer.getvalue().decode("ascii"))
 
     def test_the_same_run_is_a_record_a_program_can_read(self) -> None:
         record = json.loads(played(as_json=True))

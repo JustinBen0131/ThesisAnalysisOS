@@ -3,7 +3,7 @@
   "faults": 20,
   "measured_on": {
     "files": {
-      "count": 51,
+      "count": 52,
       "files": {
         "evals/mutations.py": "b8a6c07615a5b877da941c9402f4e99c4d4307ffad5725a9dcec514a5eacf782",
         "taos_core/__init__.py": "66629c3555bb4a5eb5d6ab16af575f0adf6b656cfd82f59dea5b15e19a40326c",
@@ -21,7 +21,7 @@
         "taos_core/config.py": "1ac43a15335c5609de4e556efa3e4f4debff34f3e1da2fc8b933a7b881486260",
         "taos_core/control.py": "97fd04c23f0700c240c99f7c4a5ded853cac50bedc1754320f725e2abd4d3dcd",
         "taos_core/decisions.py": "6b1e90507696573a62ae18c8b0dc198ad8a13b91d1c65b0a261e1c40246540f4",
-        "taos_core/demo.py": "0de7aef3974f90da0eb7b9fe3247a721b4764f19d474fdebeaf234443addaac8",
+        "taos_core/demo.py": "0c7b714cb6d335de33a2b7ab1e4e242d6c468aaac426abda55e7512b885b7cb9",
         "taos_core/doctor.py": "b9b6e95be0ec332688f8876a1fd8a7ac321e2474dc1735b2f703524e0dbe3b42",
         "taos_core/events.py": "81b4d7b216ab41303c6da429d3a5dbb958ff1ee51d1fa4ba3da57797ed0f044e",
         "taos_core/gates.py": "2d42b5fe1761d03e510053faa35198ee09ec6db10e5fd9fb5082f0b9751fcd30",
@@ -29,6 +29,7 @@
         "taos_core/kernels.py": "466bfcdec7898db676579129eefb028f1680aad750d85aa8d934236b7c887623",
         "taos_core/lessons.py": "d737e85bef1dbdaa6e8a33f2d4ba6a51cf9d0e65247c6d15dddf5daf22a346e1",
         "taos_core/lifecycle.py": "d309fae74256aaa04ce4c3d5e89de19e5edfa7966aedc874bd718ec6811d9404",
+        "taos_core/page.py": "cf09cca7059469e2ce5e33d59546b7ad70f97feb97fe8c9588389b6eac11d9df",
         "taos_core/panel.py": "a4ed83d4f43d719aa3ea9aaa3010a53e20e26420a8470decb43b3b06e71e37a5",
         "taos_core/paths.py": "d41c61f44638550b4f481213efcfeefe6cbb2bddd971f45c3ca5c3608b965e19",
         "taos_core/policy.py": "e5fa7af8a5a80a32d638b8923226900e0ccabef91b3957b882b1cf542e7c6439",
@@ -46,7 +47,7 @@
         "tests/test_closure.py": "0b93407007d4a03aedbe25fb63ae5b52b34b35799352ab5a34b33129da8253b3",
         "tests/test_control.py": "f12461a59d092ebe1dab483815acf2a2e4f93e648a6b4d0826d4779f59f99ae9",
         "tests/test_counterexamples.py": "e6f35d8c643bf98bea33ef3e9e5826fca85c2ecf43788b6100f50123301520cc",
-        "tests/test_demo.py": "e19fcece3ab88af7c013b765b694af20d8bd9dc54c28fba454ae0b06c92882e9",
+        "tests/test_demo.py": "9ecedeb87098514aa7804576d3e886efea3b1bfd77d56273dc9c4a2b66629fcc",
         "tests/test_evals.py": "2afcefcd9d082161678e72f7da2aabea57eb44207fe0db0694071c471c6a15e3",
         "tests/test_hooks.py": "39b71aa1449d53548f448204d01a1e939c3e01b29510213dfb1a7fac33f6ba3c",
         "tests/test_panel.py": "f48403f27c097ced229528beb54840285d1df02bafbd90b92930ccd7d4eebabb",
@@ -57,7 +58,7 @@
         "tests/test_taos.py": "5ebb7e36da7972e42f9c6d6b3afd7eda63bdd37fc5c8048250086bb1a8a9b187",
         "tests/test_usage.py": "9368338dede3f7da1b6d29250a8d6a5d72a59d7b5cf23a0b720b884b10ac5222"
       },
-      "sha256": "3999edd13b467fc519b5adcd83271f9c7a331f6bcd7bcab21ae6e52a34565c5e"
+      "sha256": "b3cbb2c70fee50eb41af827e955a9d55141d5d1712fbdbfaa2426924ae88b7c1"
     },
     "patterns": [
       "evals/mutations.py",

@@ -81,8 +81,11 @@ The demo builds a temporary project, fits the acceleration due to gravity
 files and instructions around it change. This is everything it prints.
 
 ```text
-TAOS keeps every result with what it stood on. Asked later, it answers holds,
-stale, fails or unknown, and says why.
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  ╺┳╸ ┏━┓ ┏━┓ ┏━╸   ThesisAnalysisOS 1.1.0                whatstillholds.com  │
+│   ┃  ┣━┫ ┃ ┃ ┗━┓   Every result is kept with what it stood on.               │
+│   ╹  ╹ ╹ ┗━┛ ╺━┛   Ask it later: holds, stale, fails or unknown, and why.    │
+└──────────────────────────────────────────────────────────────────────────────┘
 Here: six pendulum swings, a fit for g, and a check that the fit is sane.
 
 1  A result holds until what it stood on changes
@@ -177,7 +180,7 @@ or recorded experiments. The table summarizes the public checks.
 | The tests detect each of the 20 seeded faults in this run | 20 protections removed one at a time; 20 of 20 removals are caught | `python3 evals/mutations.py` |
 | Tracking the folders each check read avoided stale reuse on this synthetic workload | 60 edits, 360 results relied on: 60 executions and 0 wrong reuses, the same as an oracle; age limits gave 180 to 48 executions with 30 to 161 wrong reuses | `python3 evals/reuse_frontier.py` |
 | Omitting an input folder allowed obsolete reuse in the open run and prevented the check from passing in the isolated run | 150 wrong reuses in 360 in the open; isolated, 0 of 366 runs passed, so nothing was reused | same |
-| The whole suite passes | 154 tests, Python 3.9 and 3.12, Linux and macOS | `./taos selftest` |
+| The whole suite passes | 155 tests, Python 3.9 and 3.12, Linux and macOS | `./taos selftest` |
 | This page says what the recorded runs say | every row of `docs/CLAIMS.md` and every number above, read back against the code as it is | `python3 evals/claims.py` |
 
 **How to verify the numbers.** Each run is stored in `evals/results/`
