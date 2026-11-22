@@ -10,6 +10,8 @@ from pathlib import Path
 import re
 from urllib.parse import urljoin, urlsplit
 
+from film_player import PUBLIC_DIGESTS, PUBLIC_MEDIA_DIR
+
 
 BUILD_ORIGIN = "https://build.invalid"
 BEACON_SCRIPT = "https://static.cloudflareinsights.com/beacon.min.js"
@@ -114,8 +116,8 @@ def browser_policy(markup, relative, trusted, analytics):
     return "; ".join(directives)
 
 
-def protect_pages(root, *, private_film, analytics):
-    trusted = trusted_film_scripts() if private_film else set()
+def protect_pages(root, *, analytics):
+    trusted = trusted_film_scripts()
     for path in sorted(root.rglob("*.html")):
         name = path.relative_to(root).as_posix()
         markup = path.read_text(encoding="utf-8")
@@ -125,6 +127,33 @@ def protect_pages(root, *, private_film, analytics):
         meta = '<meta http-equiv="Content-Security-Policy" content="' + html.escape(policy, quote=True) + '">'
         meta += '\n<meta name="referrer" content="same-origin">'
         path.write_text(markup.replace(CHARSET, CHARSET + "\n" + meta, 1), encoding="utf-8")
+
+
+def verify_homepage_film(root):
+    page = PageScripts((root / "index.html").read_text(encoding="utf-8"))
+    entries = [a for tag, a in page.attributes if tag == "a" and "film-entry" in a.get("class", "").split()]
+    if len(entries) != 1 or entries[0].get("href") != "#field-film":
+        raise ValueError("The homepage must link to the film from its opening.")
+    ids = {(tag, a.get("id")) for tag, a in page.attributes}
+    if not {("figure", "field-film"), ("details", "dispatch-record")} <= ids:
+        raise ValueError("The homepage must include the film and its dispatch record.")
+    players = [a for tag, a in page.attributes if tag == "video"]
+    if len(players) != 1:
+        raise ValueError("The homepage must include one film player.")
+    player = players[0]
+    if (player.get("id") != "preview-film" or player.get("poster") != f"{PUBLIC_MEDIA_DIR}/poster.jpg"
+            or player.get("preload") != "none" or not {"controls", "playsinline"} <= player.keys()
+            or {"autoplay", "muted", "src"} & player.keys()):
+        raise ValueError("The homepage film must open on its poster and wait for the reader to play it.")
+    sources = [(a.get("media"), a.get("src")) for tag, a in page.attributes
+               if tag == "source" and a.get("type") == "video/mp4"]
+    if sources != [("(prefers-reduced-motion: reduce)", f"{PUBLIC_MEDIA_DIR}/reduced-motion.mp4"),
+                   (None, f"{PUBLIC_MEDIA_DIR}/film.mp4")]:
+        raise ValueError("The homepage must serve the reduced-motion and standard films.")
+    for name, expected in PUBLIC_DIGESTS.items():
+        asset = root / PUBLIC_MEDIA_DIR / name
+        if not asset.is_file() or asset.is_symlink() or hashlib.sha256(asset.read_bytes()).hexdigest() != expected:
+            raise ValueError(f"The homepage film asset differs from the reviewed copy: {name}")
 
 
 def release_inventory(root, revision):

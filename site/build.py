@@ -56,9 +56,9 @@ from exchange import exchange_html, write_exchange  # noqa: E402
 from exchange_result import write_followup  # noqa: E402
 from research_feed import write_feed  # noqa: E402
 from source_snapshot import write_source_snapshot  # noqa: E402
-from release_integrity import BEACON_SCRIPT, protect_pages, write_manifest  # noqa: E402
+from release_integrity import BEACON_SCRIPT, protect_pages, verify_homepage_film, write_manifest  # noqa: E402
 from verify_research_guide import verify as verify_research_guide  # noqa: E402
-from film_player import copy_preview, opening_link, preview_files  # noqa: E402
+from film_player import PUBLIC_MEDIA_DIR, film_files, opening_link, render_player  # noqa: E402
 from handoff_exhibit import HANDOFF_METHOD, HANDOFF_RECORD, HANDOFF_RUNNER  # noqa: E402
 from handoff_exhibit import handoff_markdown, handoff_section, load_handoff  # noqa: E402
 from measurement_exhibit import audit_cases_page, audit_section, load_audit  # noqa: E402
@@ -719,7 +719,7 @@ def home(ctx: Dict[str, Any]) -> str:
 <p class="kicker">Scientific research OS for AI agents</p>
 <h1>Something changed. <em>What still holds?</em></h1>
 <p class="rule"><span>The one rule</span>No result outlives what it stood on.</p>
-${preview_film_link}</div>
+${film_link}</div>
 <figure class="mind">
 <figcaption class="mind-head">Research operating system walkthrough</figcaption>
 <div id="architecture-cover">
@@ -844,7 +844,7 @@ The panels show the output of <code>./taos demo</code> captured when this page w
 <div class="stepper">$steps</div>
 </div></section>
 
-${preview_film}<section id="idea"><div class="wrap">
+${film}<section id="idea"><div class="wrap">
 <p class="kicker">02 / Reading a result</p>
 <h2>How to read a saved check</h2>
 <div class="two">
@@ -958,7 +958,7 @@ asking about your project and configuring the new copy from your answers.</p>
 </div></section>
 """).substitute(
         github=GITHUB, ref=esc(ctx["ref"]), revision=esc(ctx["revision"]), trace_line=trace_line, trace_claim=esc(TRACE_CLAIM),
-        preview_film=ctx.get("preview_film", ""), preview_film_link=ctx.get("preview_film_link", ""),
+        film=ctx["film"], film_link=ctx["film_link"],
         received_step=received["sequence"], swing_length=esc(original[0]), old_period=esc(original[1]), new_period=esc(corrected[1]),
         old_g="{:.4f}".format(baseline["g"]), new_g="{:.4f}".format(trial["g"]),
         old_fit=f"{baseline['g']:.2f}", new_fit=f"{trial['g']:.2f}",
@@ -1224,7 +1224,7 @@ def broken(out: Path, url: str = "", revision: str = "") -> List[str]:
 
 
 def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir: Optional[Path] = None) -> Dict[str, Any]:
-    files = preview_files(preview_film_dir, out, release)
+    files = film_files(preview_film_dir, out, release)
     if release and (not re.fullmatch(r"[0-9a-f]{40}", ref) or git("rev-parse", "HEAD") != ref):
         raise SystemExit("Release source must match the full commit tested by CI.")
     ctx = gather(ref)
@@ -1237,8 +1237,9 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     (out / "evidence/model-evaluation").mkdir()
     (out / "records").mkdir()
     shutil.copytree(str(HERE / "assets"), str(out / "assets"))
-    ctx["preview_film"] = copy_preview(files, out)
-    ctx["preview_film_link"] = opening_link(files)
+    media_dir = PUBLIC_MEDIA_DIR if preview_film_dir is None else "private-film"
+    ctx["film"] = render_player(files, out, media_dir)
+    ctx["film_link"] = opening_link(files)
     for path, filename in {**AUDIT_DOWNLOADS, **HANDOFF_DOWNLOADS}.items():
         shutil.copy2(REPO / path, out / "records" / filename)
     for path, destination in MODEL_DOWNLOADS.items():
@@ -1393,7 +1394,9 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     homepage = (out / "index.html").read_text(encoding="utf-8")
     linked_data = json.dumps(catalog, ensure_ascii=False, separators=(",", ":")).replace("<", "\\u003c")
     write("index.html", homepage.replace("</head>", f'<script type="application/ld+json">{linked_data}</script>\n</head>', 1))
-    protect_pages(out, private_film=bool(files), analytics=ctx["public_analytics"])
+    protect_pages(out, analytics=ctx["public_analytics"])
+    if preview_film_dir is None:
+        verify_homepage_film(out)
     agent_guide.study_versions(out, datasets, ctx["revision"])
     write("research-audit.json", json.dumps(verify_research_guide(out, writing_report=True), indent=2) + "\n")
     problems = broken(out, url, ctx["revision"])

@@ -62,16 +62,17 @@ It neither edits the files nor executes a check. The pendulum values beside it
 come from the saved audit. The page still shows the recorded demo and source links
 with JavaScript disabled. The site uses system fonts and static files.
 
-For a private film layout review, pass `--preview-film-dir DIRECTORY` to the local build.
-Supply `film.mp4` for a single cut. For *Morning Departures*, supply
-`Morning-departures.mp4` and `Morning-departures-reduced-motion.mp4` together.
-Each format accepts one poster (`poster.jpg`, `poster.png` or `poster.webp`) and
-optional `captions.vtt`. The player opens on the poster just before **How to read
-a saved check**. **AI operating system demo** takes the reader
-to the film and starts it with sound. A reader who scrolls to it can press **Play
-with sound**. The browser selects the
-reduced-motion cut when the reader has enabled that preference. Use a separate
-output directory for the private preview. Release builds exclude the film and poster.
+**AI operating system demo** plays a 1 minute 40 second film about a transit operator
+preparing the morning bus report. The player opens on its poster just before **How
+to read a saved check**. A reader can start it from the opening link or press **Play
+with sound** on the poster. The browser selects the reduced-motion cut when that
+preference is enabled. The standard build serves both cuts and the poster from
+`site/media/morning-departures/`. It checks the homepage entry, player and exact
+file contents before packaging the site. See [NOTICE](../NOTICE) for the media notice.
+
+To preview a different cut locally, pass `--preview-film-dir DIRECTORY` and choose
+a separate output directory. Supply `film.mp4`, one poster (`poster.jpg`, `poster.png`
+or `poster.webp`) and optional `captions.vtt`. The release uses the bundled cut.
 
 On the original repository, GitHub builds the site from a push to main only after
 the self-tests, claim readback and scientific audit jobs pass. The manual **site**
