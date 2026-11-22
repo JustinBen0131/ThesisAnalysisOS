@@ -59,5 +59,10 @@ body:
     id: observation
     attributes:
       label: What should a fresh assistant do with the same inputs?
-      description: Give the first step you would keep or change and one result that would show it worked. A public file or saved check can help someone repeat it. Leave this blank if you only browsed.
+      description: Give one step you would keep or change and one result that would show it worked. If you ran your own copy, a public file, software version or saved check helps someone repeat it.
       placeholder: Only the timing file changed. The next assistant should rerun the gravity fit and reuse the instrument comparison. I would check which two tasks it ran or skipped.
+  - type: input
+    id: website-build
+    attributes:
+      label: Website version
+      description: The public site fills this in so the maintainer can reopen the exact version you saw. You can leave it blank.

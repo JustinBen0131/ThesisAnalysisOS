@@ -507,7 +507,7 @@ def _readable(out, identifier):
     return None
 
 
-def write_exchange(out, catalog, url=""):
+def write_exchange(out, catalog, url="", *, public_revision=None):
     """Write the index, a page per entry, the protocol, the checker and the discovery manifest. Returns the index."""
     folder = out / "exchange"
     (folder / "entries").mkdir(parents=True, exist_ok=True)
@@ -561,7 +561,11 @@ def write_exchange(out, catalog, url=""):
         (folder / "entries" / (i + ".json")).write_bytes(canonical(entry))   # exact bytes: sha256sum of the file is the id
     outside = [row for row in rows if row["provenance"]["source"] != "project"]
     simulation = "records/exchange_simulation.json" if (out / "records/exchange_simulation.json").is_file() else None
+    feedback_url = FEEDBACK_URL
+    if public_revision:
+        feedback_url += "&" + urlencode({"website-build": public_revision})
     index = {
+        "workflow_feedback": {"form": feedback_url, "questions": "exchange/" + FEEDBACK_FORM},
         "format": "taos-exchange/1",
         "notice": ("All entries so far come from this project. No outside suggestions have been published yet."
                    if not outside else "{0} of the {1} entries grew out of a suggestion made on GitHub.".format(len(outside), len(rows))),
@@ -756,7 +760,7 @@ def protocol_markdown(index, url=""):
            "Think of one decision. Did the system catch a result that needed checking, repeat work you could still use, "
            "or leave you unsure? Say how you found out. If another assistant had the same inputs tomorrow, "
            "what should it do, and which saved result would show that it worked? Browsing the example counts too.", "",
-           "[Open the optional GitHub questionnaire](" + FEEDBACK_URL + ") or [read its questions](" + FEEDBACK_FORM + "). "
+           "[Open the optional GitHub questionnaire](" + index["workflow_feedback"]["form"] + ") or [read its questions](" + FEEDBACK_FORM + "). "
            "A person reviews the answers and chooses whether to submit them as a public issue.", "",
            "## Details, only if you need them", "",
            "If you are an AI assistant reading this for someone: " + index["for_assistants"] + " The exchange keeps no accounts, "
@@ -952,7 +956,7 @@ def exchange_html(index):
         '<details class="x-more" id="workflow-feedback"><summary>How did the OS work on your task?</summary>'
         '<p>Did your assistant catch an outdated result, repeat work it could still use, or leave you unsure? '
         'Tell us about one decision and how you checked it. If you only explored the example, you can say so.</p>'
-        '<p><a href="' + FEEDBACK_URL + '">Open the short questionnaire on GitHub</a>. '
+        '<p><a href="' + esc(index["workflow_feedback"]["form"], quote=True) + '">Open the short questionnaire on GitHub</a>. '
         'You choose what to share. Submitting creates a public issue.</p></details>'
         '<details class="x-more"><summary>How do we know the marks are right?</summary>'
         "<p>Every time this site is built, each data file is changed in a copy. Every answer resting on it must go out of "

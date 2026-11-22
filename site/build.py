@@ -1374,7 +1374,7 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
                           "dataset": [*datasets, followup, modeled]}
     discussion_catalog["@id"] = (url if release else "") + "exchange-catalog.json"
     write("exchange-catalog.json", json.dumps(discussion_catalog, ensure_ascii=False, indent=2) + "\n")
-    exchange_index = write_exchange(out, discussion_catalog, url)
+    exchange_index = write_exchange(out, discussion_catalog, url, public_revision=ctx["revision"] if release else None)
     if not release or url.rstrip("/") == "https://whatstillholds.com":
         shutil.copyfile(HERE / "security.txt", out / ".well-known/security.txt")
     question = agent_guide.open_question(out, exchange_index)
