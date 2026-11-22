@@ -8,12 +8,14 @@ the protection gone, that test was not testing it.
 
     python3 evals/mutations.py            every fault, about two minutes
     python3 evals/mutations.py dates      only the faults whose name contains "dates"
+    python3 evals/mutations.py --write    every fault, and record the count with the bytes it was measured on
 
 Nothing in this checkout is changed: every fault is applied to a temporary copy.
 """
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import sys
@@ -22,7 +24,14 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 
 REPO = Path(__file__).resolve().parents[1]
+if str(REPO / "evals") not in sys.path:
+    sys.path.insert(0, str(REPO / "evals"))
+
+import measured  # noqa: E402
+
 SKIP = shutil.ignore_patterns(".git", ".taos", "__pycache__", "results")
+RECORD = REPO / "evals" / "results" / "mutations.json"
+STANDS_ON = ["taos_core/*.py", "tests/*.py", "evals/mutations.py"]
 
 # (name, file, the protection, what replaces it, the test module that must fail)
 FAULTS: List[Tuple[str, str, str, str, str]] = [
@@ -60,6 +69,17 @@ FAULTS: List[Tuple[str, str, str, str, str]] = [
      '    verdict = basis.verdict(basis.HOLDS, "")', "test_standing"),
     ("acceptance: an agent can accept its own work", "taos_core/tasks.py",
      '        if by != "human":', "        if False:", "test_standing"),
+    ("domains: an input git ignores is left out of what a check stood on", "taos_core/basis.py",
+     '        names = sorted(set(names) | set(on_disk(root, named, settings.get("ignore"))))', "        pass", "test_counterexamples"),
+    ("isolation: an isolated check runs where every file can be read", "taos_core/gates.py",
+     '            code, tail, closed = _isolated(cwd, before, filed, command, timeout, strict=_isolation(gate) == "strict")',
+     "            code, tail = _execute(command, cwd, timeout)", "test_counterexamples"),
+    ("isolation: an isolated check still sees the caller's environment", "taos_core/gates.py",
+     "        code, tail = _execute(command, scratch, timeout, env=_fixed_environment(home, tmp), prefix=prefix)",
+     "        code, tail = _execute(command, scratch, timeout, prefix=prefix)", "test_counterexamples"),
+    ("isolation: the network and the rest of the workspace are left open where they can be closed (macOS)", "taos_core/gates.py",
+     "        code, tail = _execute(command, scratch, timeout, env=_fixed_environment(home, tmp), prefix=prefix)",
+     "        code, tail = _execute(command, scratch, timeout, env=_fixed_environment(home, tmp))", "test_counterexamples"),
 ]
 
 
@@ -86,7 +106,8 @@ def caught(fault: Tuple[str, str, str, str, str]) -> bool:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
-    wanted = (argv if argv is not None else sys.argv[1:])
+    words = list(argv if argv is not None else sys.argv[1:])
+    wanted = [word for word in words if word != "--write"]
     faults = [fault for fault in FAULTS if not wanted or any(word in fault[0] for word in wanted)]
     for module in sorted({fault[4] for fault in faults}):
         if not passes(REPO, module):          # the control: with nothing broken, the tests pass
@@ -100,6 +121,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             missed.append(fault[0])
     print("")
     print("{0} of {1} seeded faults caught.".format(len(faults) - len(missed), len(faults)))
+    if "--write" in words and not wanted:
+        found = {"faults": len(faults), "caught": len(faults) - len(missed), "missed": missed,
+                 "names": [fault[0] for fault in faults], "measured_on": measured.stamp(STANDS_ON)}
+        RECORD.write_text(json.dumps(found, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print("recorded in {0}".format(RECORD.relative_to(REPO)))
     return 1 if missed else 0
 
 

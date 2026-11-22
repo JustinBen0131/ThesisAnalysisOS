@@ -1,5 +1,58 @@
 # Architecture
 
+## Reading this repository cold
+
+For a person or an agent who has to understand, test or change TAOS itself.
+Nothing here needs setup, and none of it should be bootstrapped first.
+
+**The idea.** A recorded result is kept with who made it and what it stood
+on, and is answered later as `holds`, `fails`, `stale` or `unknown`, with the
+reason. Everything below is that one comparison applied to a different kind
+of record.
+
+| To understand | Read | Its tests |
+|---|---|---|
+| the one comparison | `taos_core/basis.py` | `tests/test_standing.py` |
+| check results, sharing between tasks, isolation | `taos_core/gates.py` | `tests/test_standing.py`, `tests/test_counterexamples.py` |
+| the single point of closure, and acceptance | `TaskStore.transition` and `TaskStore.accept` in `taos_core/tasks.py` | `tests/test_closure.py` |
+| instructions by date and scope | `taos_core/rules.py` | `tests/test_counterexamples.py` |
+| what an agent is handed when it starts | `taos_core/lifecycle.py` | `tests/test_standing.py` |
+| `taos why` | `taos_core/standing.py` | `tests/test_standing.py` |
+| every case that once went wrong | `tests/test_counterexamples.py` | `python3 evals/at_revision.py` |
+| what the repository claims, and whether it still does | `docs/CLAIMS.md` | `python3 evals/claims.py` |
+
+**Verify, cheapest first.**
+
+```bash
+./taos demo                      # the idea working on a small measurement, in a throwaway folder
+./taos selftest                  # the whole suite, about a minute
+python3 evals/claims.py          # every claim in docs/CLAIMS.md against the code as it is
+python3 evals/at_revision.py     # today's counterexamples against the two earlier releases
+python3 evals/reuse_frontier.py  # the reuse experiment, about two minutes
+python3 evals/mutations.py       # removes each protection in turn, about three minutes
+```
+
+**For a program.** `taos why [TASK] --json` and `taos gate show --task ID
+--json` return the verdicts as data, `taos why --check` exits 1 when
+something does not hold, and `python3 evals/claims.py --json` does the same
+for the repository's own claims.
+
+**Changing it.**
+
+- A change under `taos_core/` or `tests/` makes the recorded measurements
+  stale. Rerun the three evaluations with `--write`, and propose the change
+  once `python3 evals/claims.py --strict` passes. CI runs the same command.
+- A new protection gets a case in `tests/test_counterexamples.py` and an
+  entry in `evals/mutations.py`, so that removing it is noticed.
+- A new claim gets a row in `docs/CLAIMS.md`, or is not made.
+- `docs/SPEC.md` is binding. Section 11c covers the basis.
+- The root `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.codex/` and `hooks/` are
+  part of the product: the contract and the guard a constructed OS gives its
+  agents. They are live in this checkout too, so the guard will refuse an
+  agent's edit to the hooks or the settings themselves.
+
+## The moving parts
+
 ```
  human ──── taos panel on ───► http://127.0.0.1:4331  (projection)
    │                                   ▲
@@ -74,6 +127,9 @@ Every module registers its own subcommands; `cli.py` never knows the verbs.
 - No route moves a task to `review` or `done` unless every gate holds on the
   files as they are; a pass on files edited since does not count.
 - `unknown` is never reported as `holds`, as `fails` or as zero.
+- A declared domain is read from the disk, so an input git ignores is part of
+  what a check stood on.
+- An isolated check can read only the files its result is filed under.
 - The guard denies secret reads, force pushes, store edits, cage edits, and
   writes into the other agent's lane; asks on push; allows `ls`; never crashes.
 - Panel writes without the token are 403; path traversal on handoffs is 404.

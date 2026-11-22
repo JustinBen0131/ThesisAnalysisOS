@@ -351,7 +351,7 @@ def locked(paths: Paths, timeout: float = 15.0)   # fcntl.flock on lock_file; re
 ### config.py
 ```python
 DEFAULTS: dict                                # the 4.1 shape without principal/project/workspaces
-def load(paths: Paths) -> dict                # TaosError("TAOS not constructed. Read BOOTSTRAP.md and follow it.") when missing
+def load(paths: Paths) -> dict                # TaosError(config.NOT_CONSTRUCTED) when missing
 def validate(config: dict) -> List[str]       # returns problems (empty = ok)
 def prefix(paths: Paths) -> str
 def secret_patterns(paths: Paths) -> List[str]   # config value or DEFAULTS when not constructed
@@ -625,7 +625,7 @@ Kernels: OS fresh, PROJECT fresh, PRINCIPAL fresh, NOW aged
 Doctor: green | Proposals open: 2 | Latest brief: 2026-09-15
 Rule: map the prompt to a task, then `./taos start --agent <you> --task <ID> --session "<ID> | <label>"`.
 ```
-When not constructed: exactly `TAOS not constructed. Read BOOTSTRAP.md and follow it.`
+When not constructed: exactly `TAOS not constructed. To set it up for someone's work, read BOOTSTRAP.md and follow it. To read, test or change TAOS itself, read docs/ARCHITECTURE.md and do not bootstrap.`
 
 ## 7. Hooks (shared Codex/Claude contract)
 
@@ -921,10 +921,15 @@ the worst of its parts (`basis.worst`).
   (tracked and untracked-not-ignored files in git, every file otherwise;
   `.git`, `.taos` and caches excluded), grouped by `config.basis.domains =
   {name: [patterns]}`, less `config.basis.ignore = [patterns]`. A file no
-  domain claims is filed under `(undeclared)`. Above 20,000 files or 512 MB
+  domain claims is filed under `(undeclared)`. A declared domain is read
+  from the disk (`basis.on_disk`), so a file git ignores belongs to a domain
+  whose pattern names it. Above 20,000 files or 512 MB
   the snapshot is incomplete and everything that needs it is `unknown`.
-- **Gates.** `config.gates[]` may carry `depends_on: [domain]` and
-  `max_age_hours`. A receipt is `TAOS_GATE_RUN_V2`: each result carries
+- **Gates.** `config.gates[]` may carry `depends_on: [domain]`,
+  `max_age_hours` and `isolated: true|false`. An isolated gate runs in an
+  empty folder holding only the files of its result's basis, placed by hard
+  link or by copy; what it writes is discarded; its result carries
+  `isolated`, and the flag is part of `definition`. A receipt is `TAOS_GATE_RUN_V2`: each result carries
   `basis` (domain digests), `definition` (hash of the command, `depends_on`
   and the basis settings), `ran_at`, and where they apply `reused_from` and
   `changed_during_run`; the record carries the `snapshot`.
@@ -977,8 +982,12 @@ the worst of its parts (`basis.worst`).
   write-once. `lifecycle.start` checks blockers before it claims anything.
 - **Demo and evaluations.** `taos demo [--keep]` builds a throwaway home from
   `examples/measurement`. `evals/at_revision.py`, `evals/mutations.py` and
-  `evals/reuse_frontier.py` are described in `docs/METHOD.md`;
-  `tests/test_evals.py` runs a small case of the last two.
+  `evals/reuse_frontier.py` are described in `docs/METHOD.md`; given
+  `--write`, each stores its numbers in `evals/results/<name>.json` with
+  `measured_on`, the bytes of the code it measured (`evals/measured.py`).
+  `evals/claims.py [--strict] [--json]` answers every tested or measured row
+  of `docs/CLAIMS.md` and every number `README.md` repeats; CI runs it with
+  `--strict`. `tests/test_evals.py` runs a small case of each.
 
 ## 12. Builder ownership (parallel build)
 

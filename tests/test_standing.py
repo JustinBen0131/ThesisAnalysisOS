@@ -256,6 +256,26 @@ class TestDomains(unittest.TestCase):
         self.assertEqual(self.fit()["state"], basis.UNKNOWN)
         self.assertIn("outside every declared domain", self.fit()["reason"])
 
+    def test_an_isolated_check_sees_only_what_it_declared_and_leaves_nothing_behind(self) -> None:
+        config = json.loads(self.paths.config_file.read_text(encoding="utf-8"))
+        config["gates"] = [{"name": "fit", "depends_on": ["analysis"], "isolated": True,
+                            "command": "test -f src/fit.py && test ! -e figs/style.txt && touch made.txt"}]
+        self.paths.config_file.write_text(json.dumps(config), encoding="utf-8")
+        self.assertTrue(gates.run(self.paths, task_id="CMP-1", agent="codex")["ok"])
+        self.assertFalse((self.ws / "made.txt").exists())
+        self.assertIn("with only the files it declared present", self.fit()["reason"])
+        self.assertEqual(gates.run(self.paths, task_id="CMP-1", agent="codex")["reused"], ["fit"])
+        (self.ws / "figs" / "style.txt").write_text("second", encoding="utf-8")
+        self.assertEqual(self.fit()["state"], basis.HOLDS)
+
+    def test_a_failure_in_isolation_says_what_was_present(self) -> None:
+        config = json.loads(self.paths.config_file.read_text(encoding="utf-8"))
+        config["gates"] = [{"name": "fit", "depends_on": ["analysis"], "isolated": True, "command": "cat figs/style.txt"}]
+        self.paths.config_file.write_text(json.dumps(config), encoding="utf-8")
+        record = gates.run(self.paths, task_id="CMP-1", agent="codex")
+        self.assertFalse(record["ok"])
+        self.assertIn("it could read only analysis and the files no domain claims.", record["results"][0]["tail"])
+
     def test_a_check_that_names_an_undeclared_domain_is_refused_not_trusted_forever(self) -> None:
         from taos_core import config as config_mod
 

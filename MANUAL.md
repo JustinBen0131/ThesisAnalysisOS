@@ -23,20 +23,24 @@ For the human. The agents read `AGENTS.md`; you read this.
 
 ## 2. Install (sixty seconds)
 
-Clone it, then re-home it as your own private repo. You are meant to rewrite
-the policies, the questions, and the guard rules; that is easier when the
-history is yours.
+Make your own private copy from the template. You are meant to rewrite the
+policies, the questions, and the guard rules, and a template copy starts
+with a history that is yours.
 
 ```bash
-git clone https://github.com/JustinBen0131/ThesisAnalysisOS.git ~/my-os
-cd ~/my-os
-rm -rf .git && git init -b main && git add -A && git commit -m "my OS"
-gh repo create <you>/<your-os-repo> --private --source=. --remote=origin --push
+gh repo create <you>/<your-os-repo> --private --clone --template JustinBen0131/ThesisAnalysisOS
+cd <your-os-repo>
 codex        # or: claude
 ```
 
-(To keep pulling upstream improvements instead: `git remote rename origin
-upstream`, then create your own `origin`.)
+On github.com the same thing is the **Use this template** button. Two other
+ways, if you prefer them:
+
+- To keep pulling upstream improvements, `git clone` this repository, then
+  `git remote rename origin upstream` and create your own private `origin`.
+- Without GitHub, `git clone` it and start a history of your own with
+  `rm -rf .git && git init -b main && git add -A && git commit -m "my OS"`.
+  That removes only your clone's copy of this project's history.
 
 First message to the agent:
 
@@ -171,6 +175,27 @@ say so with `taos task accept <ID>`. That is recorded for that exact version,
 and an edit afterwards does not inherit it. See `policies/GATES.md`.
 
 Change the gates by editing `.taos/config.json` under `"gates"`.
+
+**Say what a check reads.** By default a check depends on every file in the
+workspace, so any edit makes its pass stale. Name the folders it reads and it
+is rerun only when one of them changes:
+
+```json
+"basis": {"domains": {"analysis": ["src/*", "data/*"], "figures": ["figs/*"]}},
+"gates": [{"name": "fit", "command": "python3 check.py", "depends_on": ["analysis"]}]
+```
+
+An edit under `figs/` now leaves `fit` standing, and two tasks that ask for
+`fit` on the same files share one run. A domain is what its patterns match on
+disk, so measured data that git ignores counts once a domain names it.
+
+**Isolate a check you would rather not trust.** A declaration is a promise.
+Add `"isolated": true` and the check runs in an empty folder that holds only
+the files it declared, in a fixed environment, so a file or a variable it did
+not declare is not there to be read. On macOS the network and the rest of the
+workspace are closed to it as well, and every result records what was closed.
+`"isolated": "strict"` does not run on a machine that cannot close them. The
+setup interview asks about both (question 5).
 
 ## 8. Correcting an agent so it compounds
 

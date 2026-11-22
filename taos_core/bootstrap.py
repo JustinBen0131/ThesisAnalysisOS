@@ -147,12 +147,19 @@ def _config_from(answers: Dict[str, Any]) -> Dict[str, Any]:
     gates = answers.get("gates")
     if isinstance(gates, list) and gates:
         config["gates"] = [
-            {"name": str(g.get("name") or g["command"].split()[0]), "command": str(g["command"])}
+            dict({"name": str(g.get("name") or g["command"].split()[0]), "command": str(g["command"])},
+                 **{key: g[key] for key in ("depends_on", "isolated") if g.get(key)})
             for g in gates
             if isinstance(g, dict) and g.get("command")
         ]
     else:
         config["gates"] = [dict(g) for g in config_mod.STACK_GATES.get(stack, [])]
+    domains = answers.get("domains")
+    if isinstance(domains, list) and domains:
+        # which files each check reads: a check is rerun only when one of them changes
+        config["basis"] = dict(config.get("basis") or {}, domains={
+            str(d["name"]): [str(pattern) for pattern in d["patterns"]]
+            for d in domains if isinstance(d, dict) and d.get("name") and d.get("patterns")})
 
     git = dict(config_mod.DEFAULT_GIT)
     if answers.get("git_isolation"):

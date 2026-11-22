@@ -1,18 +1,34 @@
 # ThesisAnalysisOS
 
-A local, zero-dependency operating layer for research done with AI agents.
+**Every result an agent records is kept with what it stood on, so that later
+the system can say whether it still holds, and why.**
 
-It keeps tasks, instructions, checks and handoffs in plain files, so the work
-survives the end of a session and a second agent can pick it up. And it keeps,
-with every recorded result, what that result stood on, so it can say later
-whether the result still holds.
+A result that carries only a date can be trusted by age or not at all. A
+result that carries its basis can be asked. This repository is that one
+comparison, applied to everything a research project relies on: a check that
+passed, an instruction a person gave, a person's acceptance of a result, what
+an agent is handed when it starts a session, and the numbers on this page.
 
-Everything is plain files under one directory. It runs on the Python standard
-library. It never calls a network or a model. Delete the directory to
-uninstall.
+It is a local, zero-dependency operating layer for research done with AI
+agents. Tasks, instructions, checks and handoffs are plain files under one
+directory, so the work survives the end of a session and a second agent can
+pick it up. It runs on the Python standard library and never calls a network
+or a model. Delete the directory to uninstall.
 
-This is an unofficial personal prototype, built by one person for a friend.
-It is not affiliated with any employer or product.
+This is an independent research prototype, generalized from the operating
+layer of a physics thesis analysis run with two AI agents. It is not
+affiliated with any employer or product.
+
+```mermaid
+flowchart LR
+    P["A person<br/>instructions, acceptance"] --> R
+    A["Agents<br/>work, check runs, handoffs"] --> R
+    R["A record<br/>the statement, who made it,<br/>what it stood on"] --> Q{"Asked later:<br/>does it still stand?"}
+    Q --> H["holds<br/>what it stood on is the same"]
+    Q --> F["fails<br/>checked as things are now"]
+    Q --> S["stale<br/>something changed, and it is named"]
+    Q --> U["unknown<br/>cannot be established"]
+```
 
 ## See it in a minute
 
@@ -40,6 +56,13 @@ $ taos why PEN-1
 Another task needs the same check on the same files. It is not run twice.
 $ taos gate run --task PEN-2 --agent claude
     held  fit          not rerun: nothing it tested has changed since 2026-11-21T22:26:19Z
+
+A second check reads figures/style.txt, but says it depends only on the analysis. It is marked
+isolated, so it runs in an empty folder that holds only the files it declared.
+$ taos gate run --task PEN-2 --agent claude
+    FAIL  style        exit 2
+    grep: figures/style.txt: No such file or directory
+    isolated: it could read only analysis. A file it could not find is one it did not declare.
 ```
 
 ## The idea
@@ -74,6 +97,13 @@ Three rules follow. None of them depends on which models are in use.
    Recommended is not executed. Missing is not false. A check passing is not
    a person accepting the result.
 
+**Why this matters more as agents do more.** A project run by agents piles up
+earlier results faster than anyone can recheck them. Rerunning everything
+does not scale, and trusting by age is wrong in both directions at once: in
+the experiment below, every age limit either reran work that nothing had
+touched or relied on work that something had. A result kept with its basis
+was rerun exactly when an edit reached it, and was never relied on wrongly.
+
 The idea is old, and `docs/METHOD.md` says where it comes from: build systems
 and truth maintenance systems have kept results with their justifications for
 decades. What is added here are the things research rests on that a build
@@ -87,39 +117,69 @@ that implements it, the test that checks it, and its status. The short form:
 
 | Claim | Evidence | Run it yourself |
 |---|---|---|
-| The previous release had 17 distinct cases of a record read without its conditions; each is now refused or reported | 17 of 17 tests fail at commit `071a348`, 17 of 17 pass here | `python3 evals/at_revision.py 071a348` |
-| The tests check what they say they check | 16 protections removed one at a time; 16 of 16 removals are caught | `python3 evals/mutations.py` |
+| Earlier releases had 22 distinct cases of a record read without its conditions; each is now refused or reported | 22 of 22 fail at `071a348`, 5 of 22 fail at `89f36ce`, 22 of 22 pass here | `python3 evals/at_revision.py` |
+| The tests check what they say they check | 20 protections removed one at a time; 20 of 20 removals are caught | `python3 evals/mutations.py` |
 | Reusing a result by its basis never relies on a stale one, and reruns only what an edit reached | 60 edits, 360 results relied on: 60 executions and 0 wrong reuses, the same as an oracle; age limits gave 180 to 48 executions with 30 to 161 wrong reuses | `python3 evals/reuse_frontier.py` |
-| The whole suite passes | 142 tests, Python 3.9 and 3.12, Linux and macOS | `./taos selftest` |
+| A check that reads what it did not declare is reused wrongly in the open, and cannot pass in isolation | 150 wrong reuses in 360 in the open; isolated, 0 of 366 runs passed, so nothing was reused | same |
+| The whole suite passes | 151 tests, Python 3.9 and 3.12, Linux and macOS | `./taos selftest` |
+| This page says what the recorded runs say | every row of `docs/CLAIMS.md` and every number above, read back against the code as it is | `python3 evals/claims.py` |
+
+**These numbers are records too.** Each run is stored in `evals/results/`
+with a fingerprint of the code it measured. `python3 evals/claims.py` asks of
+every claim what TAOS asks of any result, and answers `holds`, `stale`,
+`fails` or `unknown`. Edit `taos_core/gates.py` and the reuse numbers are
+`stale` until they are measured again. CI fails until then.
+
+The isolation result was a prediction first. It was committed on its own
+before the code existed, so the history shows the order (`docs/METHOD.md`,
+"A seventh prediction").
 
 ## What it does not do
 
-- **It trusts what a check declares.** A check that reads a folder it did not
-  declare is reused when that folder changes. The reuse experiment measures
-  this on purpose: 150 wrong reuses in 360 when every check hid one input.
-  With nothing declared, TAOS reruns everything, which is safe and slow.
+- **In the open, it trusts what a check declares.** A check that reads a
+  folder it did not declare is reused when that folder changes. Marking the
+  check `"isolated": true` makes it run with only its declared files present
+  and a fixed environment, so it cannot be reused wrongly. On macOS the
+  network and the rest of the workspace are closed to it too; elsewhere the
+  record says they were open. That costs placing those files for each run,
+  and a file outside the workspace can still be read by its absolute path.
+- **With no domains declared, it does not see a file git ignores.** Name the
+  file in a domain and it is part of what a check stood on.
 - **It cannot see outside the workspace.** A check that depends on the
   network, the clock or the environment has to say so with `max_age_hours`.
-- **Asking has a cost.** Every answer re-reads the files. On one laptop that
-  was 16 ms for 48 files and 256 ms for 4,800. Reuse pays when a check costs
+- **Asking has a cost.** Every answer re-reads the files, and the time grows
+  with the tree (measured in `docs/CLAIMS.md`). Reuse pays when a check costs
   more than a few milliseconds per file set, and does not pay for a trivial
   check on a very large tree.
 - **The evidence is mechanical.** These tests show the mechanism does what it
   says. They do not show that research done with it comes out better. That
   needs a study this repository does not contain.
 
+## Reading this repository
+
+| If you have | Start with |
+|---|---|
+| one minute | `./taos demo` |
+| five minutes | this page, then `docs/CLAIMS.md` |
+| twenty minutes | `taos_core/basis.py` (the comparison, about 250 lines), `tests/test_counterexamples.py`, then `docs/METHOD.md` from "One error, one answer" |
+| an agent with you | `docs/ARCHITECTURE.md`, "Reading this repository cold": where each idea lives, the commands that verify it, and what to keep true when changing it |
+
+An agent asked to examine or change TAOS should not set it up first.
+`AGENTS.md` says so in its first section.
+
 ## Use it for your own work
 
-Clone it, then make it yours. This is meant to be a repo you rewrite, not one
-you track.
+Make your own private copy from the template. This is meant to be a repo you
+rewrite, not one you track.
 
 ```bash
-git clone https://github.com/JustinBen0131/ThesisAnalysisOS.git ~/my-os
-cd ~/my-os
-rm -rf .git && git init -b main && git add -A && git commit -m "my OS"
-gh repo create <you>/<your-os-repo> --private --source=. --remote=origin --push
+gh repo create <you>/<your-os-repo> --private --clone --template JustinBen0131/ThesisAnalysisOS
+cd <your-os-repo>
 codex        # or: claude
 ```
+
+On github.com the same thing is the **Use this template** button. `MANUAL.md`
+has two other ways, for keeping the upstream or for working without GitHub.
 
 Paste as the first message to the agent:
 
@@ -172,9 +232,10 @@ accepted that version; a later edit does not inherit it.
 | `atoms/` | corrections a machine can check, run by `taos doctor` |
 | `policies/` | the rules, each under a page |
 | `taos change`, `lesson`, `replay`, `bank`, `rule`, `anchor` | how you know the system is getting better (`docs/METHOD.md`) |
-| `evals/` | the three evaluations above, each one command |
+| `evals/` | the four evaluations above, each one command, and the runs they recorded |
 | `examples/measurement/` | the small measurement the demo uses |
 | `MANUAL.md` | the manual for the human |
+| `docs/ARCHITECTURE.md` | the map for anyone, person or agent, reading the code |
 | `docs/SPEC.md` | the binding spec for anyone changing the OS |
 
 ## The science layer

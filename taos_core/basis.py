@@ -38,6 +38,7 @@ MAX_FILES = 20000
 MAX_BYTES = 512 * 1024 * 1024
 KEEP_LISTING = 2000
 NAMED = 4
+WILD = "*?["
 
 
 def verdict(state: str, reason: str, **extra: Any) -> Dict[str, Any]:
@@ -89,7 +90,11 @@ def _hidden(relative: str, ignore: List[str]) -> bool:
 
 
 def listing(root: Path, ignore: Optional[List[str]] = None) -> List[str]:
-    """The files that could matter: tracked and untracked-but-not-ignored in git, every file otherwise."""
+    """The files that could matter when nobody has said: what git tracks or would track, every file where there is no git.
+
+    Git's ignore rules decide this list. They do not decide what a declared
+    domain holds: see `on_disk`.
+    """
     root = Path(root)
     ignore = list(ignore or [])
     names: List[str] = []
@@ -111,6 +116,34 @@ def listing(root: Path, ignore: Optional[List[str]] = None) -> List[str]:
     return sorted({name for name in names if not _hidden(name, ignore) and (root / name).is_file()})
 
 
+def _folder(pattern: str) -> str:
+    """The folder a pattern can only match inside: what comes before its first wildcard, cut at the last slash."""
+    cut = min([pattern.index(mark) for mark in WILD if mark in pattern] or [len(pattern)])
+    return pattern[:cut].rpartition("/")[0]
+
+
+def on_disk(root: Path, patterns: Iterable[str], ignore: Optional[List[str]] = None) -> List[str]:
+    """Every file a declared pattern names, read from the disk and not from git.
+
+    Git's ignore rules say what is versioned. A declared domain says what a
+    check reads, and research inputs are very often read and not versioned.
+    So a domain holds what its patterns match on disk, ignored by git or not.
+    """
+    root, ignore = Path(root), list(ignore or [])
+    patterns = [pattern for pattern in patterns if pattern and not pattern.startswith("/") and ".." not in pattern.split("/")]
+    wild = [pattern for pattern in patterns if any(mark in pattern for mark in WILD)]
+    found = {pattern for pattern in patterns if pattern not in wild and not _hidden(pattern, ignore)}
+    folders = {_folder(pattern) for pattern in wild}
+    for start in ([""] if "" in folders else sorted(folders)):
+        for folder, inner, files in os.walk(str(root / start)):
+            inner[:] = sorted(name for name in inner if name not in TRANSIENT)
+            for name in files:
+                relative = os.path.relpath(os.path.join(folder, name), str(root)).replace(os.sep, "/")
+                if not _hidden(relative, ignore) and any(fnmatch.fnmatchcase(relative, pattern) for pattern in wild):
+                    found.add(relative)
+    return sorted(name for name in found if (root / name).is_file())
+
+
 def fingerprint(root: Path, name: str) -> Optional[str]:
     """One declared input, hashed: a file by its bytes, a folder by its listing. None when it is not there."""
     path = Path(name).expanduser()
@@ -129,6 +162,8 @@ def snapshot(root: Path, settings: Optional[Dict[str, Any]] = None) -> Dict[str,
     "ignore": [patterns]}. Patterns are shell-style and `*` crosses directories.
     A file may belong to several domains. A file that no domain claims is
     filed under UNDECLARED, so that its change is reported and never ignored.
+    A declared domain is read from the disk, so an input git ignores is part
+    of it; with no domains declared, the workspace is what git lists.
     """
     settings = settings if isinstance(settings, dict) else {}
     declared = settings.get("domains") if isinstance(settings.get("domains"), dict) else {}
@@ -138,6 +173,9 @@ def snapshot(root: Path, settings: Optional[Dict[str, Any]] = None) -> Dict[str,
         out.update(complete=False, reason="the workspace {0} does not exist".format(root))
         return out
     names = listing(root, settings.get("ignore"))
+    if declared:
+        named = [pattern for patterns in declared.values() for pattern in patterns or []]
+        names = sorted(set(names) | set(on_disk(root, named, settings.get("ignore"))))
     size = sum((root / name).stat().st_size for name in names)
     if len(names) > MAX_FILES or size > MAX_BYTES:
         out.update(complete=False, reason="the workspace is too large to fingerprint ({0} files, {1} MB); declare "

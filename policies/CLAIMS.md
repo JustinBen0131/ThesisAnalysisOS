@@ -1,5 +1,7 @@
 # Claims
 
+This page is about leases on work. What the repository asserts about itself is in `docs/CLAIMS.md`.
+
 A claim is a scope-local mutex with a heartbeat. It is how two agents share a
 codebase without a coordinator.
 

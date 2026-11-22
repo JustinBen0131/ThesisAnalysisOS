@@ -27,3 +27,5 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: selftest
         run: python3 taos selftest
+      - name: claims
+        run: python3 evals/claims.py --strict

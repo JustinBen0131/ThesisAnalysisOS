@@ -15,4 +15,6 @@ has no dependencies.
 
 In the demo the check is declared to read `analysis/` and `data/`, so an edit
 to the plot style leaves a passed check alone and an edit to the data does
-not.
+not. A second check in the demo reads `figures/style.txt` while declaring
+only the analysis. It is marked isolated, so it fails until its declaration
+names the figures.

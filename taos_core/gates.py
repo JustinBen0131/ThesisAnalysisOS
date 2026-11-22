@@ -12,15 +12,28 @@ with the domains declared under `"basis"` in the config). Then a change
 elsewhere leaves it standing, and a change that no domain claims makes it
 unknown. A gate that depends on something no file records (a service, the
 clock) can say `"max_age_hours"`.
+
+A gate may say `"isolated": true`. Then it runs in an empty folder that holds
+only the files its result is filed under. A file it did not declare is not
+there to be read, so the result cannot be reused wrongly, and what the check
+writes is discarded. It also sees a fixed environment, and where the machine
+can do it (macOS today) the network and the rest of the workspace are closed
+to it. The record says which of these were in force. A gate that says
+`"isolated": "strict"` does not run where they cannot all be.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import shutil
+import socket
 import subprocess
+import sys
+import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from . import basis
 from . import config as config_mod
@@ -70,8 +83,164 @@ def _depends(gate: Dict[str, Any]) -> Optional[List[str]]:
     return sorted({str(item) for item in value}) if isinstance(value, list) and value else None
 
 
+def _isolation(gate: Dict[str, Any]) -> Any:
+    """How far a gate asks to be closed off: None, True, or "strict"."""
+    value = gate.get("isolated")
+    return value if value is True or value == "strict" else None
+
+
 def _definition(gate: Dict[str, Any], settings: Dict[str, Any]) -> str:
-    return sha256_text(canonical_json({"command": str(gate["command"]), "depends_on": _depends(gate), "basis": settings}))
+    said: Dict[str, Any] = {"command": str(gate["command"]), "depends_on": _depends(gate), "basis": settings}
+    if _isolation(gate):
+        said["isolated"] = _isolation(gate)     # a run in the open workspace does not answer for an isolated check
+    return sha256_text(canonical_json(said))
+
+
+def _execute(command: str, cwd: Path, timeout: int, env: Optional[Dict[str, str]] = None,
+             prefix: Optional[List[str]] = None) -> Tuple[int, str]:
+    try:
+        if prefix:
+            process = subprocess.run(prefix + ["/bin/sh", "-c", command], cwd=str(cwd), env=env, capture_output=True,
+                                     text=True, timeout=timeout)
+        else:
+            process = subprocess.run(command, shell=True, cwd=str(cwd), env=env, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return 124, "timed out after {0}s".format(timeout)
+    return process.returncode, "\n".join((process.stdout + process.stderr).splitlines()[-TAIL_LINES:])
+
+
+KEPT = ("PATH", "LANG", "LC_ALL", "LC_CTYPE", "SYSTEMROOT", "COMSPEC", "PATHEXT")   # what a command needs in order to start
+SANDBOX = "/usr/bin/sandbox-exec"
+_CLOSES: Dict[str, bool] = {}
+
+
+def _fixed_environment(home: Path, tmp: Path) -> Dict[str, str]:
+    """What an isolated check sees of the environment: where programs are, the locale, an empty home.
+
+    A variable the check needs is written into its command (`SEED=7 python3 fit.py`),
+    where it is part of what the check is, so changing it asks the question again.
+    """
+    env = {name: os.environ[name] for name in KEPT if name in os.environ}
+    env.update({"HOME": str(home), "TMPDIR": str(tmp), "TMP": str(tmp), "TEMP": str(tmp)})
+    return env
+
+
+def _closed(workspace: Path, scratch: Path) -> Optional[List[str]]:
+    """The command prefix that closes the network and the workspace outside `scratch`, where this machine has one.
+
+    macOS has one. The interpreter and the folders on PATH may lie inside the
+    workspace (a virtual environment), so those stay readable.
+    """
+    if sys.platform != "darwin" or not os.access(SANDBOX, os.X_OK):
+        return None
+    real = os.path.realpath
+    shut = real(str(workspace))
+    opened = {real(str(scratch))}
+    for entry in [sys.prefix, sys.base_prefix] + os.environ.get("PATH", "").split(os.pathsep):
+        path = real(entry) if entry else ""
+        if path.startswith(shut + os.sep):
+            opened.add(path)
+            if os.path.dirname(path) != shut:
+                opened.add(os.path.dirname(path))      # `.venv/bin` needs `.venv`
+    quoted = lambda path: '(subpath "{0}")'.format(path.replace("\\", "\\\\").replace('"', '\\"'))  # noqa: E731
+    return [SANDBOX, "-p", "(version 1)(allow default)(deny network*)(deny file-read-data {0})(allow file-read-data {1})".format(
+        quoted(shut), " ".join(quoted(path) for path in sorted(opened)))]
+
+
+TRIAL = """import socket, sys
+reached = []
+try:
+    open(sys.argv[1]).read()
+    reached.append("file")
+except OSError:
+    pass
+try:
+    socket.create_connection(("127.0.0.1", int(sys.argv[2])), timeout=2).close()
+    reached.append("network")
+except OSError:
+    pass
+print("reached", *reached)
+"""
+
+
+def closes() -> bool:
+    """Whether that prefix really closes both, found once by trying: a file outside, and a socket that is listening."""
+    if "answer" not in _CLOSES:
+        outside, inside = Path(tempfile.mkdtemp(prefix="taos-outside-")), Path(tempfile.mkdtemp(prefix="taos-inside-"))
+        listener = socket.socket()
+        try:
+            prefix = _closed(outside, inside)
+            (outside / "canary").write_text("canary\n", encoding="utf-8")
+            listener.bind(("127.0.0.1", 0))
+            listener.listen(1)
+            done = prefix and subprocess.run(
+                prefix + [sys.executable, "-c", TRIAL, str(outside / "canary"), str(listener.getsockname()[1])],
+                cwd=str(inside), capture_output=True, text=True, timeout=30)
+            _CLOSES["answer"] = bool(done) and done.returncode == 0 and done.stdout.strip() == "reached"
+        except (OSError, subprocess.SubprocessError):
+            _CLOSES["answer"] = False
+        finally:
+            listener.close()
+            shutil.rmtree(str(outside), ignore_errors=True)
+            shutil.rmtree(str(inside), ignore_errors=True)
+    return _CLOSES["answer"]
+
+
+def _isolated(cwd: Path, snap: Dict[str, Any], filed: Dict[str, str], command: str, timeout: int,
+              strict: bool = False) -> Tuple[int, str, List[str]]:
+    """Run a check where only the files its result is filed under exist.
+
+    A result is reused for as long as the bytes it is filed under are the
+    same. That is sound only if the check could read nothing else. Here it is
+    made true: those files are placed in an empty folder, by hard link where
+    the filesystem allows and by copy otherwise, and the check runs there. A
+    file it did not declare is not there to be read. What it writes is
+    discarded: a check is a question, not a step that produces files.
+
+    Three more ways to read something else are closed where they can be. The
+    environment is fixed everywhere. The network and the rest of the workspace
+    (reached by its absolute path) are closed where the machine has a way,
+    which `closes()` finds by trying. Returns the exit code, the tail, and
+    what was closed, so the record never says more than was in force.
+    """
+    if not snap.get("complete"):
+        return 125, "cannot isolate: {0}".format(snap.get("reason") or "the workspace could not be read"), []
+    names: List[str] = []
+    for domain in filed:
+        entry = (snap.get("domains") or {}).get(domain)
+        if entry and entry.get("files") is None:
+            return 125, "cannot isolate: {0} holds {1} files, too many to place; split the domain".format(domain, entry.get("count")), []
+        names.extend((entry or {}).get("files") or {})
+    root = Path(tempfile.mkdtemp(prefix="taos-isolated-"))
+    scratch, home, tmp = root / "work", root / "home", root / "tmp"
+    prefix = _closed(cwd, root) if closes() else None
+    if prefix is None and strict:
+        shutil.rmtree(str(root), ignore_errors=True)
+        return 125, "cannot isolate strictly: this machine has no way to close the network and the rest of the workspace", []
+    closed = ["files", "environment"] + (["network", "workspace"] if prefix else [])
+    try:
+        for folder in (scratch, home, tmp):
+            folder.mkdir()
+        for name in sorted(set(names)):
+            target = scratch / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                os.link(str(cwd / name), str(target))
+            except OSError:
+                shutil.copy2(str(cwd / name), str(target))
+        code, tail = _execute(command, scratch, timeout, env=_fixed_environment(home, tmp), prefix=prefix)
+    finally:
+        shutil.rmtree(str(root), ignore_errors=True)
+    if code != 0:
+        called = {basis.UNDECLARED: "the files no domain claims", basis.WORKSPACE: "the files git lists in the workspace"}
+        there = [name for name in sorted(filed, key=lambda name: (name in called, name))
+                 if ((snap.get("domains") or {}).get(name) or {}).get("count")]
+        named = ", ".join(name for name in there if name not in called)
+        rest = " and ".join(called[name] for name in there if name in called)
+        tail = (tail + "\n" if tail else "") + ("isolated: it could read only {0}. A file it could not find is one "
+                                                "it did not declare.").format(" and ".join(part for part in (named, rest) if part) or "nothing")
+        tail += "\nalso closed to it: " + ", ".join(["the environment"] + (["the network", "the rest of the workspace"] if prefix else []))
+    return code, tail, closed
 
 
 def _where(paths: Paths, task: Dict[str, Any], record: Optional[Dict[str, Any]]) -> Path:
@@ -102,7 +271,10 @@ def _judge(gate: Dict[str, Any], result: Dict[str, Any], own: bool) -> Dict[str,
     if result.get("exit") != 0:
         return basis.verdict(basis.FAILS, "exit {0} on the files as they are now".format(result.get("exit")))
     whose = "" if own or not result.get("task") else " for {0}".format(result["task"])
-    return basis.verdict(basis.HOLDS, "passed {0}{1}; nothing it tested has changed".format(result["ran_at"], whose))
+    how = " with only the files it declared present" if result.get("isolated") else ""
+    if "network" in (result.get("closed") or []):
+        how += ", and the network and the rest of the workspace closed"
+    return basis.verdict(basis.HOLDS, "passed {0}{1}{2}; nothing it tested has changed".format(result["ran_at"], whose, how))
 
 
 def latest(paths: Paths, task_id: str) -> Optional[Dict[str, Any]]:
@@ -206,16 +378,17 @@ def run(paths: Paths, *, task_id: str, agent: str, workspace: Optional[str] = No
             results.append(result)
             continue
         command = str(gate["command"])
-        try:
-            process = subprocess.run(command, shell=True, cwd=str(cwd), capture_output=True, text=True, timeout=timeout)
-            code = process.returncode
-            tail = "\n".join((process.stdout + process.stderr).splitlines()[-TAIL_LINES:])
-        except subprocess.TimeoutExpired:
-            code = 124
-            tail = "timed out after {0}s".format(timeout)
+        filed = basis.digests(before, _depends(gate))
+        closed: List[str] = []
+        if _isolation(gate):
+            code, tail, closed = _isolated(cwd, before, filed, command, timeout, strict=_isolation(gate) == "strict")
+        else:
+            code, tail = _execute(command, cwd, timeout)
         result = {"name": name, "command": command, "exit": code, "tail": tail, "ran_at": utc_now(),
-                  "depends_on": _depends(gate), "definition": _definition(gate, settings),
-                  "basis": basis.digests(before, _depends(gate))}
+                  "depends_on": _depends(gate), "definition": _definition(gate, settings), "basis": filed}
+        if _isolation(gate):
+            result["isolated"] = True
+            result["closed"] = closed
         results.append(result)
         ran.append(result)
 
@@ -311,8 +484,9 @@ def _cmd_list(args: argparse.Namespace, paths: Paths) -> int:
         return 0
     for gate in gates:
         depends = _depends(gate)
-        print("{0:<12} {1}{2}".format(gate.get("name") or "-", gate["command"],
-                                     "   depends on: " + ", ".join(depends) if depends else ""))
+        print("{0:<12} {1}{2}{3}".format(gate.get("name") or "-", gate["command"],
+                                        "   depends on: " + ", ".join(depends) if depends else "",
+                                        "   isolated" + (" (strict)" if _isolation(gate) == "strict" else "") if _isolation(gate) else ""))
     return 0
 
 

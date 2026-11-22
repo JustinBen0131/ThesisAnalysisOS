@@ -11,7 +11,8 @@ from .util import TaosError
 
 SCHEMA = "TAOS_CONFIG_V1"
 
-NOT_CONSTRUCTED = "TAOS not constructed. Read BOOTSTRAP.md and follow it."
+NOT_CONSTRUCTED = ("TAOS not constructed. To set it up for someone's work, read BOOTSTRAP.md and follow it. "
+                   "To read, test or change TAOS itself, read docs/ARCHITECTURE.md and do not bootstrap.")
 
 DEFAULT_SECRET_PATTERNS = [
     r"\.env$",
@@ -228,6 +229,8 @@ def validate(config: Dict[str, Any]) -> List[str]:
         limit = gate.get("max_age_hours")
         if limit is not None and (isinstance(limit, bool) or not isinstance(limit, (int, float)) or limit <= 0):
             problems.append("config.gates: max_age_hours must be a positive number")
+        if gate.get("isolated") is not None and not (isinstance(gate.get("isolated"), bool) or gate.get("isolated") == "strict"):
+            problems.append('config.gates: isolated must be true, false or "strict"')
     return problems
 
 

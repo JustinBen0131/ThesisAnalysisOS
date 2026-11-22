@@ -19,7 +19,22 @@
         "additionalProperties": false,
         "properties": {
           "name": {"type": "string", "maxLength": 40},
-          "command": {"type": "string", "minLength": 1, "maxLength": 300}
+          "command": {"type": "string", "minLength": 1, "maxLength": 300},
+          "depends_on": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 40}},
+          "isolated": {"enum": [true, "strict"]}
+        }
+      }
+    },
+    "domains": {
+      "type": "array",
+      "maxItems": 24,
+      "items": {
+        "type": "object",
+        "required": ["name", "patterns"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {"type": "string", "minLength": 1, "maxLength": 40},
+          "patterns": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 200}}
         }
       }
     },

@@ -108,7 +108,9 @@ vendor the OS into their work repo, say no and point at that file.
    - `workspaces`: absolute paths, expand `~`, mark one `primary`, and set
      `agent` to `codex`, `claude`, or `any` per the person's answer to Q3.
    - `gates`: the person's own commands, or omit the key so the stack default
-     is used.
+     is used. If they said which folders a check reads, write `domains` (each
+     a `name` and its file `patterns`) and give the gate `depends_on` with
+     those names. Add `"isolated": true` to a gate they asked to isolate.
    - Leave out any key the person answered "default" for.
 
 4. Validate, and fix anything it names:
