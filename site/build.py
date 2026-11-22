@@ -24,6 +24,7 @@ import datetime
 import hashlib
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -305,7 +306,7 @@ PolyForm Noncommercial 1.0.0, with additional permissions.
 <a href="$github">Repository</a> &middot; <a href="${root}llms.txt">llms.txt</a> &middot; <a href="index.md">This page as Markdown</a></p>
 </div></footer>
 <script src="${root}assets/site.js" defer></script>
-</body>
+${analytics}</body>
 </html>
 """)
 
@@ -316,6 +317,10 @@ def shell(ctx: Dict[str, Any], root: str, title: str, body: str, url: str, path:
               "license": GITHUB + "/blob/main/LICENSE", "author": {"@type": "Person", "name": "Justin Bennett"}}
     return SHELL.substitute(
         title=esc(title), description=esc(DESCRIPTION), root=root, github=GITHUB, body=body,
+        analytics=('<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js" '
+                   """data-cf-beacon='{"token":"4d73a9ec7d20404a82e7a8e2f480a27f"}'></script>\n"""
+                   if url == "https://whatstillholds.com/" and os.environ.get("GITHUB_REPOSITORY") == NAME
+                   and os.environ.get("GITHUB_REF") == "refs/heads/main" and path != "404.html" else ""),
         canonical='<link rel="canonical" href="{0}">\n'.format(esc(url + path)) if url else "",
         linked=json.dumps(linked).replace("</", "<\\/"), revision=esc(ctx["revision"]), short=esc(ctx["revision"][:7]),
         built=esc(ctx["built"]), neutral=chip("unknown", "not asked yet"))
