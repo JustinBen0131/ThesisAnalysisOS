@@ -12,15 +12,23 @@ with the domains declared under `"basis"` in the config). Then a change
 elsewhere leaves it standing, and a change that no domain claims makes it
 unknown. A gate that depends on something no file records (a service, the
 clock) can say `"max_age_hours"`.
+
+A gate may say `"isolated": true`. Then it runs in an empty folder that holds
+only the files its result is filed under. A file it did not declare is not
+there to be read, so the result cannot be reused wrongly, and what the check
+writes is discarded.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
+import shutil
 import subprocess
+import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from . import basis
 from . import config as config_mod
@@ -71,7 +79,59 @@ def _depends(gate: Dict[str, Any]) -> Optional[List[str]]:
 
 
 def _definition(gate: Dict[str, Any], settings: Dict[str, Any]) -> str:
-    return sha256_text(canonical_json({"command": str(gate["command"]), "depends_on": _depends(gate), "basis": settings}))
+    said: Dict[str, Any] = {"command": str(gate["command"]), "depends_on": _depends(gate), "basis": settings}
+    if gate.get("isolated") is True:
+        said["isolated"] = True     # a run in the open workspace does not answer for an isolated check
+    return sha256_text(canonical_json(said))
+
+
+def _execute(command: str, cwd: Path, timeout: int) -> Tuple[int, str]:
+    try:
+        process = subprocess.run(command, shell=True, cwd=str(cwd), capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        return 124, "timed out after {0}s".format(timeout)
+    return process.returncode, "\n".join((process.stdout + process.stderr).splitlines()[-TAIL_LINES:])
+
+
+def _isolated(cwd: Path, snap: Dict[str, Any], filed: Dict[str, str], command: str, timeout: int) -> Tuple[int, str]:
+    """Run a check where only the files its result is filed under exist.
+
+    A result is reused for as long as the bytes it is filed under are the
+    same. That is sound only if the check could read nothing else. Here it is
+    made true: those files are placed in an empty folder, by hard link where
+    the filesystem allows and by copy otherwise, and the check runs there. A
+    file it did not declare is not there to be read. What it writes is
+    discarded: a check is a question, not a step that produces files.
+    """
+    if not snap.get("complete"):
+        return 125, "cannot isolate: {0}".format(snap.get("reason") or "the workspace could not be read")
+    names: List[str] = []
+    for domain in filed:
+        entry = (snap.get("domains") or {}).get(domain)
+        if entry and entry.get("files") is None:
+            return 125, "cannot isolate: {0} holds {1} files, too many to place; split the domain".format(domain, entry.get("count"))
+        names.extend((entry or {}).get("files") or {})
+    scratch = Path(tempfile.mkdtemp(prefix="taos-isolated-"))
+    try:
+        for name in sorted(set(names)):
+            target = scratch / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                os.link(str(cwd / name), str(target))
+            except OSError:
+                shutil.copy2(str(cwd / name), str(target))
+        code, tail = _execute(command, scratch, timeout)
+    finally:
+        shutil.rmtree(str(scratch), ignore_errors=True)
+    if code != 0:
+        called = {basis.UNDECLARED: "the files no domain claims", basis.WORKSPACE: "the files git lists in the workspace"}
+        there = [name for name in sorted(filed, key=lambda name: (name in called, name))
+                 if ((snap.get("domains") or {}).get(name) or {}).get("count")]
+        named = ", ".join(name for name in there if name not in called)
+        rest = " and ".join(called[name] for name in there if name in called)
+        tail = (tail + "\n" if tail else "") + ("isolated: it could read only {0}. A file it could not find is one "
+                                                "it did not declare.").format(" and ".join(part for part in (named, rest) if part) or "nothing")
+    return code, tail
 
 
 def _where(paths: Paths, task: Dict[str, Any], record: Optional[Dict[str, Any]]) -> Path:
@@ -102,7 +162,8 @@ def _judge(gate: Dict[str, Any], result: Dict[str, Any], own: bool) -> Dict[str,
     if result.get("exit") != 0:
         return basis.verdict(basis.FAILS, "exit {0} on the files as they are now".format(result.get("exit")))
     whose = "" if own or not result.get("task") else " for {0}".format(result["task"])
-    return basis.verdict(basis.HOLDS, "passed {0}{1}; nothing it tested has changed".format(result["ran_at"], whose))
+    how = " with only the files it declared present" if result.get("isolated") else ""
+    return basis.verdict(basis.HOLDS, "passed {0}{1}{2}; nothing it tested has changed".format(result["ran_at"], whose, how))
 
 
 def latest(paths: Paths, task_id: str) -> Optional[Dict[str, Any]]:
@@ -206,16 +267,15 @@ def run(paths: Paths, *, task_id: str, agent: str, workspace: Optional[str] = No
             results.append(result)
             continue
         command = str(gate["command"])
-        try:
-            process = subprocess.run(command, shell=True, cwd=str(cwd), capture_output=True, text=True, timeout=timeout)
-            code = process.returncode
-            tail = "\n".join((process.stdout + process.stderr).splitlines()[-TAIL_LINES:])
-        except subprocess.TimeoutExpired:
-            code = 124
-            tail = "timed out after {0}s".format(timeout)
+        filed = basis.digests(before, _depends(gate))
+        if gate.get("isolated") is True:
+            code, tail = _isolated(cwd, before, filed, command, timeout)
+        else:
+            code, tail = _execute(command, cwd, timeout)
         result = {"name": name, "command": command, "exit": code, "tail": tail, "ran_at": utc_now(),
-                  "depends_on": _depends(gate), "definition": _definition(gate, settings),
-                  "basis": basis.digests(before, _depends(gate))}
+                  "depends_on": _depends(gate), "definition": _definition(gate, settings), "basis": filed}
+        if gate.get("isolated") is True:
+            result["isolated"] = True
         results.append(result)
         ran.append(result)
 
@@ -311,8 +371,9 @@ def _cmd_list(args: argparse.Namespace, paths: Paths) -> int:
         return 0
     for gate in gates:
         depends = _depends(gate)
-        print("{0:<12} {1}{2}".format(gate.get("name") or "-", gate["command"],
-                                     "   depends on: " + ", ".join(depends) if depends else ""))
+        print("{0:<12} {1}{2}{3}".format(gate.get("name") or "-", gate["command"],
+                                        "   depends on: " + ", ".join(depends) if depends else "",
+                                        "   isolated" if gate.get("isolated") is True else ""))
     return 0
 
 

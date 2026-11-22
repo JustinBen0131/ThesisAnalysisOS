@@ -75,7 +75,8 @@ def build(tmp: Path) -> Paths:
     )
     configure(
         paths,
-        basis={"domains": {"analysis": ["analysis/*", "data/*"], "figures": ["figures/*"]}, "ignore": ["README.md"]},
+        basis={"domains": {"analysis": ["analysis/*", "data/*"], "figures": ["figures/*"]},
+               "ignore": ["README.md", "AGENTS.md", "CLAUDE.md", ".taos-link.json"]},
         gates=[{"name": "fit", "command": "\"{0}\" analysis/check.py".format(sys.executable), "depends_on": ["analysis"]}],
     )
     return paths
@@ -175,6 +176,22 @@ def play(paths: Paths, out: Any) -> None:
     say()
     say("The reminder was shown once, and nobody has judged that case yet. So it counts as one")
     say("exposure and no repeat. Shown is not repeated, and unknown stays unknown.")
+    say()
+    say("5. A check passes only on what it declared")
+    say()
+    say("A second check reads figures/style.txt, but says it depends only on the analysis. It is marked")
+    say("isolated, so it runs in an empty folder that holds only the files it declared.")
+    checks = json.loads(paths.config_file.read_text(encoding="utf-8"))["gates"]
+    style = {"name": "style", "command": "grep -c pt figures/style.txt", "depends_on": ["analysis"], "isolated": True}
+
+    def about_style(line: str) -> bool:
+        return "style" in line or "isolated:" in line
+
+    configure(paths, gates=checks + [style])
+    run("gate", "run", "--task", "PEN-2", "--agent", "claude", keep=about_style)
+    say("The declaration is corrected to name the figures, and the same check passes.")
+    configure(paths, gates=checks + [dict(style, depends_on=["figures"])])
+    run("gate", "run", "--task", "PEN-2", "--agent", "claude", keep=about_style)
 
 
 def run(out: Any = None, keep: bool = False) -> int:

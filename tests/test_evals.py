@@ -34,6 +34,24 @@ class TestEvals(unittest.TestCase):
             self.assertTrue((REPO / "tests" / (module + ".py")).is_file(), name)
         self.assertTrue(mutations.caught(mutations.FAULTS[0]))
 
+    def test_no_claim_names_something_that_is_not_there_or_misquotes_a_recorded_run(self) -> None:
+        claims = load("claims")
+        if not claims.CLAIMS.is_file():
+            self.skipTest("this copy keeps no docs/CLAIMS.md")
+        rows = claims.check()
+        self.assertGreaterEqual(len(rows), 20)
+        self.assertEqual([(row["claim"], row["reason"]) for row in rows if row["state"] == "fails"], [])
+
+    def test_a_recorded_number_goes_stale_when_the_code_it_measured_changes(self) -> None:
+        measured = load("measured")
+        stamp = measured.stamp(["evals/measured.py"])
+        self.assertEqual(measured.standing({"measured_on": stamp})["state"], "holds")
+        stamp["files"]["sha256"] = "0" * 64
+        stamp["files"]["files"] = {"evals/measured.py": "0" * 64}
+        self.assertEqual(measured.standing({"measured_on": stamp}),
+                         {"state": "stale", "reason": "the code it measured changed: evals/measured.py"})
+        self.assertEqual(measured.standing({})["state"], "unknown")
+
 
 if __name__ == "__main__":
     unittest.main()

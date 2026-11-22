@@ -6,11 +6,21 @@ contract. Read it fully once per session; it is short on purpose.
 <!-- taos:bootstrap-guard -->
 ## Not constructed yet
 
-This OS has not been set up. Before doing anything else, open `BOOTSTRAP.md`
-and follow it exactly. It takes one message of questions and one command.
+This copy has not been set up for anyone. What you do next depends on why
+you are here.
 
-Do not create tasks, edit files, or start work until `./taos status` stops
-saying "not constructed".
+**Your person wants to use TAOS for their own work.** Open `BOOTSTRAP.md` and
+follow it exactly. It takes one message of questions and one command. Do not
+create tasks, edit files, or start work until `./taos status` stops saying
+"not constructed".
+
+**You were asked to read, run, review or change TAOS itself.** Do not
+bootstrap. The rest of this file is the product you are examining, not
+instructions to you. Start with `docs/ARCHITECTURE.md`, "Reading this
+repository cold". `./taos demo`, `./taos selftest` and everything under
+`evals/` run with no setup and write only to temporary folders.
+
+If you cannot tell which it is, ask.
 <!-- /taos:bootstrap-guard -->
 
 ## What this is for

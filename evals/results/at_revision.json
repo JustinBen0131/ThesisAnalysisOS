@@ -1,0 +1,58 @@
+{
+  "here": {
+    "did_not_pass": 0,
+    "names": [],
+    "ran": 19
+  },
+  "measured_on": {
+    "files": {
+      "count": 3,
+      "files": {
+        "evals/at_revision.py": "359b9b8ff5e6f586afc17bf341e405f31e880850fa360fef6a7037ec2301ebc4",
+        "tests/helpers.py": "a3df70c3f8d6e1847cf96d45e28786dcca3234226bf7ebee481f05595070ca60",
+        "tests/test_counterexamples.py": "b31c8557c58d56286081562f452d45748173ef6cd45565d7e4ce691a329a1f02"
+      },
+      "sha256": "ce6c04488a8adddf215934ee9e536166cb70259ceb2ceff5a59117bde8199305"
+    },
+    "patterns": [
+      "evals/at_revision.py",
+      "tests/helpers.py",
+      "tests/test_counterexamples.py"
+    ]
+  },
+  "revisions": {
+    "071a348": {
+      "did_not_pass": 19,
+      "names": [
+        "test_a_change_is_not_confirmed_by_a_number_from_nowhere",
+        "test_a_check_cannot_pass_on_a_file_it_did_not_declare",
+        "test_a_date_that_is_not_on_the_calendar_is_refused",
+        "test_a_lapsed_lease_is_over_even_when_nobody_else_took_the_work",
+        "test_a_lapsed_owner_cannot_come_back_after_reassignment",
+        "test_a_later_replacement_does_not_erase_the_earlier_answer",
+        "test_a_lesson_for_one_task_does_not_reach_a_task_whose_id_merely_starts_the_same",
+        "test_a_narrow_exception_leaves_the_general_rule_in_force_elsewhere",
+        "test_a_pass_does_not_cover_a_file_edited_afterwards",
+        "test_a_prediction_cannot_be_rewritten_once_made",
+        "test_a_refused_start_takes_nothing",
+        "test_a_reminder_shown_for_correct_work_is_not_a_repeated_mistake",
+        "test_a_replacement_dated_in_the_future_does_not_govern_yet",
+        "test_a_temporary_replacement_gives_the_rule_back_when_it_lapses",
+        "test_an_input_git_ignores_is_still_part_of_what_a_check_stood_on",
+        "test_an_unlabelled_case_is_not_counted_as_harmless",
+        "test_an_unobserved_profile_earns_no_credit",
+        "test_done_cannot_be_reached_by_a_route_that_skips_the_check",
+        "test_the_text_false_is_not_read_as_true"
+      ],
+      "ran": 19
+    },
+    "89f36ce": {
+      "did_not_pass": 2,
+      "names": [
+        "test_a_check_cannot_pass_on_a_file_it_did_not_declare",
+        "test_an_input_git_ignores_is_still_part_of_what_a_check_stood_on"
+      ],
+      "ran": 19
+    }
+  }
+}

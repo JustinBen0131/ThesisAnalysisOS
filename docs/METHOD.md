@@ -106,17 +106,28 @@ stored with who made it and what it stood on. Asked later, it answers
 rests on: its checks, the instructions it was closed under, its work products
 and their inputs, a person's acceptance, the lease on it.
 
-Three checks stand behind this, each one command:
+Four checks stand behind this, each one command:
 
-- **The cases.** `tests/test_counterexamples.py` holds 17 cases, written
-  against entry points the previous release already had. At commit `071a348`
-  all 17 fail. Here all 17 pass. `python3 evals/at_revision.py 071a348`
-- **The tests themselves.** `evals/mutations.py` removes 16 protections from
-  a copy of the code, one at a time, and runs the tests. The first run caught
-  15. The miss was real: nothing tested that a lapsed lease cannot be revived
-  by its own heartbeat when nobody else has taken the work. That test was
-  added and the run is now 16 of 16. The miss stays in this record.
+- **The cases.** `tests/test_counterexamples.py` holds 19 cases, written
+  against entry points the first release already had. At commit `071a348`
+  all 19 fail. The first 17 came from three outside reviews and were closed
+  in the release that followed, `89f36ce`. The last two were found after it,
+  one by a fourth review and one by this document's own table of limits, so
+  2 of the 19 still fail there. Here all 19 pass.
+  `python3 evals/at_revision.py`
+- **The tests themselves.** `evals/mutations.py` removes 18 protections from
+  a copy of the code, one at a time, and runs the tests. Its first run, with
+  16, caught 15. The miss was real: nothing tested that a lapsed lease cannot
+  be revived by its own heartbeat when nobody else has taken the work. That
+  test was added, two protections have been added since, and the run is 18
+  of 18. The miss stays in this record.
 - **The mechanism under load.** The reuse experiment, below.
+- **This document.** The numbers quoted here and in `README.md` are records
+  with a basis like any other. Each run is stored in `evals/results/` with a
+  fingerprint of the code it measured, and `python3 evals/claims.py` answers,
+  for every row of `docs/CLAIMS.md`, whether it holds, is stale, fails or is
+  unknown. A number measured on code that has since changed is reported
+  stale, and CI fails until it is measured again.
 
 ## Where the idea comes from
 
@@ -136,6 +147,10 @@ None of this is new as an idea, and it is better for that.
   the second.
 - The W3C provenance model records what was derived from what, and by whom
   (PROV-DM, W3C Recommendation, 2013).
+- A sandboxed build runs each step where only its declared inputs exist, so
+  an undeclared input breaks the step instead of being depended on in
+  silence. Bazel's sandboxing and the Nix build sandbox both work this way.
+  An `isolated` check, below, is that idea applied to a check result.
 
 What a build system does not model is what research also rests on: an
 instruction a person gave on a date, in words, for a scope and sometimes for
@@ -158,7 +173,8 @@ at six levels of detail, from one domain holding everything to one domain per
 folder.
 
 Six predictions were written into the script before its first run, and it
-exits 1 if one fails. All six held.
+exits 1 if one fails. All six held. A seventh was added later with the last
+two rows of the table, and has its own section below.
 
 | Policy | Executions | Stale results relied on |
 |---|---|---|
@@ -170,6 +186,8 @@ exits 1 if one fails. All six held.
 | An oracle that knows what every check reads | 60 | 0 |
 | TAOS, three tasks asking the same questions | 60 | 0 |
 | TAOS, every check hiding one folder it reads | 29 | 150 |
+| TAOS, checks isolated, everything declared | 60 | 0 |
+| TAOS, checks isolated, every check hiding one folder | 366 runs, none passed | 0 |
 
 What the table says:
 
@@ -209,6 +227,31 @@ so that the history shows the order:
 If the isolated folder lets one undeclared file through, the first half
 fails. If isolating disturbs what a correctly declared check sees, the second
 half fails.
+
+**What happened.** P7 held. With every check isolated and hiding one folder,
+none of 366 runs passed, so nothing was ever reused, where the open workspace
+had 150 wrong reuses. With everything declared, isolation changed no count:
+60 executions and 0 wrong reuses. The cost is placing the declared files for
+each run, by hard link where the filesystem allows.
+`evals/reuse_frontier.py` prints what that added to one execution, with its
+uncertainty. The two runs it compares are minutes apart, so the figure also
+carries any drift of the machine between them. Read it as an order of
+magnitude: milliseconds for a few small files.
+
+What isolation establishes is narrower than "the check is right". It
+establishes that the result depends on the bytes it is filed under and on
+nothing else in the workspace, which is what reuse needs. A check that finds
+an input missing usually fails, as these did. One that carries on without it
+gives a wrong answer, and gives the same wrong answer when rerun, so it is
+still never reused wrongly. A path outside the workspace, the network and
+the environment are not isolated, and a check that needs git or the files it
+wrote on an earlier run cannot run this way.
+
+The other half of the gap was closed directly. A declared domain is read
+from the disk, so an input git ignores is part of what a check stood on.
+With no domains declared, the workspace is still what git lists and an
+ignored input is not seen; an isolated check that needs it fails, and says
+what it could read.
 
 ### What it costs, and the connection to transport networks
 

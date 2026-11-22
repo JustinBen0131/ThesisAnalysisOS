@@ -45,11 +45,36 @@ Then an edit under `figs/` leaves `fit` alone, an edit under `src/` makes it
 stale, and an edit to a file no domain claims makes it `unknown`, because
 nobody said whether that file matters. Two limits to keep in mind:
 
-- The declaration is trusted. A gate that reads a folder it did not name will
-  be reused when that folder changes. When in doubt, declare more.
+- In the open, the declaration is trusted. A gate that reads a folder it did
+  not name will be reused when that folder changes. When in doubt, declare
+  more, or isolate the gate (below).
+- A domain is what its patterns match on disk, tracked by git or not.
+  Measured data that git ignores counts once a domain names it. With no
+  domains declared, the workspace is what git lists, and an ignored file is
+  not seen.
 - TAOS sees files in the workspace. A gate that depends on the network, the
   clock or the environment should set `"max_age_hours"`, after which its pass
   is stale whatever the files say.
+
+## Isolating a gate
+
+```json
+"gates": [{"name": "fit", "command": "python3 check.py", "depends_on": ["analysis"], "isolated": true}]
+```
+
+An isolated gate runs in an empty folder that holds only the files its
+result is filed under: the domains it depends on, and any file no domain
+claims. A file it did not declare is not there to be read, so its result
+cannot be reused wrongly. A failure ends with a line saying what it could
+read. Three things to know:
+
+- What the gate writes is discarded. A gate is a question, not a step that
+  produces files.
+- Files are placed by hard link where the filesystem allows, and by copy
+  otherwise. A gate that rewrites one of its inputs changes the original,
+  and that run is reported `unknown`.
+- A gate that needs `.git`, an absolute path, the network, or more than
+  2,000 files in one domain cannot run this way.
 
 ## Rules
 

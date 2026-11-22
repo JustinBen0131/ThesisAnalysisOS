@@ -27,6 +27,9 @@ class TestDemo(unittest.TestCase):
             "stale    acceptance:",                                             # a person's acceptance is of one version
             "told:      \"Quote g with its uncertainty, never alone\"",         # delivered to the next agent
             "0 repeated, 0 followed, 1 not judged, of 1 times shown",           # shown is not repeated
+            "FAIL  style        exit 2",                                        # it read a file it did not declare
+            "A file it could not find is one it did not declare.",              # and the answer says so
+            "ok    style        exit 0",                                        # declared, the same check passes
         ):
             self.assertIn(phrase, text)
         self.assertEqual(text.count("PEN-1 stands as recorded."), 2)            # the style edit left the result standing

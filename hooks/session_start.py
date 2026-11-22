@@ -11,7 +11,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import emit_context, find_home, read_stdin_json  # noqa: E402
 
 EVENT = "SessionStart"
-FALLBACK = "TAOS not constructed. Read BOOTSTRAP.md and follow it."
+FALLBACK = ("TAOS not constructed. To set it up for someone's work, read BOOTSTRAP.md and follow it. "
+            "To read, test or change TAOS itself, read docs/ARCHITECTURE.md and do not bootstrap.")
 
 
 def main() -> int:
