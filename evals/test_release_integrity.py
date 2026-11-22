@@ -7,12 +7,13 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "site"))
-from release_integrity import browser_policy, script_hash, verify_manifest, write_manifest
+from film_player import PUBLIC_MEDIA_DIR, film_files, opening_link, render_player
+from release_integrity import browser_policy, script_hash, verify_homepage_film, verify_manifest, write_manifest
 from build import broken, GITHUB
 
 
 class TestBrowserPolicy(unittest.TestCase):
-    def test_only_approved_private_inline_code_gets_a_hash(self):
+    def test_only_approved_homepage_inline_code_gets_a_hash(self):
         sample = "/* trusted project template */"
         tag = "<script>" + sample + "</script>"
         trusted = {script_hash(sample)}
@@ -30,6 +31,33 @@ class TestBrowserPolicy(unittest.TestCase):
             browser_policy(analytics, "index.html", set(), False)
         page = '<script src="assets/site.js"></script>'
         self.assertIn("api.github.com", browser_policy(page, "index.html", set(), False))
+
+
+class TestHomepageFilm(unittest.TestCase):
+    def test_release_requires_the_reviewed_film_and_a_working_entry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            files = film_files(None, root, release=True)
+            entry = opening_link(files)
+            player = render_player(files, root, PUBLIC_MEDIA_DIR)
+            home = root / "index.html"
+            home.write_text(entry + player, encoding="utf-8")
+            verify_homepage_film(root)
+            home.write_text(player, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "link to the film"):
+                verify_homepage_film(root)
+            home.write_text(entry, encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "dispatch record"):
+                verify_homepage_film(root)
+            home.write_text(entry + player.replace('preload="none"', 'autoplay'), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "wait for the reader"):
+                verify_homepage_film(root)
+            home.write_text(entry + player, encoding="utf-8")
+            (root / PUBLIC_MEDIA_DIR / "reduced-motion.mp4").write_bytes(b"another cut")
+            with self.assertRaisesRegex(ValueError, "reduced-motion.mp4"):
+                verify_homepage_film(root)
+            with self.assertRaisesRegex(SystemExit, "private film preview"):
+                film_files(root, root, release=True)
 
 
 class TestSourceNavigation(unittest.TestCase):

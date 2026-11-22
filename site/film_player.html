@@ -56,9 +56,9 @@ $context
 <h2 id="film-question">$title</h2>
 </div>
 <div class="film-frame">
-<video id="preview-film" tabindex="0" aria-keyshortcuts="Space F" controls playsinline preload="none" poster="private-film/$poster" aria-labelledby="film-question">
-${reduced}<source src="private-film/film.mp4" type="video/mp4">$track
-<a href="private-film/film.mp4">Open the film</a></video>
+<video id="preview-film" tabindex="0" aria-keyshortcuts="Space F" controls playsinline preload="none" poster="$media_dir/$poster" aria-labelledby="film-question">
+${reduced}<source src="$media_dir/film.mp4" type="video/mp4">$track
+<a href="$media_dir/film.mp4">Open the film</a></video>
 <button class="film-play" type="button" aria-controls="preview-film" hidden><span class="film-play-label">
 <span aria-hidden="true">▶</span><span class="film-play-copy">Play with sound</span></span></button>
 </div>$caption</figure>$record</div></section>

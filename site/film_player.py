@@ -1,11 +1,12 @@
-"""An opt-in player for a private local site preview."""
+"""The homepage demonstration and opt-in previews of other cuts."""
 import hashlib
 import shutil
 from pathlib import Path
 from string import Template
 from typing import Optional, Tuple
 
-MEDIA_DIR = "private-film"
+PUBLIC_MEDIA_DIR = "films/morning-departures"
+PUBLIC_INPUT = Path(__file__).resolve().parent / "media" / "morning-departures"
 V6_PRIMARY = "Morning-departures.mp4"
 V6_REDUCED = "Morning-departures-reduced-motion.mp4"
 # The illustrated dispatch record was checked against both of these cuts.
@@ -13,26 +14,28 @@ DISPATCH_CUTS = {
     "film.mp4": "e055a9a60378962e7dc96d902e8784ac2617a31b30ef001db29975e86830773d",
     "reduced-motion.mp4": "542c604121dfde71d392594b8cf0dd00b218dced823e633fba5d8c369ee68f0b",
 }
+PUBLIC_DIGESTS = {**DISPATCH_CUTS, "poster.jpg": "d204522f43886f41c24f18af8bb44eb1380bfdaad01b6c65ff45a041d8ffe55d"}
 FILM_INVITATION = "AI operating system demo"
 FILM_SUBTITLE = "A transit operator checks the morning bus schedule"
 FILM_CONTEXT = "Example of an agentic operating system"
 
 
-def preview_files(directory: Optional[Path], out: Path, release: bool) -> Tuple[Path, ...]:
-    """Resolve the exact preview inputs before the caller replaces its output tree."""
-    if directory is None:
-        return ()
-    if release:
+def film_files(directory: Optional[Path], out: Path, release: bool) -> Tuple[Path, ...]:
+    """Use the published cut by default and allow a local preview to supply its own files."""
+    if directory is not None and release:
         raise SystemExit("A release cannot include a private film preview.")
-    directory = Path(directory).expanduser()
+    bundled = directory is None
+    directory = PUBLIC_INPUT if bundled else Path(directory).expanduser()
     if directory.is_symlink():
         raise SystemExit("Use the film directory itself, not a symbolic link.")
     folder = directory.resolve()
     output = Path(out).resolve()
     if folder == output or output in folder.parents or folder in output.parents:
-        raise SystemExit("The private film inputs and the site output must be separate directories.")
+        raise SystemExit("The film inputs and the site output must be separate directories.")
     if not folder.is_dir():
-        raise SystemExit("The private film preview directory does not exist.")
+        raise SystemExit("The film directory does not exist.")
+    if bundled:
+        return (folder / V6_PRIMARY, folder / "poster.jpg", folder / V6_REDUCED)
     names = {entry.name for entry in folder.iterdir()}
     primary = names.intersection({"film.mp4", V6_PRIMARY})
     posters = names.intersection({"poster.webp", "poster.jpg", "poster.png"})
@@ -61,20 +64,18 @@ def opening_link(files: Tuple[Path, ...]) -> str:
             '<span class="film-duration">1:40</span></span></span></a>')
 
 
-def copy_preview(files: Tuple[Path, ...], out: Path) -> str:
-    """Copy the selected assets and return only the optional homepage fragment."""
-    if not files:
-        return ""
-    target = Path(out) / MEDIA_DIR
-    target.mkdir()
+def render_player(files: Tuple[Path, ...], out: Path, media_dir: str) -> str:
+    """Copy the selected film and render the homepage player using site-relative URLs."""
+    target = Path(out) / media_dir
+    target.mkdir(parents=True)
     public_names = {V6_PRIMARY: "film.mp4", V6_REDUCED: "reduced-motion.mp4"}
     for source in files:
         shutil.copy2(source, target / public_names.get(source.name, source.name))
     poster = files[1].name
     names = {source.name for source in files}
-    reduced = ('<source media="(prefers-reduced-motion: reduce)" src="private-film/reduced-motion.mp4" type="video/mp4">\n'
+    reduced = (f'<source media="(prefers-reduced-motion: reduce)" src="{media_dir}/reduced-motion.mp4" type="video/mp4">\n'
                if V6_REDUCED in names else "")
-    track = ('<track kind="captions" srclang="en" label="English" src="private-film/captions.vtt">'
+    track = (f'<track kind="captions" srclang="en" label="English" src="{media_dir}/captions.vtt">'
              if "captions.vtt" in names else "")
     transit_film = V6_PRIMARY in names
     title = "A transit operator checks the morning bus report" if transit_film else "Film preview"
@@ -88,5 +89,5 @@ def copy_preview(files: Tuple[Path, ...], out: Path) -> str:
                             for name, digest in DISPATCH_CUTS.items()):
         record = Path(__file__).with_name("film_record.html").read_text(encoding="utf-8")
     template = Path(__file__).with_name("film_player.html").read_text(encoding="utf-8")
-    return Template(template).substitute(poster=poster, reduced=reduced, track=track, title=title, context=context,
-                                         caption=caption, record=record)
+    return Template(template).substitute(media_dir=media_dir, poster=poster, reduced=reduced, track=track,
+                                         title=title, context=context, caption=caption, record=record)
