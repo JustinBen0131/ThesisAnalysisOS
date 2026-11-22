@@ -199,6 +199,7 @@ ul.three em { font-style: normal; font-weight: 600; color: var(--ink); }
 .demo-comparison caption { text-align: left; color: var(--soft); padding-bottom: .4rem; }
 .demo-comparison td, .demo-comparison th { padding: .5rem .4rem; vertical-align: top; overflow-wrap: anywhere; text-align: left; }
 .demo-comparison tbody tr { border-top: 1px solid var(--line); }
+.demo-comparison .trial-source { font-size: .83rem; font-weight: 500; }
 .comparison-label { display: none; }
 .comparison-value { font-variant-numeric: tabular-nums; }
 .demo-proof .term { max-width: 100%; }

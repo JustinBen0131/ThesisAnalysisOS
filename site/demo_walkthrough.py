@@ -127,9 +127,9 @@ def chapters(record, audit):
     old_period, new_period = f"{float(original):.2f} s", f"{float(corrected):.2f} s"
     at_length = f"{float(length):.2f} m"
     number = str(len(old))
-    trials = (("Terminal demo", new_period, updated_fit, "Passes", "records/demo.json"),
+    trials = (("Terminal demo", new_period, updated_fit, "Passes", "records/demo.json", "Run record (JSON)"),
               ("Opening animation", large["rows"][row][1] + " s", f"{large_g:.2f} ± {large_error:.2f} m/s²",
-               "Below 9.6 m/s²", "evidence/pendulum/#readings-row-6-1.05"))
+               "Below 9.6 m/s²", "evidence/pendulum/#readings-row-6-1.05", "See the six timings"))
 
     instructions = []
     for key in ("february", "march"):
@@ -151,9 +151,9 @@ def chapters(record, audit):
               "The plot style changed. The fit uses the timing data and analysis code. Those files still match its saved check.",
               (("File edited", "figures/style.txt"), ("Gravity estimate", initial_fit), ("Earlier pass", "Still usable")),
               "taos_core/basis.py", transcript(standing[first:second])),
-        Scene("run-3", "Correct a timing", "One timing changed. Check the fit again.",
-              f"The {at_length} pendulum took {new_period}, up from {old_period}. The saved check used the earlier timing. "
-              "Run the check on the corrected data before using the result.",
+        Scene("run-3", "Correct a timing", "One timing changed. Recheck the gravity estimate.",
+              f"One swing of the {at_length} pendulum took {new_period}. The earlier check used {old_period}. "
+              "Run it again with the corrected timing before using the estimate.",
               (("Earlier timing", old_period), ("Corrected timing", new_period), ("Earlier pass", "Check again")),
               "taos_core/basis.py", transcript(standing[second:]), trials),
         Scene("run-4", "Hand it on", "Hand the checked result to the next researcher",
@@ -187,11 +187,12 @@ COMPARE_NOTE = ("The original check used the first timing. Each correction needs
 def comparison_html(trials):
     labels = ("New timing", "Gravity ± standard error", "Fresh check")
     rows = []
-    for name, period, fit, answer, url in trials:
+    for name, period, fit, answer, url, evidence in trials:
         cells = "".join(f'<td><span class="comparison-label" aria-hidden="true">{label}</span>'
                         f'<span class="comparison-value">{html.escape(value)}</span></td>'
                         for label, value in zip(labels, (period, fit, answer)))
-        rows.append(f'<tr><th scope="row"><a href="{html.escape(url)}">{html.escape(name)}</a></th>{cells}</tr>')
+        rows.append(f'<tr><th scope="row">{html.escape(name)}<br>'
+                    f'<a class="trial-source" href="{html.escape(url)}">{html.escape(evidence)}</a></th>{cells}</tr>')
     return (f'<details class="demo-comparison"><summary>{COMPARE_TITLE}</summary><p>{COMPARE_NOTE}</p>'
             '<table><caption>Two corrections to the same swing</caption><thead><tr><th scope="col">Run</th>'
             '<th scope="col">New timing</th><th scope="col">Gravity ± standard error</th>'
@@ -199,6 +200,7 @@ def comparison_html(trials):
 
 
 def comparison_markdown(trials):
-    rows = [f"| [{name}]({url}) | {period} | {fit} | {answer} |" for name, period, fit, answer, url in trials]
+    rows = [f"| {name} ([{evidence}]({url})) | {period} | {fit} | {answer} |"
+            for name, period, fit, answer, url, evidence in trials]
     return "\n".join([f"**{COMPARE_TITLE}**", "", COMPARE_NOTE, "",
                       "| Run | New timing | Gravity ± standard error | Fresh check |", "| --- | --- | --- | --- |", *rows])
