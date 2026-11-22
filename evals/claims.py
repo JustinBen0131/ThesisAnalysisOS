@@ -115,6 +115,10 @@ def quoted(name: str, run: Dict[str, Any]) -> List[str]:
     if timing:
         said.append("{0} ms for {1} files".format(", ".join("{0:.1f}".format(1000 * size["seconds"]) for size in timing["upkeep"]),
                                                   ", ".join("{0:,}".format(size["files"]) for size in timing["upkeep"])))
+        added = timing.get("isolating_one_execution")
+        if added:
+            said.append("{0:.1f} ms added, the median of {1} paired runs (95% interval {2:.1f} to {3:.1f} ms)".format(
+                1000 * added["median_seconds"], added["pairs"], 1000 * added["low_seconds"], 1000 * added["high_seconds"]))
     return said
 
 

@@ -57,6 +57,9 @@ be marked reviewable, and I'll record every run.
 Default (Rust): `cargo test`, `cargo fmt --all -- --check`,
 `cargo clippy --all-targets -- -D warnings`
 
+Optional, per check: which folders does it read? Then it reruns only when
+those change. Say "isolate it" to run it with only those folders present.
+
 **6. How much rope do the agents get?**
 - **propose only**: they edit, but every commit needs your nod and pushes are refused
 - **branches**: they commit freely on task branches, every push asks you first
@@ -118,7 +121,7 @@ What each answer fills in `.taos/config.json`, and what it changes:
 | 2 | `project_name`, `prefix` | the allocator; ids are permanent |
 | 3 | `workspaces[].path/primary/agent` | lanes: the guard denies the other agent's writes in a reserved path; `taos start` routes each agent to its own |
 | 4 | `git_isolation` (`worktree`/`branch`/`fork`/`trunk`), `branch_pattern` (`{prefix_lower}`, `{id_lower}`, `{slug}`, `{agent}`), `protected_branches`, `worktree_root`, `merge_policy` (`human_pr`/`agent_after_gates`/`trunk`) | what `taos start` prints and claims; what the guard asks and denies around commit, push, and merge |
-| 5 | `gates[]`, `stack` | `taos gate run`; `finish --state review\|done` refuses without a pass in 24 h. Stack is auto-detected from the primary workspace (Cargo.toml, package.json, pyproject, go.mod) when unstated |
+| 5 | `gates[]` (each may carry `depends_on` and `isolated`), `domains[]`, `stack` | `taos gate run`; `finish --state review\|done` refuses unless every gate holds on the files as they are now. Stack is auto-detected from the primary workspace (Cargo.toml, package.json, pyproject, go.mod) when unstated |
 | 6 | `autonomy` (`propose_only`/`edit_branches`/`push_branches_open_prs`), `human_only[]` | the guard's push and commit verdicts; the list shown in AGENTS.md and the panel |
 | 7 | `secret_patterns[]` | merged with the built-in deny list in the guard |
 | 8 | `first_tasks[]` | `{title, next_action, done_when?, verification?, priority}`; created as `next`, none hot. If `done_when` is absent, propose one in the sharpen step after reading the repo |

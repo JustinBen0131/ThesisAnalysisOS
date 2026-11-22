@@ -229,8 +229,8 @@ def validate(config: Dict[str, Any]) -> List[str]:
         limit = gate.get("max_age_hours")
         if limit is not None and (isinstance(limit, bool) or not isinstance(limit, (int, float)) or limit <= 0):
             problems.append("config.gates: max_age_hours must be a positive number")
-        if gate.get("isolated") is not None and not isinstance(gate.get("isolated"), bool):
-            problems.append("config.gates: isolated must be true or false")
+        if gate.get("isolated") is not None and not (isinstance(gate.get("isolated"), bool) or gate.get("isolated") == "strict"):
+            problems.append('config.gates: isolated must be true, false or "strict"')
     return problems
 
 

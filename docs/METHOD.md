@@ -108,7 +108,7 @@ and their inputs, a person's acceptance, the lease on it.
 
 Four checks stand behind this, each one command:
 
-- **The cases.** `tests/test_counterexamples.py` holds 19 cases, written
+- **The cases.** `tests/test_counterexamples.py` holds 22 cases, written
   against entry points the first release already had. At commit `071a348`
   all 19 fail. The first 17 came from three outside reviews and were closed
   in the release that followed, `89f36ce`. The last two were found after it,
@@ -233,19 +233,23 @@ none of 366 runs passed, so nothing was ever reused, where the open workspace
 had 150 wrong reuses. With everything declared, isolation changed no count:
 60 executions and 0 wrong reuses. The cost is placing the declared files for
 each run, by hard link where the filesystem allows.
-`evals/reuse_frontier.py` prints what that added to one execution, with its
-uncertainty. The two runs it compares are minutes apart, so the figure also
-carries any drift of the machine between them. Read it as an order of
-magnitude: milliseconds for a few small files.
+`evals/reuse_frontier.py` measures what that adds to one execution in pairs:
+the same edit in two workspaces, one with its checks isolated, asked back to
+back with the order alternating, so a drift of the machine cancels instead
+of landing in the answer. The figure, with its interval, is in
+`docs/CLAIMS.md`.
 
 What isolation establishes is narrower than "the check is right". It
 establishes that the result depends on the bytes it is filed under and on
 nothing else in the workspace, which is what reuse needs. A check that finds
 an input missing usually fails, as these did. One that carries on without it
 gives a wrong answer, and gives the same wrong answer when rerun, so it is
-still never reused wrongly. A path outside the workspace, the network and
-the environment are not isolated, and a check that needs git or the files it
-wrote on an earlier run cannot run this way.
+still never reused wrongly. The environment is fixed for an isolated check
+everywhere. The network and the rest of the workspace are closed where the
+machine has a way, which is found by trying and written into each result;
+today that is macOS. A file outside the workspace can still be read by its
+absolute path, and a check that needs git or the files it wrote on an
+earlier run cannot run this way.
 
 The other half of the gap was closed directly. A declared domain is read
 from the disk, so an input git ignores is part of what a check stood on.

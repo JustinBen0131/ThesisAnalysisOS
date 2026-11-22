@@ -66,15 +66,32 @@ An isolated gate runs in an empty folder that holds only the files its
 result is filed under: the domains it depends on, and any file no domain
 claims. A file it did not declare is not there to be read, so its result
 cannot be reused wrongly. A failure ends with a line saying what it could
-read. Three things to know:
+read.
+
+Files are one way to read something undeclared. Three more are closed where
+they can be, and each result records which were (`closed` in the record, and
+the words `taos why` prints):
+
+- **The environment, everywhere.** The gate sees where programs are, the
+  locale and an empty home folder. A variable it needs is written into its
+  command (`SEED=7 python3 check.py`), where it is part of what the gate is.
+- **The network and the rest of the workspace, on macOS.** A connection, or a
+  workspace file reached by its absolute path, is refused. Whether the
+  machine can do this is found by trying, once, and never assumed. On other
+  systems these two stay open, and the record says so.
+- `"isolated": "strict"` does not run on a machine that cannot close them.
+
+Four more things to know:
 
 - What the gate writes is discarded. A gate is a question, not a step that
   produces files.
 - Files are placed by hard link where the filesystem allows, and by copy
   otherwise. A gate that rewrites one of its inputs changes the original,
   and that run is reported `unknown`.
-- A gate that needs `.git`, an absolute path, the network, or more than
-  2,000 files in one domain cannot run this way.
+- A gate that needs `.git`, the network, a variable from your shell, or
+  more than 2,000 files in one domain cannot run this way.
+- A file outside the workspace, reached by its absolute path, can still be
+  read. Keep inputs in the workspace, where a domain can name them.
 
 ## Rules
 

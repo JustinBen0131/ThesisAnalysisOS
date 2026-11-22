@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import platform
 import random
 import shutil
@@ -135,6 +136,39 @@ class World(object):
 def trace(edits: int, seed: int, files: int = 4) -> List[Tuple[int, int]]:
     rng = random.Random(seed)
     return [(rng.randrange(FOLDERS), rng.randrange(files)) for _ in range(edits)]
+
+
+def isolation_cost(pairs: int = 40, seed: int = 7) -> Optional[Dict[str, Any]]:
+    """What isolating one execution adds: the same edit in two workspaces, one with its checks isolated, asked back to back.
+
+    The two halves of a pair differ only in the isolation, and the order
+    within a pair alternates, so a drift of the machine cancels instead of
+    landing in the answer. Reported: the median difference, and the interval
+    between the order statistics that covers the median 95% of the time.
+    """
+    homes = [Path(tempfile.mkdtemp(prefix="taos-reuse-")) for _ in range(2)]
+    try:
+        worlds = [World(homes[0], FOLDERS), World(homes[1], FOLDERS, isolate=True)]
+        for world in worlds:
+            world.consult(-1)
+        differences: List[float] = []
+        for step, (folder, index) in enumerate(trace(pairs, seed)):
+            seconds = [0.0, 0.0]
+            for which in ((0, 1) if step % 2 == 0 else (1, 0)):
+                worlds[which].edit(step, folder, index)
+                ran, seconds[which] = worlds[which].consult(step)
+                if ran != 1:
+                    return None          # each edit is meant to rerun exactly one check
+            differences.append(seconds[1] - seconds[0])
+        differences.sort()
+        count = len(differences)
+        low = max(1, int(math.floor((count - 1.96 * math.sqrt(count)) / 2)))
+        high = min(count, int(math.ceil(1 + (count + 1.96 * math.sqrt(count)) / 2)))
+        return {"pairs": count, "median_seconds": statistics.median(differences), "low_seconds": differences[low - 1],
+                "high_seconds": differences[high - 1], "network_and_workspace_closed": gates.closes()}
+    finally:
+        for home in homes:
+            shutil.rmtree(str(home), ignore_errors=True)
 
 
 def expected(edit_trace: Sequence[Tuple[int, int]], k: int) -> int:
@@ -259,12 +293,9 @@ def experiment(edits: int = 60, seed: int = 7, ks: Sequence[int] = GRANULARITIES
             size["break_even_check_seconds"] = size["seconds"] / spared
         result["timing"] = {"seconds_when_something_reran": base, "seconds_per_execution": per_check, "upkeep": sizes,
                             "checks_spared_per_consultation": spared}
-        closed, opened = [seconds for _, seconds in alone["samples"]], [seconds for _, seconds in by_k[finest]["samples"]]
-        if len(closed) > 1 and all(ran == 1 for ran, _ in alone["samples"] + by_k[finest]["samples"]):
-            # every consultation reran exactly one check in both runs, so the difference of the means is what isolating one costs
-            result["timing"]["isolating_one_execution"] = {
-                "seconds": statistics.mean(closed) - statistics.mean(opened),
-                "standard_error": (statistics.variance(closed) / len(closed) + statistics.variance(opened) / len(opened)) ** 0.5}
+        added = isolation_cost()
+        if added is not None:
+            result["timing"]["isolating_one_execution"] = added
     return result
 
 
@@ -282,8 +313,8 @@ def report(result: Dict[str, Any]) -> str:
         added = timing.get("isolating_one_execution")
         out += ["", "  On this machine one execution of these small checks costs {0:.1f} ms{1}, and asking costs:".format(
             1000 * timing["seconds_per_execution"],
-            "" if added is None else "; isolating it changes that by {0:+.1f} +/- {1:.1f} ms".format(
-                1000 * added["seconds"], 1000 * added["standard_error"]))]
+            "" if added is None else "; isolating it adds {0:.1f} ms, the median of {1} paired runs (95% interval {2:.1f} to {3:.1f} ms)".format(
+                1000 * added["median_seconds"], added["pairs"], 1000 * added["low_seconds"], 1000 * added["high_seconds"]))]
         for size in timing["upkeep"]:
             out.append("    {0:>5} files: {1:6.1f} ms to ask when nothing changed; reuse pays for any check slower than {2:.1f} ms".format(
                 size["files"], 1000 * size["seconds"], 1000 * size["break_even_check_seconds"]))

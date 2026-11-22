@@ -1,30 +1,30 @@
 {
-  "caught": 18,
-  "faults": 18,
+  "caught": 20,
+  "faults": 20,
   "measured_on": {
     "files": {
       "count": 51,
       "files": {
-        "evals/mutations.py": "3d1f639b784a82c87d1b027ff29a5e5f88825c35256c4729b1ca652f6f0804d3",
-        "taos_core/__init__.py": "c7fc733846d64d909ecb441c43360360c861ba39b5503ceea0dde47cce7f0e02",
+        "evals/mutations.py": "b8a6c07615a5b877da941c9402f4e99c4d4307ffad5725a9dcec514a5eacf782",
+        "taos_core/__init__.py": "66629c3555bb4a5eb5d6ab16af575f0adf6b656cfd82f59dea5b15e19a40326c",
         "taos_core/_science.py": "a86fa4b33025583e352ed6bbcae71708f46f38223ad3da40151c8e0223764e94",
         "taos_core/anchors.py": "ec360d4aa57d588703acc6ff915463003029e33b24fef2d1fa952d93af877b29",
         "taos_core/atoms.py": "f0c5f9f5d422d471a6056023e51ba0ef0f1dfd1c2ea842edb3a46eafb159c279",
         "taos_core/bank.py": "c1a364b7786330ca6243b4401e8b7687de70d6c1535ab80c4cafe0b12517033d",
         "taos_core/basis.py": "44cd41ded3f771bdf66f716911b0095cb291ba2809e1c11c9afb880f5066ef1b",
-        "taos_core/bootstrap.py": "0cac2d7d490ac551843cad73cc997666afa5a309fd34d6d5846e2d6cd5a1d177",
+        "taos_core/bootstrap.py": "5743c8492960292d769bd4d8f124a4d0de1d315ccfa11bca3305e93e61c41231",
         "taos_core/brief.py": "2a0fbb94f9e108b74728e35a39de74b99d7742789b4f63fa21e8174a98294c25",
         "taos_core/burn.py": "49b54c0b7b85903b6b3aa37a20fd7d8af1b30fa5bd5ec3d62db4215cd236dab0",
         "taos_core/changes.py": "7426cfc1bd5b88a4783160d996ebe8ffa120a6a25967bdad5af68d0d6c01f5e7",
         "taos_core/claims.py": "9b6eb35626843264409f2910ebb4d3427334f8c6c5b4515745922d7218f35081",
         "taos_core/cli.py": "175aa230a7b0287250a617f21bd19d821b7ddce3e7d967eb97df4a952754edca",
-        "taos_core/config.py": "04d3ca3b205c2756f81aa4fd692b6008b75baeb954c99283ca893a0f0e3e118c",
+        "taos_core/config.py": "1ac43a15335c5609de4e556efa3e4f4debff34f3e1da2fc8b933a7b881486260",
         "taos_core/control.py": "97fd04c23f0700c240c99f7c4a5ded853cac50bedc1754320f725e2abd4d3dcd",
         "taos_core/decisions.py": "6b1e90507696573a62ae18c8b0dc198ad8a13b91d1c65b0a261e1c40246540f4",
         "taos_core/demo.py": "7b15a091b69005b79f307ac9436cbd5b25bc50e6492e0ecd4bc2b7bed5c05ef4",
-        "taos_core/doctor.py": "0d4ff31ded62c9f1dd025a643b5220ef8e0f5141a6178d039b9501228ee9914c",
+        "taos_core/doctor.py": "b9b6e95be0ec332688f8876a1fd8a7ac321e2474dc1735b2f703524e0dbe3b42",
         "taos_core/events.py": "81b4d7b216ab41303c6da429d3a5dbb958ff1ee51d1fa4ba3da57797ed0f044e",
-        "taos_core/gates.py": "5ce672ce90da509b7bb4cb21dbecf680518163dc16c48288ec1ad034515ee5c8",
+        "taos_core/gates.py": "2d42b5fe1761d03e510053faa35198ee09ec6db10e5fd9fb5082f0b9751fcd30",
         "taos_core/handoff.py": "b07517aea62d0546559b834b7abbdd8319fb488f44d0013856b0c1469e4bb5af",
         "taos_core/kernels.py": "466bfcdec7898db676579129eefb028f1680aad750d85aa8d934236b7c887623",
         "taos_core/lessons.py": "d737e85bef1dbdaa6e8a33f2d4ba6a51cf9d0e65247c6d15dddf5daf22a346e1",
@@ -45,7 +45,7 @@
         "tests/helpers.py": "a3df70c3f8d6e1847cf96d45e28786dcca3234226bf7ebee481f05595070ca60",
         "tests/test_closure.py": "0b93407007d4a03aedbe25fb63ae5b52b34b35799352ab5a34b33129da8253b3",
         "tests/test_control.py": "f12461a59d092ebe1dab483815acf2a2e4f93e648a6b4d0826d4779f59f99ae9",
-        "tests/test_counterexamples.py": "b31c8557c58d56286081562f452d45748173ef6cd45565d7e4ce691a329a1f02",
+        "tests/test_counterexamples.py": "e6f35d8c643bf98bea33ef3e9e5826fca85c2ecf43788b6100f50123301520cc",
         "tests/test_demo.py": "2ebbd25116d3316dcf3688e65cd202b953d32e80b733d875b6c8731b536cfab3",
         "tests/test_evals.py": "2afcefcd9d082161678e72f7da2aabea57eb44207fe0db0694071c471c6a15e3",
         "tests/test_hooks.py": "39b71aa1449d53548f448204d01a1e939c3e01b29510213dfb1a7fac33f6ba3c",
@@ -57,7 +57,7 @@
         "tests/test_taos.py": "5ebb7e36da7972e42f9c6d6b3afd7eda63bdd37fc5c8048250086bb1a8a9b187",
         "tests/test_usage.py": "9368338dede3f7da1b6d29250a8d6a5d72a59d7b5cf23a0b720b884b10ac5222"
       },
-      "sha256": "c99234ad3e0dbbddd3a62971c77b5cd8cdda65543ab99369d91fd176fa0c4fd9"
+      "sha256": "276327c691f994e66927eb7bed3ddb8beff962aaa916bb010ec27168ffea3939"
     },
     "patterns": [
       "evals/mutations.py",
@@ -84,6 +84,8 @@
     "acceptance: it carries over to an edited version",
     "acceptance: an agent can accept its own work",
     "domains: an input git ignores is left out of what a check stood on",
-    "isolation: an isolated check runs where every file can be read"
+    "isolation: an isolated check runs where every file can be read",
+    "isolation: an isolated check still sees the caller's environment",
+    "isolation: the network and the rest of the workspace are left open where they can be closed (macOS)"
   ]
 }

@@ -55,6 +55,9 @@ cannot rerun it. **not claimed** is listed so nobody has to guess.
 | Claim | Code | Check | Status |
 |---|---|---|---|
 | A number quoted here is stale once the code it was measured on changes, and the answer names the file | `evals/measured.py` | `test_a_recorded_number_goes_stale_when_the_code_it_measured_changes` | tested |
+| An isolated check sees a fixed environment, not the caller's | `_fixed_environment` | `test_an_isolated_check_does_not_see_the_environment` | tested |
+| Each isolated result records what was closed, found by trying; where the network and the rest of the workspace can be closed they are, and a strict check does not run where they cannot | `closes` | `test_the_record_says_what_was_closed_and_it_was` | tested |
+| The setup answers can say which files each check reads | `_config_from` | `test_setup_can_say_what_a_check_reads` | tested |
 | No row of this file names code or a test that is not there, or a number its recorded run does not contain | `evals/claims.py` | `test_no_claim_names_something_that_is_not_there_or_misquotes_a_recorded_run` | tested |
 | The demo runs from a clean copy and prints each idea with real output | `taos_core/demo.py` | `test_it_runs_from_a_clean_copy_and_shows_each_idea_with_real_output` | tested |
 
@@ -62,14 +65,15 @@ cannot rerun it. **not claimed** is listed so nobody has to guess.
 
 | Claim | Number | Reproduce | Status |
 |---|---|---|---|
-| Earlier releases had the counterexample cases: every one at the first, two at the second | 19 of 19 fail at `071a348`; 2 of 19 fail at `89f36ce`; 19 of 19 pass here | `python3 evals/at_revision.py` | measured |
-| The tests notice when a protection is removed. The first run, with 16 faults, caught 15; the missing test was added | 18 of 18 seeded faults caught | `python3 evals/mutations.py` | measured |
+| Earlier releases had the counterexample cases: every one at the first, five at the second | 22 of 22 fail at `071a348`; 5 of 22 fail at `89f36ce`; 22 of 22 pass here | `python3 evals/at_revision.py` | measured |
+| The tests notice when a protection is removed. The first run, with 16 faults, caught 15; the missing test was added | 20 of 20 seeded faults caught | `python3 evals/mutations.py` | measured |
 | Reuse by basis relied on no stale result and executed what an oracle would | 60 executions, 0 wrong, in 360 results relied on | `python3 evals/reuse_frontier.py` | measured, one workload |
 | Age limits trade reruns against stale reuse | 180, 90, 48 executions with 30, 83, 161 wrong | same | measured, one workload |
 | In the open, under-declared inputs are reused wrongly | 150 wrong in 360 when every check hid one folder | same | measured, one workload |
 | Isolated, a check that reads what it did not declare never passes, and correct declarations cost no extra executions. Predicted before the code was written | 0 of 366 runs passed when every check hid one folder and ran isolated; 60 executions, 0 wrong with everything declared | same | measured, one workload |
-| Asking costs time that grows with the tree | 17.8, 47.1, 326.4 ms for 48, 480, 4,800 files | same | measured, one laptop |
-| The suite passes on Python 3.9 and 3.12, Linux and macOS | 148 tests | `./taos selftest`, and CI | tested |
+| Asking costs time that grows with the tree | 15.4, 40.6, 305.4 ms for 48, 480, 4,800 files | same | measured, one laptop |
+| Isolating a check costs milliseconds. Measured in pairs that differ only in the isolation, order alternating | 14.0 ms added, the median of 40 paired runs (95% interval 13.6 to 14.7 ms) | same | measured, one laptop |
+| The suite passes on Python 3.9 and 3.12, Linux and macOS | 151 tests | `./taos selftest`, and CI | tested |
 
 ## Reported, not reproducible here
 
@@ -90,7 +94,8 @@ them as the reasons the mechanisms exist, not as results you can check.
 - That an open check's declaration of what it reads is verified. It is
   trusted, unless the check is marked isolated.
 - That an isolated check is a correct check. Isolation makes its result
-  depend only on the files it is filed under. It does not reach an absolute
-  path, the network or the environment.
+  depend only on the files it is filed under and a fixed environment. The
+  network and the rest of the workspace are closed on macOS only, and a file
+  outside the workspace can be read by its absolute path anywhere.
 - That anything outside the workspace is seen: the network, the clock, the
   environment, another machine.

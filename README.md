@@ -117,11 +117,11 @@ that implements it, the test that checks it, and its status. The short form:
 
 | Claim | Evidence | Run it yourself |
 |---|---|---|
-| Earlier releases had 19 distinct cases of a record read without its conditions; each is now refused or reported | 19 of 19 fail at `071a348`, 2 of 19 fail at `89f36ce`, 19 of 19 pass here | `python3 evals/at_revision.py` |
-| The tests check what they say they check | 18 protections removed one at a time; 18 of 18 removals are caught | `python3 evals/mutations.py` |
+| Earlier releases had 22 distinct cases of a record read without its conditions; each is now refused or reported | 22 of 22 fail at `071a348`, 5 of 22 fail at `89f36ce`, 22 of 22 pass here | `python3 evals/at_revision.py` |
+| The tests check what they say they check | 20 protections removed one at a time; 20 of 20 removals are caught | `python3 evals/mutations.py` |
 | Reusing a result by its basis never relies on a stale one, and reruns only what an edit reached | 60 edits, 360 results relied on: 60 executions and 0 wrong reuses, the same as an oracle; age limits gave 180 to 48 executions with 30 to 161 wrong reuses | `python3 evals/reuse_frontier.py` |
 | A check that reads what it did not declare is reused wrongly in the open, and cannot pass in isolation | 150 wrong reuses in 360 in the open; isolated, 0 of 366 runs passed, so nothing was reused | same |
-| The whole suite passes | 148 tests, Python 3.9 and 3.12, Linux and macOS | `./taos selftest` |
+| The whole suite passes | 151 tests, Python 3.9 and 3.12, Linux and macOS | `./taos selftest` |
 | This page says what the recorded runs say | every row of `docs/CLAIMS.md` and every number above, read back against the code as it is | `python3 evals/claims.py` |
 
 **These numbers are records too.** Each run is stored in `evals/results/`
@@ -138,10 +138,11 @@ before the code existed, so the history shows the order (`docs/METHOD.md`,
 
 - **In the open, it trusts what a check declares.** A check that reads a
   folder it did not declare is reused when that folder changes. Marking the
-  check `"isolated": true` makes it run with only its declared files present,
-  so it cannot be reused wrongly. That costs placing those files for each
-  run, and a check that needs git, the network or an absolute path cannot
-  run that way.
+  check `"isolated": true` makes it run with only its declared files present
+  and a fixed environment, so it cannot be reused wrongly. On macOS the
+  network and the rest of the workspace are closed to it too; elsewhere the
+  record says they were open. That costs placing those files for each run,
+  and a file outside the workspace can still be read by its absolute path.
 - **With no domains declared, it does not see a file git ignores.** Name the
   file in a domain and it is part of what a check stood on.
 - **It cannot see outside the workspace.** A check that depends on the

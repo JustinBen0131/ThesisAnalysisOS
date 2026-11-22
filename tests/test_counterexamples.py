@@ -12,13 +12,16 @@ it tested, an action that was observed) was read later as simply true.
 from __future__ import annotations
 
 import json
+import os
 import shutil
+import socket
 import subprocess
+import sys
 import unittest
 
-from helpers import cleanup, construct_example, make_home
+from helpers import REPO, cleanup, construct_example, make_home
 
-from taos_core import anchors, changes, claims, control, gates, lessons, lifecycle, replay, rules
+from taos_core import anchors, bootstrap, changes, claims, control, gates, lessons, lifecycle, replay, rules
 from taos_core import tasks as tasks_mod
 from taos_core.util import TaosError
 
@@ -205,6 +208,47 @@ class TestTheBasisIsWhatWasRead(Counterexample):
         self.assertFalse(gates.run(self.paths, task_id="CMP-1", agent="codex")["ok"])
         self.check(command="cat data/run.csv src/scale.txt", isolated=True, depends_on=["inputs", "code"])
         self.assertTrue(gates.run(self.paths, task_id="CMP-1", agent="codex")["ok"])
+
+    def test_an_isolated_check_does_not_see_the_environment(self) -> None:
+        os.environ["TAOS_TUNING"] = "1"
+        self.addCleanup(os.environ.pop, "TAOS_TUNING", None)
+        reads_it = 'test -n "$TAOS_TUNING" && cat data/run.csv'
+        self.check(command=reads_it)
+        self.assertTrue(gates.run(self.paths, task_id="CMP-1", agent="codex")["ok"])      # in the open, the variable is there
+        self.check(command=reads_it, isolated=True)
+        self.assertFalse(gates.run(self.paths, task_id="CMP-1", agent="codex")["ok"])     # isolated, it is not
+        self.check(command="TAOS_TUNING=1; " + reads_it, isolated=True)
+        self.assertTrue(gates.run(self.paths, task_id="CMP-1", agent="codex")["ok"])      # written into the command, it is the check
+
+    def test_the_record_says_what_was_closed_and_it_was(self) -> None:
+        listener = socket.socket()
+        self.addCleanup(listener.close)
+        listener.bind(("127.0.0.1", 0))
+        listener.listen(8)
+        self.check(isolated=True)
+        closed = gates.run(self.paths, task_id="CMP-1", agent="codex")["results"][0]["closed"]
+        self.assertEqual(closed[:2], ["files", "environment"])
+        self.assertEqual("network" in closed, gates.closes())                   # the record says no more than was in force
+        by_absolute_path = "cat '{0}'".format(self.ws / "src" / "scale.txt")       # in the workspace, and not declared
+        over_the_network = "\"{0}\" -c \"import socket; socket.create_connection(('127.0.0.1', {1}), timeout=2)\"".format(
+            sys.executable, listener.getsockname()[1])
+        for reach in (by_absolute_path, over_the_network):
+            self.check(command="cat data/run.csv && " + reach, isolated=True)
+            self.assertEqual(gates.run(self.paths, task_id="CMP-1", agent="codex")["ok"], not gates.closes())
+        self.check(isolated="strict")                                            # strict does not run where they stay open
+        self.assertEqual(gates.run(self.paths, task_id="CMP-1", agent="codex")["ok"], gates.closes())
+
+    def test_setup_can_say_what_a_check_reads(self) -> None:
+        answers = json.loads((REPO / "bootstrap" / "answers.example.json").read_text(encoding="utf-8"))
+        answers["domains"] = [{"name": "analysis", "patterns": ["src/*", "data/*"]}]
+        answers["gates"] = [{"name": "fit", "command": "python3 check.py", "depends_on": ["analysis"], "isolated": True}]
+        about_these = [problem for problem in bootstrap.validate_answers(answers, self.paths)
+                       if any(word in problem for word in ("domains", "gates", "depends_on", "isolated"))]
+        self.assertEqual(about_these, [])
+        config = bootstrap._config_from(answers)
+        self.assertEqual(config["basis"]["domains"], {"analysis": ["src/*", "data/*"]})
+        self.assertEqual(config["gates"][0]["depends_on"], ["analysis"])
+        self.assertIs(config["gates"][0]["isolated"], True)
 
 
 if __name__ == "__main__":

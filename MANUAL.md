@@ -176,6 +176,27 @@ and an edit afterwards does not inherit it. See `policies/GATES.md`.
 
 Change the gates by editing `.taos/config.json` under `"gates"`.
 
+**Say what a check reads.** By default a check depends on every file in the
+workspace, so any edit makes its pass stale. Name the folders it reads and it
+is rerun only when one of them changes:
+
+```json
+"basis": {"domains": {"analysis": ["src/*", "data/*"], "figures": ["figs/*"]}},
+"gates": [{"name": "fit", "command": "python3 check.py", "depends_on": ["analysis"]}]
+```
+
+An edit under `figs/` now leaves `fit` standing, and two tasks that ask for
+`fit` on the same files share one run. A domain is what its patterns match on
+disk, so measured data that git ignores counts once a domain names it.
+
+**Isolate a check you would rather not trust.** A declaration is a promise.
+Add `"isolated": true` and the check runs in an empty folder that holds only
+the files it declared, in a fixed environment, so a file or a variable it did
+not declare is not there to be read. On macOS the network and the rest of the
+workspace are closed to it as well, and every result records what was closed.
+`"isolated": "strict"` does not run on a machine that cannot close them. The
+setup interview asks about both (question 5).
+
 ## 8. Correcting an agent so it compounds
 
 When an agent does something wrong, correct it as you normally would. When it

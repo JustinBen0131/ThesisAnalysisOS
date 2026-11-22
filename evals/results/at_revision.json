@@ -2,7 +2,7 @@
   "here": {
     "did_not_pass": 0,
     "names": [],
-    "ran": 19
+    "ran": 22
   },
   "measured_on": {
     "files": {
@@ -10,9 +10,9 @@
       "files": {
         "evals/at_revision.py": "359b9b8ff5e6f586afc17bf341e405f31e880850fa360fef6a7037ec2301ebc4",
         "tests/helpers.py": "a3df70c3f8d6e1847cf96d45e28786dcca3234226bf7ebee481f05595070ca60",
-        "tests/test_counterexamples.py": "b31c8557c58d56286081562f452d45748173ef6cd45565d7e4ce691a329a1f02"
+        "tests/test_counterexamples.py": "e6f35d8c643bf98bea33ef3e9e5826fca85c2ecf43788b6100f50123301520cc"
       },
-      "sha256": "ce6c04488a8adddf215934ee9e536166cb70259ceb2ceff5a59117bde8199305"
+      "sha256": "bc850b53561dc02d559c93a3e1d82b360f5ddea04c4ffd3f9f7c114ef564c88d"
     },
     "patterns": [
       "evals/at_revision.py",
@@ -22,7 +22,7 @@
   },
   "revisions": {
     "071a348": {
-      "did_not_pass": 19,
+      "did_not_pass": 22,
       "names": [
         "test_a_change_is_not_confirmed_by_a_number_from_nowhere",
         "test_a_check_cannot_pass_on_a_file_it_did_not_declare",
@@ -39,20 +39,26 @@
         "test_a_replacement_dated_in_the_future_does_not_govern_yet",
         "test_a_temporary_replacement_gives_the_rule_back_when_it_lapses",
         "test_an_input_git_ignores_is_still_part_of_what_a_check_stood_on",
+        "test_an_isolated_check_does_not_see_the_environment",
         "test_an_unlabelled_case_is_not_counted_as_harmless",
         "test_an_unobserved_profile_earns_no_credit",
         "test_done_cannot_be_reached_by_a_route_that_skips_the_check",
+        "test_setup_can_say_what_a_check_reads",
+        "test_the_record_says_what_was_closed_and_it_was",
         "test_the_text_false_is_not_read_as_true"
       ],
-      "ran": 19
+      "ran": 22
     },
     "89f36ce": {
-      "did_not_pass": 2,
+      "did_not_pass": 5,
       "names": [
         "test_a_check_cannot_pass_on_a_file_it_did_not_declare",
-        "test_an_input_git_ignores_is_still_part_of_what_a_check_stood_on"
+        "test_an_input_git_ignores_is_still_part_of_what_a_check_stood_on",
+        "test_an_isolated_check_does_not_see_the_environment",
+        "test_setup_can_say_what_a_check_reads",
+        "test_the_record_says_what_was_closed_and_it_was"
       ],
-      "ran": 19
+      "ran": 22
     }
   }
 }

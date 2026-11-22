@@ -72,8 +72,14 @@ FAULTS: List[Tuple[str, str, str, str, str]] = [
     ("domains: an input git ignores is left out of what a check stood on", "taos_core/basis.py",
      '        names = sorted(set(names) | set(on_disk(root, named, settings.get("ignore"))))', "        pass", "test_counterexamples"),
     ("isolation: an isolated check runs where every file can be read", "taos_core/gates.py",
-     "            code, tail = _isolated(cwd, before, filed, command, timeout)", "            code, tail = _execute(command, cwd, timeout)",
-     "test_counterexamples"),
+     '            code, tail, closed = _isolated(cwd, before, filed, command, timeout, strict=_isolation(gate) == "strict")',
+     "            code, tail = _execute(command, cwd, timeout)", "test_counterexamples"),
+    ("isolation: an isolated check still sees the caller's environment", "taos_core/gates.py",
+     "        code, tail = _execute(command, scratch, timeout, env=_fixed_environment(home, tmp), prefix=prefix)",
+     "        code, tail = _execute(command, scratch, timeout, prefix=prefix)", "test_counterexamples"),
+    ("isolation: the network and the rest of the workspace are left open where they can be closed (macOS)", "taos_core/gates.py",
+     "        code, tail = _execute(command, scratch, timeout, env=_fixed_environment(home, tmp), prefix=prefix)",
+     "        code, tail = _execute(command, scratch, timeout, env=_fixed_environment(home, tmp))", "test_counterexamples"),
 ]
 
 

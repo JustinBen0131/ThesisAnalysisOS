@@ -19,7 +19,7 @@ from .paths import Paths
 from .store import age_days, read_json, read_jsonl
 from .util import TaosError
 
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 
 def _check(name: str, status: str, detail: str) -> Dict[str, str]:
