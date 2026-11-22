@@ -1,5 +1,7 @@
 # ThesisAnalysisOS
 
+[![What ./taos demo prints first: the name TAOS in a box, each letter shaded as one of the four answers a result can get: holds, stale, fails or unknown.](docs/opener.svg)](#see-it-in-a-minute)
+
 **When a dataset changes, which earlier checks still apply?** ThesisAnalysisOS (TAOS)
 helps a team using AI agents answer that question. It records a check's result with
 the files the check says it reads. After an edit, it compares those files with the
