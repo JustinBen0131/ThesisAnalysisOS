@@ -63,6 +63,11 @@ jobs:
           python3 evals/exchange_simulation.py --verify
           python3 evals/replay_instrument_imbalance.py --json > "${RUNNER_TEMP}/instrument-imbalance.json"
           cmp evals/results/followups/instrument-imbalance.json "${RUNNER_TEMP}/instrument-imbalance.json"
+      - name: Build and verify the website before merge
+        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
+        run: |
+          python3 site/build.py --release --out "$RUNNER_TEMP/checked-site" --ref "$GITHUB_SHA" --url "https://whatstillholds.com/"
+          python3 site/release_integrity.py "$RUNNER_TEMP/checked-site"
 
   build:
     needs: test

@@ -71,9 +71,9 @@ find a compatible recorded run, it returns `unknown`.
 | Age limits trade reruns against stale reuse | 180, 90, 48 executions with 30, 83, 161 wrong | same | measured, one workload |
 | In the open, under-declared inputs are reused wrongly | 150 wrong in 360 when every check hid one folder | same | measured, one workload |
 | Isolated, a check that reads what it did not declare never passes, and correct declarations cost no extra executions. Predicted before the code was written | 0 of 366 runs passed when every check hid one folder and ran isolated; 60 executions, 0 wrong with everything declared | same | measured, one workload |
-| Asking costs time that grows with the tree | 15.4, 40.6, 305.4 ms for 48, 480, 4,800 files | same | measured, one laptop |
-| Isolating a check costs milliseconds. Measured in pairs that differ only in the isolation, order alternating | 14.0 ms added, the median of 40 paired runs (95% interval 13.6 to 14.7 ms) | same | measured, one laptop |
-| The suite passes on Python 3.9 and 3.12, Linux and macOS | 151 tests | `./taos selftest`, and CI | tested |
+| Asking costs time that grows with the tree | 18.4, 51.4, 351.0 ms for 48, 480, 4,800 files | same | measured, one laptop |
+| Isolating a check costs milliseconds. Measured in pairs that differ only in the isolation, order alternating | 16.8 ms added, the median of 40 paired runs (95% interval 15.5 to 17.8 ms) | same | measured, one laptop |
+| The suite passes on Python 3.9 and 3.12, Linux and macOS | 155 tests | `./taos selftest`, and CI | tested |
 
 ## Reported, not reproducible here
 

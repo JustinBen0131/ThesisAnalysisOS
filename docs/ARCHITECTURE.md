@@ -106,6 +106,7 @@ for the repository's own claims.
 | `standing` | `taos why`: every record a task rests on, read back against the present |
 | `rules`, `lessons`, `changes`, `replay`, `bank`, `anchors` | the science layer (`docs/METHOD.md`) |
 | `demo` | `taos demo`, and the scratch home the evaluations use |
+| `page` | how a run is written for a person: the opener, plain in a pipe, shaded on a terminal |
 | `handoff` | template, validate, write, wrapper |
 | `decisions`, `proposals` | the human queues |
 | `telemetry` | sanitized labels |

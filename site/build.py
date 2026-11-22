@@ -5,7 +5,7 @@ Nothing on the page is typed in twice. The run it steps through is the output
 of `./taos demo`, captured when the page is built. Every number is read from
 `evals/results/`, and every claim from `docs/CLAIMS.md` with the standing
 `evals/claims.py` gives it. The build stops if a recorded run no longer
-stands, if the demo stops printing a line the page explains, or if a link
+stands, if the structured demo record disagrees with the walkthrough, or if a link
 inside the page leads nowhere.
 
 Each page is written twice from one source: as HTML for a person and as
@@ -25,6 +25,7 @@ import argparse
 import datetime
 import hashlib
 import html
+import io
 import json
 import os
 import re
@@ -45,6 +46,8 @@ sys.path.insert(0, str(HERE))  # support loaders that import the builder by file
 
 import claims as read_back  # noqa: E402  (evals/claims.py)
 import measured  # noqa: E402
+import demo_walkthrough  # noqa: E402
+from taos_core.demo import write as write_terminal_demo  # noqa: E402
 from reuse_play import recorded_comparison, reuse_play  # noqa: E402
 from visitor_claims import visitor_claim_title  # noqa: E402
 from policy_evidence import attach_policy_evidence  # noqa: E402
@@ -87,39 +90,6 @@ DESCRIPTION = ("A research operating system for people working with AI assistant
                "so the next person or assistant can see which results need checking again after a change.")
 RUN_NAMES = {"at_revision": "known failures", "mutations": "seeded faults", "reuse_frontier": "reuse experiment"}
 
-# The seven moments, in the order the demo prints them. `first` and `last` are the lines that bound each one.
-STEPS = [
-    {"short": "Recorded", "title": "Record the fit", "answer": "holds", "code": "taos_core/gates.py",
-     "first": "$ taos gate run --task PEN-1", "last": "    PEN-1 stands as recorded",
-     "text": "The check passes and the AI assistant marks the task done. TAOS saves a receipt, a record of the "
-             "pass and a fingerprint of the files it tested. It also saves the instructions in force when the "
-             "task closed. A researcher can separately review and accept the fit."},
-    {"short": "Unrelated edit", "title": "Change the plot style", "answer": "holds", "code": "taos_core/basis.py",
-     "first": "The plot style is edited", "last": "    PEN-1 stands as recorded",
-     "text": "The figure style changes. The fit reads only the analysis code and swing data. Their contents "
-             "match the saved receipt, so the earlier pass still holds."},
-    {"short": "Input changes", "title": "Replace one timing measurement", "answer": "stale", "code": "taos_core/basis.py",
-     "first": "One swing is measured again", "last": "    PEN-1 does not stand as recorded",
-     "text": "The period for the 1.20 m pendulum changes from 2.19 to 2.21 seconds. TAOS marks the old pass "
-             "stale and names the changed data file. A fresh run can establish whether the revised fit passes."},
-    {"short": "Shared", "title": "Reuse a pass on a second task", "answer": "holds", "code": "taos_core/gates.py",
-     "section": "2",
-     "text": "The first assistant reruns the check on the revised data. A second task needs the same check on "
-             "the same inputs. TAOS returns the new pass and skips a duplicate run."},
-    {"short": "Instructions", "title": "Find the instruction in effect on each date", "answer": "stale", "code": "taos_core/rules.py",
-     "section": "3",
-     "text": "The January instruction specifies tape-measured lengths. Its March replacement specifies "
-             "laser-measured lengths. TAOS retrieves the original wording for either date and flags that the "
-             "task had already closed before either instruction was recorded."},
-    {"short": "Acceptance", "title": "Keep approval with the version reviewed", "answer": "stale", "code": "taos_core/tasks.py",
-     "section": "4", "last": "    stale    acceptance",
-     "text": "A researcher reviews the fit and its residuals and accepts the result. A later comment changes the "
-             "analysis file. TAOS reports that the approval applies to the earlier version."},
-    {"short": "Isolation", "title": "Find an undeclared input", "answer": "fails", "code": "taos_core/gates.py",
-     "section": "5", "last": "    ok    style",
-     "text": "The style check needs a file from the figures folder. It runs in isolation with only the analysis "
-             "files it listed, so it fails. After the figures folder is listed, the same command passes."},
-]
 
 USES = [
     ("Checks", "A saved pass identifies the inputs the check tested.", "taos_core/gates.py"),
@@ -213,38 +183,6 @@ def recorded_runs() -> Dict[str, Any]:
     return runs
 
 
-def demo_moments() -> List[List[str]]:
-    """Run the demo and cut its output into the seven moments. A line the page explains must still be printed."""
-    done = subprocess.run([sys.executable, str(REPO / "taos"), "demo"], cwd=str(REPO), capture_output=True, text=True)
-    if done.returncode != 0:
-        raise SystemExit("./taos demo failed, so there is no run to show:\n" + done.stderr[-800:])
-    lines = done.stdout.splitlines()
-
-    def find(prefix: str, start: int) -> int:
-        for index in range(start, len(lines)):
-            if lines[index].startswith(prefix):
-                return index
-        raise SystemExit("./taos demo no longer prints a line starting {0!r}; update STEPS in site/build.py".format(prefix))
-
-    moments, cursor = [], 0
-    for step in STEPS:
-        if "section" in step:
-            first = find(step["section"] + ". ", cursor) + 1
-            nxt = str(int(step["section"]) + 1) + ". "
-            last = next((index for index in range(first, len(lines)) if lines[index].startswith(nxt)), len(lines)) - 1
-            if "last" in step:
-                last = find(step["last"], first)
-        else:
-            first = find(step["first"], cursor)
-            last = find(step["last"], first)
-        chosen = lines[first:last + 1]
-        while chosen and not chosen[0].strip():
-            chosen = chosen[1:]
-        while chosen and not chosen[-1].strip():
-            chosen = chosen[:-1]
-        moments.append(chosen)
-        cursor = last + 1
-    return moments
 
 
 WORD = re.compile(r"^(\s+)(holds|stale|fails|unknown|ok|held|FAIL)(\s+)")
@@ -397,7 +335,7 @@ def record_graph(ctx: Dict[str, Any]) -> Dict[str, Any]:
                  "site/research_notes.py", "site/exchange.py", "site/verify_research_guide.py",
                  "site/research_feed.py", "site/exchange_result.py", "site/policy_evidence.py", "evals/replay_instrument_imbalance.py",
                  "evals/results/followups/instrument-imbalance.json",
-                 "site/reuse_play.py", "site/assets/reuse.js", "site/assets/reuse.css"):
+                 "site/reuse_play.py", "site/assets/reuse.js", "site/assets/reuse.css", "site/demo_walkthrough.py"):
         edges.append([page_at, len(nodes)])
         nodes.append({"k": "f", "l": path, "g": "other"})
     correction = next(row for row in ctx["model_evaluation"]["cases"] if row["id"] == "offsetting-score-corrections")["counts"]
@@ -498,7 +436,7 @@ def gather(ref: str) -> Dict[str, Any]:
     ctx = {
         "ref": ref, "revision": git("rev-parse", "HEAD") or "unknown",
         "built": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"),
-        "runs": runs, "rows": rows, "moments": demo_moments(), "sections": claims_file(),
+        "runs": runs, "rows": rows, "demo_record": demo_walkthrough.capture(REPO), "sections": claims_file(),
         "reuse": reuse, "finest": finest, "aged": aged, "hidden": hidden, "alone": alone, "refused": refused,
         "everything": by_policy["rerun everything"],
         "oracle": next(row for row in reuse["rows"] if row["policy"].startswith("oracle")),
@@ -509,6 +447,7 @@ def gather(ref: str) -> Dict[str, Any]:
         "handoff": load_handoff(REPO),
         "model_evaluation": load_model_evaluation(REPO),
     }
+    ctx["chapters"] = demo_walkthrough.chapters(ctx["demo_record"], ctx["audit"])
     graph = ctx["graph"] = record_graph(ctx)
     # Compare the same transitive inputs in the live footer that the graph draws.
     inputs: Dict[int, List[int]] = {}
@@ -661,20 +600,20 @@ def bars(ctx: Dict[str, Any]) -> str:
 
 
 def home(ctx: Dict[str, Any]) -> str:
-    moments = ctx["moments"]
-    before = next(line for line in moments[0] if "check fit" in line)
-    after = next(line for line in moments[2] if "check fit" in line)
+    chapters = ctx["chapters"]
+    before, after = demo_walkthrough.fit_verdicts(chapters)
     steps = []
-    for number, (step, lines) in enumerate(zip(STEPS, moments), 1):
+    for position, scene in enumerate(chapters, 1):
+        facts = "".join(f'<div><dt>{esc(label)}</dt> <dd>{esc(value)}</dd></div>' for label, value in scene.facts)
+        extra = demo_walkthrough.comparison_html(scene.comparisons) if scene.comparisons else ""
         steps.append(
-            '<article class="step" id="run-{0}" data-short="{1}">'
-            '<div class="term" role="group" aria-label="Recorded output"><pre>{2}</pre></div>'
-            '<div class="tell"><p class="count">{0} of {3}</p><h3>{4}</h3><p>{5}</p>'
-            '<p class="answer">{6} {7}</p></div></article>'.format(
-                number, esc(step["short"]), terminal(lines), len(STEPS), esc(step["title"]), esc(step["text"]),
-                chip("holds" if step["answer"] == "fails" else step["answer"],
-                     "fails, then holds" if step["answer"] == "fails" else None),
-                source(ctx, step["code"])))
+            f'<article class="step demo-scene" id="{scene.anchor}" data-short="{esc(scene.short)}">'
+            f'<div class="tell"><p class="count">Step {position} of {len(chapters)}</p><h3>{esc(scene.title)}</h3>'
+            f'<p class="step-story">{esc(scene.story)}</p></div>'
+            f'<dl class="demo-facts" aria-label="Observed in this run">{facts}</dl>{extra}'
+            '<details class="demo-proof"><summary>Show the commands and results</summary>'
+            f'<div class="term" role="group" aria-label="Recorded commands and output"><pre>{terminal(scene.lines)}</pre></div>'
+            f'<p class="small source-link">{source(ctx, scene.code, "Read the implementation")}</p></details></article>')
     examples = "".join(
         "<li><h3>{0}</h3><p>{1}</p><p>{2}</p><p>{3} · {4}</p></li>".format(
             esc(question), esc(example), esc(limit), source(ctx, code, code_label), source(ctx, test, test_label))
@@ -834,13 +773,11 @@ When the team changes, the project record shows who did what, which checks passe
 
 <section id="run"><div class="wrap">
 <p class="kicker">01 / A recorded run</p>
-<h2>Follow a pendulum measurement from fit to review</h2>
-<p class="intro">The example estimates gravity from six pendulum lengths and periods. An automated check, called a
-<em>gate</em> in the commands below, tests the fitted value and its uncertainty. Two AI assistants share the work.
-The panels show the output of <code>./taos demo</code> captured when this page was built.</p>
-<p class="runplay"><button type="button" class="button ghost" data-play hidden aria-pressed="false">&#9654; Watch it run</button></p>
-<noscript><p>Compare the <a href="$original_readings">original fit of $old_fit m/s²</a> with the
-<a href="$corrected_readings">corrected fit of $new_fit m/s²</a>.</p></noscript>
+<h2>Which changes require a new gravity estimate?</h2>
+<p class="intro">A researcher estimates gravity from six pendulum timings. See which results a colleague
+can still use after the plot style changes or one timing is corrected.</p>
+<p class="runplay"><button type="button" class="button ghost" data-play hidden aria-pressed="false">&#9654; Play the steps</button>
+<a href="#run-3">Go to the timing correction</a> <a href="records/demo.json">Download the run (JSON)</a></p>
 <div class="stepper">$steps</div>
 </div></section>
 
@@ -938,22 +875,26 @@ Run this command to check the claim list against the current checkout.</p>
 <p class="kicker">06 / Start</p>
 <h2>Run the pendulum example locally</h2>
 <div class="two">
-<div><div class="command-block">
-<pre class="shell"><code id="demo-commands">git clone $github.git
-cd ThesisAnalysisOS
-./taos demo</code></pre>
+<div><p><!--demo-setup--></p><div class="command-block">
+<pre class="shell"><code id="demo-commands"><!--demo-commands--></code></pre>
 <button type="button" class="copy-commands" aria-label="Copy commands" title="Copy commands" hidden>
 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
 <g class="copy-squares"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M15.5 5V4.8A1.8 1.8 0 0 0 13.7 3H5a2 2 0 0 0-2 2v8.7a1.8 1.8 0 0 0 1.8 1.8H5"/></g>
 <path class="copy-check" d="m5 12 4.4 4.4L19 7"/></svg></button>
 <span class="copy-status" role="status" aria-live="polite"></span>
 </div>
-<p class="small">The demo copies the example into a temporary folder and runs its checks there.</p></div>
+<p class="small"><a href="records/demo.txt">Preview the terminal output</a>. The demo runs offline in a temporary folder.
+Add <code>--keep</code> to explore the files afterwards,
+or <code>--json</code> to read the run in a program.</p>
+<details class="demo-own"><summary>Try your own pendulum readings</summary>
+<p>Start with a CSV containing <code>length_m</code> and <code>period_s</code>.
+The audit tests how the estimate changes when a reading changes.
+<a href="$github/blob/$ref/docs/MEASUREMENT_AUDIT.md">See the required readings and command</a>.</p></details></div>
 <div><p>For your own project, choose <strong>Use this template</strong> on GitHub. The manual guides an AI assistant through
 asking about your project and configuring the new copy from your answers.</p>
 <p class="actions"><a class="button" href="$github">Open the repository<span aria-hidden="true"> &#8599;</span></a>
 <a class="plain" href="$github/blob/$ref/MANUAL.md">Read the manual</a>
-<a class="plain" href="source/" data-source-download>Browse the source</a></p></div>
+<a class="plain" href="source/">Browse this build’s source</a></p></div>
 </div>
 </div></section>
 """).substitute(
@@ -1108,11 +1049,14 @@ def home_markdown(ctx: Dict[str, Any], url: str) -> str:
            "The interactive view simulates an edit in the browser.".format(
                kinds.count("f"), kinds.count("r"), kinds.count("c")), "",
            "## A recorded run", "",
-           "The scripted demo assigns work to two assistant roles in one pendulum analysis. Six lengths and periods yield an estimate of gravity. "
-           "The automated check, called a gate, tests the fit and its uncertainty. The panels reproduce the output of `./taos demo` captured at build time.", ""]
-    for number, (step, lines) in enumerate(zip(STEPS, ctx["moments"]), 1):
-        out += ["### {0}. {1}".format(number, step["title"]), "", step["text"], "", "```text"] + lines + ["```", "",
-                "Code: `{0}`".format(step["code"]), ""]
+           "The demo fits six pendulum timings, edits the plot style, then corrects one timing. The website runs "
+           "`./taos demo --json` at build time. [Download the complete run](records/demo.json).", ""]
+    for number, scene in enumerate(ctx["chapters"], 1):
+        out += [f"### {number}. {scene.title}", "", scene.story, ""]
+        out += [f"- {label} — {value}" for label, value in scene.facts]
+        if scene.comparisons:
+            out += ["", demo_walkthrough.comparison_markdown(scene.comparisons)]
+        out += ["", "```text"] + scene.lines + ["```", "", f"Implementation in `{scene.code}`", ""]
     out += ["## How to read a saved check", "",
             "Each record names who produced it and the inputs or instructions it relied on. TAOS calls those its basis. "
             "Comparing the recorded basis with the current one yields one of four answers.", ""]
@@ -1292,6 +1236,11 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     agent_guide.write_decision_reading(out, REPO, RESEARCH_QUESTIONS, GITHUB, ctx["ref"])
     write("claims.json", json.dumps({"repository": NAME, "revision": ctx["revision"], "built": ctx["built"],
                                      "check": "python3 evals/claims.py --json", "rows": ctx["rows"]}, indent=2, sort_keys=True) + "\n")
+    write("records/demo.json", json.dumps(ctx["demo_record"], ensure_ascii=False, indent=2) + "\n")
+    terminal_view = io.StringIO()
+    write_terminal_demo(ctx["demo_record"], terminal_view, full=False, width=80, color=False)
+    # Some static hosts serve text/plain without a charset. Mark UTF-8 so the terminal border survives a direct visit.
+    write("records/demo.txt", "\ufeff" + terminal_view.getvalue())
     write("standing.json", json.dumps({"repository": NAME, "branch": "main", "revision": ctx["revision"], "built": ctx["built"],
                                        "stands_on": ctx["stands_on"]}, indent=2, sort_keys=True) + "\n")
     write("graph.json", json.dumps({
@@ -1318,10 +1267,16 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
         raise SystemExit("Release requires the verified source archive for the tested commit.")
     archive = snapshot["archive"]
     if archive:
-        homepage = out / "index.html"
-        homepage.write_text(homepage.read_text(encoding="utf-8").replace(
-            'href="source/" data-source-download>Browse the source',
-            f'href="source/{esc(archive)}" data-source-download download>Download ZIP'), encoding="utf-8")
+        setup = (f'<a href="source/{esc(archive)}" data-source-download download>Download this demo</a>, '
+                 'unzip it, and open the extracted folder in a terminal with Python 3.9 or later.')
+        commands = "./taos demo"
+    else:
+        setup = "To try the published demo, open a terminal with Git and Python 3.9 or later."
+        commands = f"git clone {GITHUB}.git\ncd ThesisAnalysisOS\n./taos demo"
+    homepage = out / "index.html"
+    homepage.write_text(homepage.read_text(encoding="utf-8")
+                        .replace("<!--demo-setup-->", setup)
+                        .replace("<!--demo-commands-->", esc(commands)), encoding="utf-8")
     catalog = research_catalog(out / "records", url if release else "",
                                ctx["revision"] if archive else None,
                                source_archive="source/" + archive if archive else None)
@@ -1416,7 +1371,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parser.parse_args(argv)
     ctx = build(Path(args.out), args.ref, args.url, release=args.release, preview_film_dir=args.preview_film_dir)
     print("built {0} from {1}: {2} moments, {3} claims hold, stands on {4} files, the record drawn as {5} nodes and {6} edges".format(
-        args.out, ctx["revision"][:7], len(ctx["moments"]), len(ctx["rows"]), len(ctx["stands_on"]),
+        args.out, ctx["revision"][:7], len(ctx["chapters"]), len(ctx["rows"]), len(ctx["stands_on"]),
         len(ctx["graph"]["nodes"]), len(ctx["graph"]["edges"])))
     return 0
 
