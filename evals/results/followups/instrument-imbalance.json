@@ -1,0 +1,592 @@
+{
+  "added_b_faults": [
+    {
+      "id": "B09",
+      "reference_fault": "1",
+      "score": "60"
+    },
+    {
+      "id": "B10",
+      "reference_fault": "1",
+      "score": "61"
+    },
+    {
+      "id": "B11",
+      "reference_fault": "1",
+      "score": "63"
+    },
+    {
+      "id": "B12",
+      "reference_fault": "1",
+      "score": "65"
+    },
+    {
+      "id": "B13",
+      "reference_fault": "1",
+      "score": "72"
+    },
+    {
+      "id": "B14",
+      "reference_fault": "1",
+      "score": "79"
+    },
+    {
+      "id": "B15",
+      "reference_fault": "1",
+      "score": "59"
+    },
+    {
+      "id": "B16",
+      "reference_fault": "1",
+      "score": "56"
+    }
+  ],
+  "cases": [
+    {
+      "equal_group_mean": "3/4",
+      "groups": {
+        "A": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 1,
+            "fp": 1,
+            "tn": 3,
+            "tp": 3
+          },
+          "detected_fault_ids": [
+            "A01",
+            "A02",
+            "A03"
+          ],
+          "reference_faults": 4,
+          "sensitivity": "3/4"
+        },
+        "B": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 3,
+            "fp": 1,
+            "tn": 3,
+            "tp": 9
+          },
+          "detected_fault_ids": [
+            "B01",
+            "B02",
+            "B03",
+            "B09",
+            "B10",
+            "B11",
+            "B12",
+            "B13",
+            "B14"
+          ],
+          "reference_faults": 12,
+          "sensitivity": "3/4"
+        },
+        "pooled": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 4,
+            "fp": 2,
+            "tn": 6,
+            "tp": 12
+          },
+          "detected_fault_ids": [
+            "A01",
+            "A02",
+            "A03",
+            "B01",
+            "B02",
+            "B03",
+            "B09",
+            "B10",
+            "B11",
+            "B12",
+            "B13",
+            "B14"
+          ],
+          "reference_faults": 16,
+          "sensitivity": "3/4"
+        }
+      },
+      "id": "augmented-baseline",
+      "input_sha256": {
+        "a": "7d8067525c66ce5346d2732f37f86da19e599663220ee245439a2be0c935a4e2",
+        "b": "5b8ef51c920e5589eb406eaa09b4d5d4326425eb053c5d5147cc8e60de156761"
+      },
+      "lowest_group_sensitivity": "3/4",
+      "score_edits": []
+    },
+    {
+      "equal_group_mean": "5/8",
+      "groups": {
+        "A": {
+          "checker_exit": 1,
+          "counts": {
+            "fn": 2,
+            "fp": 1,
+            "tn": 3,
+            "tp": 2
+          },
+          "detected_fault_ids": [
+            "A01",
+            "A02"
+          ],
+          "reference_faults": 4,
+          "sensitivity": "1/2"
+        },
+        "B": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 3,
+            "fp": 1,
+            "tn": 3,
+            "tp": 9
+          },
+          "detected_fault_ids": [
+            "B01",
+            "B02",
+            "B03",
+            "B09",
+            "B10",
+            "B11",
+            "B12",
+            "B13",
+            "B14"
+          ],
+          "reference_faults": 12,
+          "sensitivity": "3/4"
+        },
+        "pooled": {
+          "checker_exit": 1,
+          "counts": {
+            "fn": 5,
+            "fp": 2,
+            "tn": 6,
+            "tp": 11
+          },
+          "detected_fault_ids": [
+            "A01",
+            "A02",
+            "B01",
+            "B02",
+            "B03",
+            "B09",
+            "B10",
+            "B11",
+            "B12",
+            "B13",
+            "B14"
+          ],
+          "reference_faults": 16,
+          "sensitivity": "11/16"
+        }
+      },
+      "id": "a-only",
+      "input_sha256": {
+        "a": "3bb79b3416cbc0bd3810a655c6b5bd0b9cac8dba6421f2ed5d15d6ac1517b17b",
+        "b": "5b8ef51c920e5589eb406eaa09b4d5d4326425eb053c5d5147cc8e60de156761"
+      },
+      "lowest_group_sensitivity": "1/2",
+      "score_edits": [
+        {
+          "file": "a.csv",
+          "id": "A03",
+          "score": 50
+        }
+      ]
+    },
+    {
+      "equal_group_mean": "19/24",
+      "groups": {
+        "A": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 1,
+            "fp": 1,
+            "tn": 3,
+            "tp": 3
+          },
+          "detected_fault_ids": [
+            "A01",
+            "A02",
+            "A03"
+          ],
+          "reference_faults": 4,
+          "sensitivity": "3/4"
+        },
+        "B": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 2,
+            "fp": 1,
+            "tn": 3,
+            "tp": 10
+          },
+          "detected_fault_ids": [
+            "B01",
+            "B02",
+            "B03",
+            "B04",
+            "B09",
+            "B10",
+            "B11",
+            "B12",
+            "B13",
+            "B14"
+          ],
+          "reference_faults": 12,
+          "sensitivity": "5/6"
+        },
+        "pooled": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 3,
+            "fp": 2,
+            "tn": 6,
+            "tp": 13
+          },
+          "detected_fault_ids": [
+            "A01",
+            "A02",
+            "A03",
+            "B01",
+            "B02",
+            "B03",
+            "B04",
+            "B09",
+            "B10",
+            "B11",
+            "B12",
+            "B13",
+            "B14"
+          ],
+          "reference_faults": 16,
+          "sensitivity": "13/16"
+        }
+      },
+      "id": "b-only",
+      "input_sha256": {
+        "a": "7d8067525c66ce5346d2732f37f86da19e599663220ee245439a2be0c935a4e2",
+        "b": "0fbba7f392799da43c2f6279871e534c8f1eb5fac1493203cbb039fa25df950e"
+      },
+      "lowest_group_sensitivity": "3/4",
+      "score_edits": [
+        {
+          "file": "b.csv",
+          "id": "B04",
+          "score": 70
+        }
+      ]
+    },
+    {
+      "equal_group_mean": "2/3",
+      "groups": {
+        "A": {
+          "checker_exit": 1,
+          "counts": {
+            "fn": 2,
+            "fp": 1,
+            "tn": 3,
+            "tp": 2
+          },
+          "detected_fault_ids": [
+            "A01",
+            "A02"
+          ],
+          "reference_faults": 4,
+          "sensitivity": "1/2"
+        },
+        "B": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 2,
+            "fp": 1,
+            "tn": 3,
+            "tp": 10
+          },
+          "detected_fault_ids": [
+            "B01",
+            "B02",
+            "B03",
+            "B04",
+            "B09",
+            "B10",
+            "B11",
+            "B12",
+            "B13",
+            "B14"
+          ],
+          "reference_faults": 12,
+          "sensitivity": "5/6"
+        },
+        "pooled": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 4,
+            "fp": 2,
+            "tn": 6,
+            "tp": 12
+          },
+          "detected_fault_ids": [
+            "A01",
+            "A02",
+            "B01",
+            "B02",
+            "B03",
+            "B04",
+            "B09",
+            "B10",
+            "B11",
+            "B12",
+            "B13",
+            "B14"
+          ],
+          "reference_faults": 16,
+          "sensitivity": "3/4"
+        }
+      },
+      "id": "both",
+      "input_sha256": {
+        "a": "3bb79b3416cbc0bd3810a655c6b5bd0b9cac8dba6421f2ed5d15d6ac1517b17b",
+        "b": "0fbba7f392799da43c2f6279871e534c8f1eb5fac1493203cbb039fa25df950e"
+      },
+      "lowest_group_sensitivity": "1/2",
+      "score_edits": [
+        {
+          "file": "a.csv",
+          "id": "A03",
+          "score": 50
+        },
+        {
+          "file": "b.csv",
+          "id": "B04",
+          "score": 70
+        }
+      ]
+    },
+    {
+      "equal_group_mean": "3/4",
+      "groups": {
+        "A": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 1,
+            "fp": 1,
+            "tn": 3,
+            "tp": 3
+          },
+          "detected_fault_ids": [
+            "A01",
+            "A02",
+            "A03"
+          ],
+          "reference_faults": 4,
+          "sensitivity": "3/4"
+        },
+        "B": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 3,
+            "fp": 1,
+            "tn": 3,
+            "tp": 9
+          },
+          "detected_fault_ids": [
+            "B01",
+            "B02",
+            "B03",
+            "B09",
+            "B10",
+            "B11",
+            "B12",
+            "B13",
+            "B14"
+          ],
+          "reference_faults": 12,
+          "sensitivity": "3/4"
+        },
+        "pooled": {
+          "checker_exit": 0,
+          "counts": {
+            "fn": 4,
+            "fp": 2,
+            "tn": 6,
+            "tp": 12
+          },
+          "detected_fault_ids": [
+            "A01",
+            "A02",
+            "A03",
+            "B01",
+            "B02",
+            "B03",
+            "B09",
+            "B10",
+            "B11",
+            "B12",
+            "B13",
+            "B14"
+          ],
+          "reference_faults": 16,
+          "sensitivity": "3/4"
+        }
+      },
+      "id": "restored",
+      "input_sha256": {
+        "a": "7d8067525c66ce5346d2732f37f86da19e599663220ee245439a2be0c935a4e2",
+        "b": "5b8ef51c920e5589eb406eaa09b4d5d4326425eb053c5d5147cc8e60de156761"
+      },
+      "lowest_group_sensitivity": "3/4",
+      "score_edits": []
+    }
+  ],
+  "controls": {
+    "all_classifier_process_calls_observed": true,
+    "equal_group_mean_changes_from_3_4_to_2_3": true,
+    "expected_detections_in_every_condition": true,
+    "pooled_detects_12_of_16_before_and_after": true,
+    "restored_bytes_and_counts_match_augmented_baseline": true
+  },
+  "expected_detected_faults": {
+    "a-only": {
+      "A": 2,
+      "B": 9
+    },
+    "augmented-baseline": {
+      "A": 3,
+      "B": 9
+    },
+    "b-only": {
+      "A": 3,
+      "B": 10
+    },
+    "both": {
+      "A": 2,
+      "B": 10
+    },
+    "restored": {
+      "A": 3,
+      "B": 9
+    }
+  },
+  "invocations": 15,
+  "method": "Append eight fictional known faults to instrument B. Run the shipped classifier on A, B and pooled readings for the augmented baseline, each score correction alone, both corrections, and exact restoration. Independently recount the four classification cells by sample ID and use exact fractions for sensitivities.",
+  "original_samples": {
+    "a": [
+      {
+        "id": "A01",
+        "reference_fault": "1",
+        "score": "90"
+      },
+      {
+        "id": "A02",
+        "reference_fault": "1",
+        "score": "80"
+      },
+      {
+        "id": "A03",
+        "reference_fault": "1",
+        "score": "70"
+      },
+      {
+        "id": "A04",
+        "reference_fault": "1",
+        "score": "55"
+      },
+      {
+        "id": "A05",
+        "reference_fault": "0",
+        "score": "75"
+      },
+      {
+        "id": "A06",
+        "reference_fault": "0",
+        "score": "45"
+      },
+      {
+        "id": "A07",
+        "reference_fault": "0",
+        "score": "30"
+      },
+      {
+        "id": "A08",
+        "reference_fault": "0",
+        "score": "20"
+      }
+    ],
+    "b": [
+      {
+        "id": "B01",
+        "reference_fault": "1",
+        "score": "90"
+      },
+      {
+        "id": "B02",
+        "reference_fault": "1",
+        "score": "80"
+      },
+      {
+        "id": "B03",
+        "reference_fault": "1",
+        "score": "65"
+      },
+      {
+        "id": "B04",
+        "reference_fault": "1",
+        "score": "50"
+      },
+      {
+        "id": "B05",
+        "reference_fault": "0",
+        "score": "78"
+      },
+      {
+        "id": "B06",
+        "reference_fault": "0",
+        "score": "42"
+      },
+      {
+        "id": "B07",
+        "reference_fault": "0",
+        "score": "33"
+      },
+      {
+        "id": "B08",
+        "reference_fault": "0",
+        "score": "10"
+      }
+    ]
+  },
+  "passed": true,
+  "policy": {
+    "flag_if_score_at_least": 60,
+    "minimum_sensitivity": {
+      "denominator": 4,
+      "numerator": 3
+    }
+  },
+  "question": "research-notes/instrument-imbalance.json",
+  "recorded_edits": [
+    {
+      "file": "a.csv",
+      "id": "A03",
+      "score": 50
+    },
+    {
+      "file": "b.csv",
+      "id": "B04",
+      "score": 70
+    }
+  ],
+  "schema": "instrument-imbalance-replay/1",
+  "scope": "A deterministic arithmetic demonstration on chosen fictional readings. The equal-group mean gives A and B equal weight. Pooling weights each group by its count of known faults. The results do not estimate population performance or how often these corrections occur.",
+  "sources": {
+    "evals/replay_instrument_imbalance.py": "1ab7349a0acfdebb4e5888cac1e6095e9a9e2cd9e1768b21b71db6f1b34373a0",
+    "evals/results/model_evaluation.json": "b1ab76c3ece97f5e55e09af1b7b6735a959f39ef2ba7cb9e16e7232719275763",
+    "examples/model_evaluation/a.csv": "7d8067525c66ce5346d2732f37f86da19e599663220ee245439a2be0c935a4e2",
+    "examples/model_evaluation/b.csv": "19c200941878010a3a77805a58a985193c20cbc1f12d4719925a5eeceef05f3b",
+    "examples/model_evaluation/model.py": "4b6304a340abbd51e2a39bf5f81782b6f5f3d4ad68300e4eae7e5d4a0bf7cdf0",
+    "examples/model_evaluation/policy.json": "8152ed2bd1ed563bef2423d57cb3fd4e56574dc91e5c9ed1191df99c4049a87a"
+  }
+}

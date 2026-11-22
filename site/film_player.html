@@ -1,0 +1,199 @@
+<style>
+.film-entry { display: inline-flex; max-width: 100%; align-items: center; gap: .75rem; min-height: 44px;
+  margin-top: 1.05rem; padding: .12rem .25rem .12rem 0; color: #f4dfae; text-decoration: none; }
+.film-entry-ring { flex: none; display: grid; place-items: center; width: 2.45rem; height: 2.45rem; padding-left: .12em;
+  border: 1px solid #c4a15e; border-radius: 50%; background: #24291d; color: #f4d387; font: 650 .86rem/1 var(--sans); }
+.film-entry-lines { display: grid; align-content: center; gap: .25rem; }
+.film-premise { color: #c5d0c7; font: 450 .86rem/1.35 var(--sans); }
+.film-entry-title { max-width: 35ch; text-wrap: balance; font: 650 1.04rem/1.25 var(--sans); text-decoration: underline; text-underline-offset: .2em;
+  text-decoration-color: #9d854f; text-decoration-thickness: 1px; }
+.film-duration { color: #aab9ae; white-space: nowrap; font: 500 .75rem/1.3 var(--mono); }
+.film-entry:hover .film-entry-ring, .film-entry:focus-visible .film-entry-ring { color: #182116; background: #e3bd6a; }
+.film-entry:hover .film-entry-title, .film-entry:focus-visible .film-entry-title { text-decoration-color: currentColor; }
+section.film-screening { padding: clamp(1.65rem,3.8vw,3.75rem) 0 clamp(1.75rem,3.3vw,3rem); }
+.film-screening + #idea { padding-top: clamp(2rem,4vw,3.6rem); }
+.film-screening .wrap { max-width: 86rem; }
+.private-film { width: 100%; max-width: calc(177.78vh - 16.9rem); max-width: calc(177.78svh - 16.9rem); margin: 0 auto; }
+.private-film .film-context { margin: 0 0 .22rem; color: var(--soft); font: 500 .88rem/1.35 var(--sans); }
+.private-film h2 { font: 500 clamp(1.45rem,2.45vw,2.3rem)/1.14 var(--serif); margin: 0 0 .8rem; max-width: 100%; }
+.private-film figcaption { margin: .6rem 0 0; color: var(--soft); font: 400 .86rem/1.5 var(--sans); }
+.private-film .film-download:not([hidden]) { display: inline-block; margin-inline-start: .25em; color: var(--ink);
+  text-decoration: underline; text-underline-offset: .2em; }
+.private-film .film-frame { position: relative; overflow: hidden; background: #050807; border-radius: clamp(.45rem,1vw,.8rem);
+  aspect-ratio: 16 / 9; box-shadow: 0 0 0 1px var(--edge); }
+.private-film video { display: block; width: 100%; height: 100%; object-fit: contain; }
+.private-film video::-webkit-media-controls { transition: opacity .16s ease-out; }
+.private-film video.film-idle { cursor: none; }
+.private-film video.film-idle::-webkit-media-controls { opacity: 0 !important; pointer-events: none; }
+video.film-idle:fullscreen::-webkit-media-controls { transition: none; }
+@media (prefers-reduced-motion: reduce) { .private-film video::-webkit-media-controls { transition: none; } }
+.private-film .film-play { position: absolute; inset: 0; display: flex; align-items: end; justify-content: start;
+  border: 0; padding: clamp(.65rem,2vw,1.55rem); color: #fff; cursor: pointer; text-align: left;
+  background: linear-gradient(0deg,rgba(4,11,7,.42),transparent 26%); }
+.private-film .film-play-label { display: inline-flex; align-items: center; gap: .55rem; padding: .62rem .96rem;
+  border: 1px solid #afbbab; border-radius: 2rem; background: #101b16ed; font: 600 .97rem/1.25 var(--sans); }
+.film-play:hover .film-play-label, .film-play:focus-visible .film-play-label { border-color: #f0dba8; color: #f0dba8; }
+.private-film .film-play:focus-visible { outline: 3px solid #e3bd6a; outline-offset: -4px; }
+.private-film .film-play[hidden] { display: none; }
+@media (max-width: 34rem) { .film-screening .wrap { padding-inline: 1rem; } .film-entry { gap: .55rem; } }
+@media (min-width: 50rem) and (min-aspect-ratio: 3/2) {
+  .film-heading { margin-bottom: .65rem; }
+  .private-film .film-heading h2 { margin: 0; }
+}
+@media (min-width: 34rem) and (max-height: 35rem) {
+  .private-film { max-width: none; text-align: center; }
+  .film-heading { justify-content: center; margin-bottom: .3rem; }
+  .private-film .film-context { font-size: .76rem; margin-bottom: .12rem; }
+  .private-film h2 { margin-bottom: .4rem; font-size: clamp(1.05rem, 4.1vh, 1.4rem); }
+  .private-film .film-frame { max-width: calc(177.78vh - 13.33rem); max-width: calc(177.78svh - 13.33rem); margin-inline: auto; }
+  .private-film figcaption { margin-top: .35rem; font-size: .8rem; line-height: 1.3; }
+}
+</style>
+<section class="film-screening" aria-labelledby="film-question"><div class="wrap">
+<figure id="field-film" class="private-film" aria-labelledby="film-question">
+<div class="film-heading">
+$context
+<h2 id="film-question">$title</h2>
+</div>
+<div class="film-frame">
+<video id="preview-film" tabindex="0" aria-keyshortcuts="Space F" controls playsinline preload="none" poster="private-film/$poster" aria-labelledby="film-question">
+${reduced}<source src="private-film/film.mp4" type="video/mp4">$track
+<a href="private-film/film.mp4">Open the film</a></video>
+<button class="film-play" type="button" aria-controls="preview-film" hidden><span class="film-play-label">
+<span aria-hidden="true">▶</span><span class="film-play-copy">Play with sound</span></span></button>
+</div>$caption</figure>$record</div></section>
+<script>
+(function () {
+  var video = document.getElementById("preview-film"), frame = video.parentElement;
+  var play = frame.querySelector("button"), entry = document.querySelector('a.film-entry[href="#field-film"]');
+  var download = frame.closest("figure").querySelector(".film-download");
+  var returnUrl = null;
+  play.hidden = false;
+  video.controls = false;
+  // Leave all playback, seeking, captions, and volume controls to the browser.
+  var fadesNativeControls = window.CSS && CSS.supports("selector(video::-webkit-media-controls)");
+  var idleTimer, heldPointer = false, usingTab = false;
+  function hideControls() {
+    clearTimeout(idleTimer);
+    if (!play.hidden || video.paused || video.seeking || heldPointer || usingTab) { return; }
+    video.classList.add("film-idle");
+    if (!fadesNativeControls) { video.controls = false; }
+  }
+  function showControls() {
+    clearTimeout(idleTimer);
+    if (!play.hidden) { return; }
+    video.controls = true;
+    video.classList.remove("film-idle");
+    if (!video.paused && !heldPointer && !usingTab) { idleTimer = setTimeout(hideControls, 1200); }
+  }
+  frame.addEventListener("pointermove", function (event) {
+    if (event.pointerType === "mouse" && !event.movementX && !event.movementY) { return; }
+    usingTab = false;
+    showControls();
+  });
+  frame.addEventListener("pointerdown", function () {
+    usingTab = false;
+    heldPointer = true;
+    showControls();
+  }, true);
+  function releasePointer() {
+    if (heldPointer) { heldPointer = false; showControls(); }
+  }
+  window.addEventListener("pointerup", releasePointer, true);
+  window.addEventListener("pointercancel", releasePointer, true);
+  frame.addEventListener("focusin", function (event) {
+    usingTab = event.target.matches(":focus-visible");
+    showControls();
+  });
+  function toggleFilmFullscreen() {
+    var full = document.fullscreenElement || document.webkitFullscreenElement;
+    if (video.webkitDisplayingFullscreen && !full && video.webkitExitFullscreen) {
+      video.webkitExitFullscreen(); return;
+    }
+    var surface = full ? document : video;
+    var toggle = full ? document.exitFullscreen || document.webkitExitFullscreen
+                      : video.requestFullscreen || video.webkitRequestFullscreen || video.webkitEnterFullscreen;
+    if (!toggle) { return; }
+    var changing = toggle.call(surface);
+    if (changing && changing.catch) { changing.catch(showControls); }
+  }
+  frame.addEventListener("keydown", function (event) {
+    if (event.key === "Tab") { usingTab = true; }
+    showControls();
+    if (event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.defaultPrevented) { return; }
+    var fullscreen = event.key.toLowerCase() === "f";
+    var playback = (event.key === " " || event.key === "Spacebar") && event.target === video;
+    if (!fullscreen && !playback) { return; }
+    event.preventDefault();
+    if (event.repeat) { return; }
+    if (fullscreen) { toggleFilmFullscreen(); }
+    else if (video.paused) {
+      var playing = video.play();
+      if (playing && playing.catch) { playing.catch(showControls); }
+    } else { video.pause(); }
+  }, true);
+  frame.addEventListener("focusout", function (event) {
+    if (!frame.contains(event.relatedTarget)) { usingTab = false; showControls(); }
+  });
+  function fullscreenChanged() {
+    usingTab = false;
+    heldPointer = false;
+    if (document.fullscreenElement || document.webkitFullscreenElement || video.webkitDisplayingFullscreen) {
+      hideControls();
+    } else { showControls(); }
+  }
+  document.addEventListener("fullscreenchange", fullscreenChanged);
+  document.addEventListener("webkitfullscreenchange", fullscreenChanged);
+  video.addEventListener("webkitbeginfullscreen", fullscreenChanged);
+  video.addEventListener("webkitendfullscreen", fullscreenChanged);
+  video.addEventListener("pause", showControls);
+  function playWithSound() {
+    video.muted = false;
+    video.controls = true;
+    var request = video.play();
+    if (request) { request.catch(function () { play.hidden = false; }); }
+  }
+  play.addEventListener("click", playWithSound);
+  if (entry) {
+    entry.addEventListener("click", function (event) {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) { return; }
+      playWithSound();
+      // Preserve a Back destination while centering and focusing the actual player.
+      if (location.hash !== entry.hash) {
+        returnUrl = location.href;
+        try { history.pushState(history.state, "", entry.hash); } catch (_) { return; }
+      }
+      event.preventDefault();
+      video.focus({preventScroll: true});
+      var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var figure = frame.closest("figure").getBoundingClientRect();
+      var header = document.querySelector(".top").getBoundingClientRect().bottom;
+      var room = window.innerHeight - header;
+      var top = window.scrollY + figure.top - header - Math.max(0, (room - figure.height) / 2);
+      window.scrollTo({top: top, behavior: reduced ? "instant" : "smooth"});
+    });
+  }
+  video.addEventListener("play", function () {
+    if (download) { download.hidden = true; }
+    if (document.activeElement === play) { video.focus({preventScroll: true}); }
+    play.hidden = true;
+    showControls();
+  });
+  video.addEventListener("ended", function () {
+    if (download) { download.hidden = false; }
+    clearTimeout(idleTimer);
+    video.classList.remove("film-idle");
+    video.controls = false;
+    play.querySelector(".film-play-copy").textContent = "Replay film";
+    play.hidden = false;
+  });
+  window.addEventListener("hashchange", function (event) {
+    if (new URL(event.oldURL).hash !== "#field-film" || location.hash === "#field-film") { return; }
+    video.pause();
+    if (entry && location.href === returnUrl && frame.contains(document.activeElement)) {
+      entry.focus({preventScroll: true});
+    }
+  });
+  window.addEventListener("pagehide", function () { video.pause(); });
+}());
+</script>

@@ -108,19 +108,18 @@ and their inputs, a person's acceptance, the lease on it.
 
 Four checks stand behind this, each one command:
 
-- **The cases.** `tests/test_counterexamples.py` holds 22 cases, written
-  against entry points the first release already had. At commit `071a348`
-  all 19 fail. The first 17 came from three outside reviews and were closed
-  in the release that followed, `89f36ce`. The last two were found after it,
-  one by a fourth review and one by this document's own table of limits, so
-  2 of the 19 still fail there. Here all 19 pass.
-  `python3 evals/at_revision.py`
-- **The tests themselves.** `evals/mutations.py` removes 18 protections from
-  a copy of the code, one at a time, and runs the tests. Its first run, with
-  16, caught 15. The miss was real: nothing tested that a lapsed lease cannot
-  be revived by its own heartbeat when nobody else has taken the work. That
-  test was added, two protections have been added since, and the run is 18
-  of 18. The miss stays in this record.
+- **The cases.** The [recorded revision comparison](../evals/results/at_revision.json)
+  ran the same 22 cases at three revisions. All 22 failed or raised an error at
+  `071a348`. Five still failed at `89f36ce`. All 22 passed on the reference
+  checkout. The first 17 cases came from three outside reviews. Two later
+  cases came from a fourth review and this document's table of limits.
+  Reproduce the comparison with `python3 evals/at_revision.py`.
+- **The tests themselves.** The [recorded fault-injection experiment](../evals/results/mutations.json)
+  introduced 20 specified faults in separate copies of the code. The tests
+  caught all 20. An earlier set of 16 caught 15. The missed fault allowed a
+  lapsed lease to be revived by its own heartbeat when nobody else had taken
+  the work. A test for that case was added. Reproduce the experiment with
+  `python3 evals/mutations.py`.
 - **The mechanism under load.** The reuse experiment, below.
 - **This document.** The numbers quoted here and in `README.md` are records
   with a basis like any other. Each run is stored in `evals/results/` with a

@@ -1,0 +1,404 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Instrument quality-control model evaluation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "sources",
+    "design_sha256",
+    "cell_order",
+    "baseline_counts",
+    "cases"
+  ],
+  "properties": {
+    "schema": {
+      "const": "instrument-qc-model-evaluation-v1"
+    },
+    "sources": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "$ref": "#/$defs/sha256"
+      }
+    },
+    "design_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "cell_order": {
+      "const": [
+        "tp",
+        "fn",
+        "fp",
+        "tn"
+      ]
+    },
+    "baseline_counts": {
+      "type": "object",
+      "required": [
+        "A",
+        "B",
+        "pooled"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "A": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "B": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "pooled": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "edits",
+          "threshold",
+          "samples",
+          "before_sha256",
+          "after_sha256",
+          "old_receipts",
+          "executed",
+          "reused",
+          "result_after_consultation",
+          "counts",
+          "independent_counts",
+          "sensitivity_direction"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "figure-caption",
+              "correct-a-score",
+              "offsetting-score-corrections",
+              "shared-threshold"
+            ]
+          },
+          "edits": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "file"
+              ],
+              "properties": {
+                "file": {
+                  "enum": [
+                    "caption.txt",
+                    "a.csv",
+                    "b.csv",
+                    "policy.json"
+                  ]
+                },
+                "id": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "integer"
+                },
+                "threshold": {
+                  "type": "integer"
+                },
+                "value": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "threshold": {
+            "type": "integer"
+          },
+          "samples": {
+            "type": "object",
+            "required": [
+              "a",
+              "b"
+            ],
+            "properties": {
+              "a": {
+                "type": "array",
+                "minItems": 8,
+                "maxItems": 8,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "reference_fault",
+                    "score"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[AB][0-9]{2}$"
+                    },
+                    "reference_fault": {
+                      "enum": [
+                        "0",
+                        "1"
+                      ]
+                    },
+                    "score": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$"
+                    }
+                  }
+                }
+              },
+              "b": {
+                "type": "array",
+                "minItems": 8,
+                "maxItems": 8,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "reference_fault",
+                    "score"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[AB][0-9]{2}$"
+                    },
+                    "reference_fault": {
+                      "enum": [
+                        "0",
+                        "1"
+                      ]
+                    },
+                    "score": {
+                      "type": "string",
+                      "pattern": "^[0-9]+$"
+                    }
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          },
+          "before_sha256": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": {
+              "$ref": "#/$defs/sha256"
+            }
+          },
+          "after_sha256": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": {
+              "$ref": "#/$defs/sha256"
+            }
+          },
+          "old_receipts": {
+            "type": "object",
+            "required": [
+              "A",
+              "B",
+              "pooled"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "A": {
+                "$ref": "#/$defs/state"
+              },
+              "B": {
+                "$ref": "#/$defs/state"
+              },
+              "pooled": {
+                "$ref": "#/$defs/state"
+              }
+            }
+          },
+          "executed": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "A",
+                "B",
+                "pooled"
+              ]
+            }
+          },
+          "reused": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "A",
+                "B",
+                "pooled"
+              ]
+            }
+          },
+          "result_after_consultation": {
+            "type": "object",
+            "required": [
+              "A",
+              "B",
+              "pooled"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "A": {
+                "$ref": "#/$defs/state"
+              },
+              "B": {
+                "$ref": "#/$defs/state"
+              },
+              "pooled": {
+                "$ref": "#/$defs/state"
+              }
+            }
+          },
+          "counts": {
+            "type": "object",
+            "required": [
+              "A",
+              "B",
+              "pooled"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "A": {
+                "$ref": "#/$defs/confusion"
+              },
+              "B": {
+                "$ref": "#/$defs/confusion"
+              },
+              "pooled": {
+                "$ref": "#/$defs/confusion"
+              }
+            }
+          },
+          "independent_counts": {
+            "type": "object",
+            "required": [
+              "A",
+              "B",
+              "pooled"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "A": {
+                "$ref": "#/$defs/confusion"
+              },
+              "B": {
+                "$ref": "#/$defs/confusion"
+              },
+              "pooled": {
+                "$ref": "#/$defs/confusion"
+              }
+            }
+          },
+          "sensitivity_direction": {
+            "type": "object",
+            "required": [
+              "A",
+              "B",
+              "pooled"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "A": {
+                "enum": [
+                  "up",
+                  "down",
+                  "same"
+                ]
+              },
+              "B": {
+                "enum": [
+                  "up",
+                  "down",
+                  "same"
+                ]
+              },
+              "pooled": {
+                "enum": [
+                  "up",
+                  "down",
+                  "same"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "confusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tp",
+        "fn",
+        "fp",
+        "tn"
+      ],
+      "properties": {
+        "tp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fn": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "fp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tn": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "state": {
+      "enum": [
+        "holds",
+        "stale",
+        "fails"
+      ]
+    }
+  }
+}

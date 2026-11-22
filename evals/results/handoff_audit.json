@@ -1,0 +1,479 @@
+{
+  "counts": {
+    "executions": 4,
+    "exit_1": 2,
+    "gate_requests": 7,
+    "reused": 3
+  },
+  "expectation_mismatches": [],
+  "observations": [
+    {
+      "actor_label": "codex",
+      "after": "holds",
+      "basis_sha256": {
+        "(undeclared)": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "analysis": "3390d8d90a154a30a92ca95ceb60b207e34ff912856f4776880936b26a83e80d"
+      },
+      "before": "unknown",
+      "csv_exact_original": true,
+      "csv_same_numbers": true,
+      "csv_text": "length_m,period_s\n0.20,0.90\n0.40,1.27\n0.60,1.55\n0.80,1.80\n1.00,2.01\n1.20,2.19\n",
+      "data_sha256": "3175e892360ebbbadf4fb8eab3c4bfc1c3b84e21b32de48d7c3e3c9f092e89eb",
+      "edit": "none",
+      "execution": "execute",
+      "execution_origin": "baseline",
+      "exit": 0,
+      "id": "baseline",
+      "output_from_origin": "g = 9.82 +/- 0.02 m/s^2",
+      "prediction": {
+        "after": "holds",
+        "before": "unknown",
+        "execution": "execute",
+        "execution_origin": "baseline",
+        "exit": 0
+      },
+      "reused_gates": [],
+      "sequence": 1,
+      "style_sha256": "913e935f68600b555aa132ed425d3bc7c2de8ff16384922d5e38909caebfc23e",
+      "task": "PEN-1",
+      "task_started": true,
+      "views_after": {
+        "PEN-1": {
+          "pass_origin": "baseline",
+          "reason": "passed <recorded time>; nothing it tested has changed",
+          "state": "holds"
+        }
+      },
+      "views_before": {
+        "PEN-1": {
+          "pass_origin": null,
+          "reason": "never run for this task",
+          "state": "unknown"
+        }
+      }
+    },
+    {
+      "actor_label": "claude",
+      "after": "holds",
+      "basis_sha256": {
+        "(undeclared)": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "analysis": "3390d8d90a154a30a92ca95ceb60b207e34ff912856f4776880936b26a83e80d"
+      },
+      "before": "holds",
+      "csv_exact_original": true,
+      "csv_same_numbers": true,
+      "csv_text": "length_m,period_s\n0.20,0.90\n0.40,1.27\n0.60,1.55\n0.80,1.80\n1.00,2.01\n1.20,2.19\n",
+      "data_sha256": "3175e892360ebbbadf4fb8eab3c4bfc1c3b84e21b32de48d7c3e3c9f092e89eb",
+      "edit": "style",
+      "execution": "reuse",
+      "execution_origin": "baseline",
+      "exit": 0,
+      "id": "style-only",
+      "output_from_origin": "g = 9.82 +/- 0.02 m/s^2",
+      "prediction": {
+        "after": "holds",
+        "before": "holds",
+        "execution": "reuse",
+        "execution_origin": "baseline",
+        "exit": 0
+      },
+      "reused_gates": [
+        "fit"
+      ],
+      "sequence": 2,
+      "style_sha256": "2eb66bdac208edbeb96c5f5ea13e041254b2935ba2782747f2472c46b783025a",
+      "task": "PEN-2",
+      "task_started": true,
+      "views_after": {
+        "PEN-1": {
+          "pass_origin": "baseline",
+          "reason": "passed <recorded time>; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-2": {
+          "pass_origin": "baseline",
+          "reason": "passed <recorded time> for PEN-1; nothing it tested has changed",
+          "state": "holds"
+        }
+      },
+      "views_before": {
+        "PEN-1": {
+          "pass_origin": "baseline",
+          "reason": "passed <recorded time>; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-2": {
+          "pass_origin": "baseline",
+          "reason": "passed <recorded time> for PEN-1; nothing it tested has changed",
+          "state": "holds"
+        }
+      }
+    },
+    {
+      "actor_label": "claude",
+      "after": "fails",
+      "basis_sha256": {
+        "(undeclared)": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "analysis": "68ad38d8465cc45619fd99e114edef2410d654bdf329457a8c5340b53122d9cd"
+      },
+      "before": "stale",
+      "csv_exact_original": false,
+      "csv_same_numbers": false,
+      "csv_text": "length_m,period_s\n0.20,0.90\n0.40,1.27\n0.60,1.55\n0.80,1.80\n1.00,2.01\n1.20,2.2995\n",
+      "data_sha256": "f99cbbe5a450987c4fded8a49be5320aa495bf91d62ab073353d79b5a36344a4",
+      "edit": "material",
+      "execution": "execute",
+      "execution_origin": "measurement-fails",
+      "exit": 1,
+      "id": "measurement-fails",
+      "output_from_origin": "g = 9.44 is outside 9.6 to 10.0",
+      "prediction": {
+        "after": "fails",
+        "before": "stale",
+        "execution": "execute",
+        "execution_origin": "measurement-fails",
+        "exit": 1
+      },
+      "reused_gates": [],
+      "sequence": 3,
+      "style_sha256": "2eb66bdac208edbeb96c5f5ea13e041254b2935ba2782747f2472c46b783025a",
+      "task": "PEN-2",
+      "task_started": false,
+      "views_after": {
+        "PEN-1": {
+          "pass_origin": null,
+          "reason": "exit 1 on the files as they are now",
+          "state": "fails"
+        },
+        "PEN-2": {
+          "pass_origin": null,
+          "reason": "exit 1 on the files as they are now",
+          "state": "fails"
+        }
+      },
+      "views_before": {
+        "PEN-1": {
+          "pass_origin": null,
+          "reason": "analysis changed: data/swings.csv",
+          "state": "stale"
+        },
+        "PEN-2": {
+          "pass_origin": null,
+          "reason": "analysis changed: data/swings.csv",
+          "state": "stale"
+        }
+      }
+    },
+    {
+      "actor_label": "codex",
+      "after": "fails",
+      "basis_sha256": {
+        "(undeclared)": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "analysis": "68ad38d8465cc45619fd99e114edef2410d654bdf329457a8c5340b53122d9cd"
+      },
+      "before": "fails",
+      "csv_exact_original": false,
+      "csv_same_numbers": false,
+      "csv_text": "length_m,period_s\n0.20,0.90\n0.40,1.27\n0.60,1.55\n0.80,1.80\n1.00,2.01\n1.20,2.2995\n",
+      "data_sha256": "f99cbbe5a450987c4fded8a49be5320aa495bf91d62ab073353d79b5a36344a4",
+      "edit": "none",
+      "execution": "execute",
+      "execution_origin": "new-task-sees-failure",
+      "exit": 1,
+      "id": "new-task-sees-failure",
+      "output_from_origin": "g = 9.44 is outside 9.6 to 10.0",
+      "prediction": {
+        "after": "fails",
+        "before": "fails",
+        "execution": "execute",
+        "execution_origin": "new-task-sees-failure",
+        "exit": 1
+      },
+      "reused_gates": [],
+      "sequence": 4,
+      "style_sha256": "2eb66bdac208edbeb96c5f5ea13e041254b2935ba2782747f2472c46b783025a",
+      "task": "PEN-3",
+      "task_started": true,
+      "views_after": {
+        "PEN-1": {
+          "pass_origin": null,
+          "reason": "exit 1 on the files as they are now",
+          "state": "fails"
+        },
+        "PEN-2": {
+          "pass_origin": null,
+          "reason": "exit 1 on the files as they are now",
+          "state": "fails"
+        },
+        "PEN-3": {
+          "pass_origin": null,
+          "reason": "exit 1 on the files as they are now",
+          "state": "fails"
+        }
+      },
+      "views_before": {
+        "PEN-1": {
+          "pass_origin": null,
+          "reason": "exit 1 on the files as they are now",
+          "state": "fails"
+        },
+        "PEN-2": {
+          "pass_origin": null,
+          "reason": "exit 1 on the files as they are now",
+          "state": "fails"
+        },
+        "PEN-3": {
+          "pass_origin": null,
+          "reason": "exit 1 on the files as they are now",
+          "state": "fails"
+        }
+      }
+    },
+    {
+      "actor_label": "claude",
+      "after": "holds",
+      "basis_sha256": {
+        "(undeclared)": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "analysis": "3390d8d90a154a30a92ca95ceb60b207e34ff912856f4776880936b26a83e80d"
+      },
+      "before": "holds",
+      "csv_exact_original": true,
+      "csv_same_numbers": true,
+      "csv_text": "length_m,period_s\n0.20,0.90\n0.40,1.27\n0.60,1.55\n0.80,1.80\n1.00,2.01\n1.20,2.19\n",
+      "data_sha256": "3175e892360ebbbadf4fb8eab3c4bfc1c3b84e21b32de48d7c3e3c9f092e89eb",
+      "edit": "restore",
+      "execution": "reuse",
+      "execution_origin": "baseline",
+      "exit": 0,
+      "id": "restore-exact-bytes",
+      "output_from_origin": "g = 9.82 +/- 0.02 m/s^2",
+      "prediction": {
+        "after": "holds",
+        "before": "holds",
+        "execution": "reuse",
+        "execution_origin": "baseline",
+        "exit": 0
+      },
+      "reused_gates": [
+        "fit"
+      ],
+      "sequence": 5,
+      "style_sha256": "2eb66bdac208edbeb96c5f5ea13e041254b2935ba2782747f2472c46b783025a",
+      "task": "PEN-2",
+      "task_started": false,
+      "views_after": {
+        "PEN-1": {
+          "pass_origin": "baseline",
+          "reason": "passed <recorded time>; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-2": {
+          "pass_origin": "baseline",
+          "reason": "passed <recorded time> for PEN-1; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-3": {
+          "pass_origin": "baseline",
+          "reason": "passed <recorded time> for PEN-1; nothing it tested has changed",
+          "state": "holds"
+        }
+      },
+      "views_before": {
+        "PEN-1": {
+          "pass_origin": "baseline",
+          "reason": "passed <recorded time>; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-2": {
+          "pass_origin": "baseline",
+          "reason": "passed <recorded time> for PEN-1; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-3": {
+          "pass_origin": "baseline",
+          "reason": "passed <recorded time> for PEN-1; nothing it tested has changed",
+          "state": "holds"
+        }
+      }
+    },
+    {
+      "actor_label": "claude",
+      "after": "holds",
+      "basis_sha256": {
+        "(undeclared)": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "analysis": "5d0d1501cb1eb18f8d8ef45d9dc343a16d43d815be1ab83792de3d8018705087"
+      },
+      "before": "stale",
+      "csv_exact_original": false,
+      "csv_same_numbers": true,
+      "csv_text": "length_m,period_s\n0.20,0.90\n0.40,1.27\n0.60,1.55\n0.80,1.80\n1.00,2.01\n1.20,2.190\n",
+      "data_sha256": "bdca6cbc77756b11bf6fd9e81531f2918a1df5864fde97f9f44dab6ad1f1f176",
+      "edit": "respell",
+      "execution": "execute",
+      "execution_origin": "same-values-new-bytes",
+      "exit": 0,
+      "id": "same-values-new-bytes",
+      "output_from_origin": "g = 9.82 +/- 0.02 m/s^2",
+      "prediction": {
+        "after": "holds",
+        "before": "stale",
+        "execution": "execute",
+        "execution_origin": "same-values-new-bytes",
+        "exit": 0
+      },
+      "reused_gates": [],
+      "sequence": 6,
+      "style_sha256": "2eb66bdac208edbeb96c5f5ea13e041254b2935ba2782747f2472c46b783025a",
+      "task": "PEN-2",
+      "task_started": false,
+      "views_after": {
+        "PEN-1": {
+          "pass_origin": "same-values-new-bytes",
+          "reason": "passed <recorded time> for PEN-2; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-2": {
+          "pass_origin": "same-values-new-bytes",
+          "reason": "passed <recorded time>; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-3": {
+          "pass_origin": "same-values-new-bytes",
+          "reason": "passed <recorded time> for PEN-2; nothing it tested has changed",
+          "state": "holds"
+        }
+      },
+      "views_before": {
+        "PEN-1": {
+          "pass_origin": null,
+          "reason": "analysis changed: data/swings.csv",
+          "state": "stale"
+        },
+        "PEN-2": {
+          "pass_origin": null,
+          "reason": "analysis changed: data/swings.csv",
+          "state": "stale"
+        },
+        "PEN-3": {
+          "pass_origin": null,
+          "reason": "analysis changed: data/swings.csv",
+          "state": "stale"
+        }
+      }
+    },
+    {
+      "actor_label": "codex",
+      "after": "holds",
+      "basis_sha256": {
+        "(undeclared)": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "analysis": "5d0d1501cb1eb18f8d8ef45d9dc343a16d43d815be1ab83792de3d8018705087"
+      },
+      "before": "holds",
+      "csv_exact_original": false,
+      "csv_same_numbers": true,
+      "csv_text": "length_m,period_s\n0.20,0.90\n0.40,1.27\n0.60,1.55\n0.80,1.80\n1.00,2.01\n1.20,2.190\n",
+      "data_sha256": "bdca6cbc77756b11bf6fd9e81531f2918a1df5864fde97f9f44dab6ad1f1f176",
+      "edit": "none",
+      "execution": "reuse",
+      "execution_origin": "same-values-new-bytes",
+      "exit": 0,
+      "id": "share-respelled-pass",
+      "output_from_origin": "g = 9.82 +/- 0.02 m/s^2",
+      "prediction": {
+        "after": "holds",
+        "before": "holds",
+        "execution": "reuse",
+        "execution_origin": "same-values-new-bytes",
+        "exit": 0
+      },
+      "reused_gates": [
+        "fit"
+      ],
+      "sequence": 7,
+      "style_sha256": "2eb66bdac208edbeb96c5f5ea13e041254b2935ba2782747f2472c46b783025a",
+      "task": "PEN-3",
+      "task_started": false,
+      "views_after": {
+        "PEN-1": {
+          "pass_origin": "same-values-new-bytes",
+          "reason": "passed <recorded time> for PEN-2; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-2": {
+          "pass_origin": "same-values-new-bytes",
+          "reason": "passed <recorded time>; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-3": {
+          "pass_origin": "same-values-new-bytes",
+          "reason": "passed <recorded time> for PEN-2; nothing it tested has changed",
+          "state": "holds"
+        }
+      },
+      "views_before": {
+        "PEN-1": {
+          "pass_origin": "same-values-new-bytes",
+          "reason": "passed <recorded time> for PEN-2; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-2": {
+          "pass_origin": "same-values-new-bytes",
+          "reason": "passed <recorded time>; nothing it tested has changed",
+          "state": "holds"
+        },
+        "PEN-3": {
+          "pass_origin": "same-values-new-bytes",
+          "reason": "passed <recorded time> for PEN-2; nothing it tested has changed",
+          "state": "holds"
+        }
+      }
+    }
+  ],
+  "schema": "pendulum-handoff-audit/1",
+  "scope": "One local scratch history with three task IDs and supplied actor labels. No model calls.",
+  "sources": {
+    "bootstrap/answers.example.json": "3be8a24afb6b69e93ab4c4c87b2a4f3714ae458bf8fe9bd6e752fcad6450ffa8",
+    "evals/handoff_audit.py": "da90d9273ce3a46a599e2a8871f90c5c78ce69fba9c1c4fc62c22bbb410a3511",
+    "examples/measurement/README.md": "8c33c84cb7cb85ad17dd4470bf93ede3a1252e5a124b87d48cd2b73def33b74b",
+    "examples/measurement/analysis/check.py": "353a5684357e6a43b37b667498a803257b54a85f350813bc0d8f653d68a9d06a",
+    "examples/measurement/analysis/fit.py": "0b1d79c84520738eb6d608846f323f285c9a0abe71927f42039ac5be8ca87390",
+    "examples/measurement/data/swings.csv": "3175e892360ebbbadf4fb8eab3c4bfc1c3b84e21b32de48d7c3e3c9f092e89eb",
+    "examples/measurement/figures/style.txt": "913e935f68600b555aa132ed425d3bc7c2de8ff16384922d5e38909caebfc23e",
+    "taos_core/__init__.py": "66629c3555bb4a5eb5d6ab16af575f0adf6b656cfd82f59dea5b15e19a40326c",
+    "taos_core/_science.py": "a86fa4b33025583e352ed6bbcae71708f46f38223ad3da40151c8e0223764e94",
+    "taos_core/anchors.py": "ec360d4aa57d588703acc6ff915463003029e33b24fef2d1fa952d93af877b29",
+    "taos_core/atoms.py": "f0c5f9f5d422d471a6056023e51ba0ef0f1dfd1c2ea842edb3a46eafb159c279",
+    "taos_core/bank.py": "c1a364b7786330ca6243b4401e8b7687de70d6c1535ab80c4cafe0b12517033d",
+    "taos_core/basis.py": "44cd41ded3f771bdf66f716911b0095cb291ba2809e1c11c9afb880f5066ef1b",
+    "taos_core/bootstrap.py": "5743c8492960292d769bd4d8f124a4d0de1d315ccfa11bca3305e93e61c41231",
+    "taos_core/brief.py": "2a0fbb94f9e108b74728e35a39de74b99d7742789b4f63fa21e8174a98294c25",
+    "taos_core/burn.py": "49b54c0b7b85903b6b3aa37a20fd7d8af1b30fa5bd5ec3d62db4215cd236dab0",
+    "taos_core/changes.py": "7426cfc1bd5b88a4783160d996ebe8ffa120a6a25967bdad5af68d0d6c01f5e7",
+    "taos_core/claims.py": "9b6eb35626843264409f2910ebb4d3427334f8c6c5b4515745922d7218f35081",
+    "taos_core/cli.py": "175aa230a7b0287250a617f21bd19d821b7ddce3e7d967eb97df4a952754edca",
+    "taos_core/config.py": "1ac43a15335c5609de4e556efa3e4f4debff34f3e1da2fc8b933a7b881486260",
+    "taos_core/control.py": "97fd04c23f0700c240c99f7c4a5ded853cac50bedc1754320f725e2abd4d3dcd",
+    "taos_core/decisions.py": "6b1e90507696573a62ae18c8b0dc198ad8a13b91d1c65b0a261e1c40246540f4",
+    "taos_core/demo.py": "7b15a091b69005b79f307ac9436cbd5b25bc50e6492e0ecd4bc2b7bed5c05ef4",
+    "taos_core/doctor.py": "b9b6e95be0ec332688f8876a1fd8a7ac321e2474dc1735b2f703524e0dbe3b42",
+    "taos_core/events.py": "81b4d7b216ab41303c6da429d3a5dbb958ff1ee51d1fa4ba3da57797ed0f044e",
+    "taos_core/gates.py": "2d42b5fe1761d03e510053faa35198ee09ec6db10e5fd9fb5082f0b9751fcd30",
+    "taos_core/handoff.py": "b07517aea62d0546559b834b7abbdd8319fb488f44d0013856b0c1469e4bb5af",
+    "taos_core/kernels.py": "466bfcdec7898db676579129eefb028f1680aad750d85aa8d934236b7c887623",
+    "taos_core/lessons.py": "d737e85bef1dbdaa6e8a33f2d4ba6a51cf9d0e65247c6d15dddf5daf22a346e1",
+    "taos_core/lifecycle.py": "d309fae74256aaa04ce4c3d5e89de19e5edfa7966aedc874bd718ec6811d9404",
+    "taos_core/panel.py": "a4ed83d4f43d719aa3ea9aaa3010a53e20e26420a8470decb43b3b06e71e37a5",
+    "taos_core/paths.py": "d41c61f44638550b4f481213efcfeefe6cbb2bddd971f45c3ca5c3608b965e19",
+    "taos_core/policy.py": "e5fa7af8a5a80a32d638b8923226900e0ccabef91b3957b882b1cf542e7c6439",
+    "taos_core/projections.py": "c9e6da11b3492ffe0cbf3a7bda3dbbd7d8555a00768f1f8ca050733dc7e27a16",
+    "taos_core/proposals.py": "6ae4dac3cee7c8cfde9808c9e9041335050ee9659c43ceff18c38878c1e091f9",
+    "taos_core/replay.py": "d15dd6ad96cc71c7edd183e6d48f9241242ec93ebbed988153223531b547f5a8",
+    "taos_core/rules.py": "e9c20e1b25bd8798a13ee4abbcba4b06a77469e8a686c82f69bd57f5f145db96",
+    "taos_core/standing.py": "6983d9c42aa6daf24391d263ae1ec930184dcb23659531cac763602a8c701ccb",
+    "taos_core/store.py": "a9244770bee1742da2106e580c0823a7d9e080831edb5fc286da040e71ebd5d0",
+    "taos_core/tasks.py": "a240c2fd1e9bc6e160c646ac1483efa24f94458c3fb2bf49fc2360bc292cf834",
+    "taos_core/telemetry.py": "438dc7886be98746a23838ab95321c354aff45ef829b660ccf4f7e5bec7c3677",
+    "taos_core/usage.py": "5a4f311e66da6be035f55403ae4f58e95e74c4b505b51661c05c0af2bf367a1c",
+    "taos_core/util.py": "e02eb73a86172fcf632efed3f27bf9d1d8253d54ba0f3bc788101672bae2dba0"
+  }
+}

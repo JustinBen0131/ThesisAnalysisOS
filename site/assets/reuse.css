@@ -1,0 +1,74 @@
+/* The reuse experiment as something to play with. Uses the page's own colour and type tokens. */
+.reuse-play { margin: 0.2rem 0 1.4rem; }
+.reuse-play .reuse-lede { max-width: 44rem; margin: 0 0 1.2rem; font-size: 1.05rem; }
+.reuse-bench { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.6rem; margin: 0 0 1rem; }
+.reuse-unit { display: grid; justify-items: center; padding: 0.9rem 0.3rem 0.8rem; border: 1px solid var(--line);
+  border-radius: 12px; background: var(--panel); transition: border-color 0.25s; }
+.reuse-lamp { display: grid; justify-items: center; gap: 0.32rem; font: 600 0.84rem/1.2 var(--sans); }
+.reuse-dot { width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--holds);
+  box-shadow: 0 0 0 5px rgba(111, 211, 160, 0.12); transition: background 0.25s, box-shadow 0.25s, transform 0.25s; }
+.reuse-state { font: 500 0.7rem/1.2 var(--mono); font-style: normal; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--soft); }
+.reuse-unit.ran { border-color: var(--stale); }
+.reuse-unit.ran .reuse-dot { background: var(--stale); transform: scale(1.14);
+  box-shadow: 0 0 0 6px rgba(242, 162, 58, 0.2), 0 0 20px rgba(242, 162, 58, 0.6); }
+.reuse-unit.ran .reuse-state { color: var(--stale); }
+.reuse-unit.outdated { border-color: var(--fails); }
+.reuse-unit.outdated .reuse-dot { background: var(--fails); transform: none;
+  box-shadow: 0 0 0 6px rgba(239, 143, 128, 0.2), 0 0 16px rgba(239, 143, 128, 0.45); }
+.reuse-unit.outdated .reuse-state { color: var(--fails); }
+.reuse-wires { display: block; width: 100%; max-width: 8rem; height: 2.7rem; margin: 0.25rem 0 0.1rem; overflow: visible; }
+.reuse-wires path { fill: none; stroke: var(--edge); stroke-width: 2.4; stroke-linecap: round; }
+.reuse-wires path.off { stroke-dasharray: 3 6; opacity: 0.6; }
+.reuse-wires path.lit { stroke: var(--link); }
+.reuse-wires path.spark { stroke: none; }
+.reuse-wires path.spark.go { stroke: #f6dc9c; stroke-width: 4; stroke-dasharray: 10 70; animation: reuse-run 0.45s linear; }
+@keyframes reuse-run { from { stroke-dashoffset: 10; } to { stroke-dashoffset: -48; } }
+.reuse-folders { display: flex; justify-content: center; gap: 0.55rem; padding-top: 0.45rem; }
+.reuse-play .reuse-folder { position: relative; width: 2.9rem; height: 2.2rem; min-height: 0; padding: 0;
+  border: 1px solid var(--edge); border-radius: 2px 5px 5px 5px; background: var(--card); color: var(--ink);
+  font: 600 0.86rem/1 var(--mono); cursor: pointer; transition: transform 0.15s, background 0.2s, border-color 0.2s, color 0.2s; }
+.reuse-play .reuse-folder::before { content: ""; position: absolute; left: -1px; top: -0.45rem; width: 1.25rem; height: 0.45rem;
+  border: 1px solid var(--edge); border-bottom: 0; border-radius: 4px 4px 0 0; background: var(--card);
+  transition: background 0.2s, border-color 0.2s; }
+.reuse-play .reuse-folder:disabled { cursor: default; opacity: 1; }
+.reuse-play :is(button, input):focus-visible { outline: 3px solid var(--link); outline-offset: 3px; }
+.reuse-play .reuse-folder:not(:disabled):hover { transform: translateY(-3px); border-color: var(--link); color: var(--link);
+  background: var(--card); }
+.reuse-play .reuse-folder:not(:disabled):hover::before { border-color: var(--link); }
+.reuse-play .reuse-folder.unlisted { border-style: dashed; color: var(--soft); }
+.reuse-play .reuse-folder.unlisted::before { border-style: dashed; }
+.reuse-play .reuse-folder.changed, .reuse-play .reuse-folder.changed:not(:disabled):hover { background: var(--link);
+  border-color: var(--link); border-style: solid; color: #10160f; }
+.reuse-play .reuse-folder.changed::before { background: var(--link); border-color: var(--link); border-style: solid; }
+.reuse-say { min-height: 1.6em; margin: 0 0 1rem; font-size: 1.04rem; }
+.reuse-tally { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 24rem; gap: 0.8rem; margin: 0 0 1.1rem; }
+.reuse-tally div[hidden] { display: none; }
+.reuse-tally div { border-top: 1px solid var(--line); padding-top: 0.6rem; }
+.reuse-tally dt { font: 500 0.7rem/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--soft); }
+.reuse-tally dd { margin: 0.2rem 0 0; font: 400 2.1rem/1.1 var(--serif); font-variant-numeric: tabular-nums; }
+.reuse-tally .saved dd { color: var(--holds); }
+.reuse-tally .bad dd { color: var(--soft); }
+.reuse-tally .bad.on dd { color: var(--fails); }
+.reuse-ctl { display: flex; flex-wrap: wrap; align-items: center; gap: 0.7rem 1.2rem; margin: 0 0 1rem; }
+.reuse-ctl[hidden] { display: none; }
+.reuse-play .reuse-ctl button { min-height: 2.75rem; padding: 0.62rem 1.1rem; border: 1px solid var(--link); border-radius: 999px;
+  background: var(--link); color: #10160f; font: 600 0.9rem/1 var(--sans); cursor: pointer; }
+.reuse-play .reuse-ctl button:hover { background: #f1d08a; border-color: #f1d08a; }
+.reuse-play .reuse-ctl button.quiet { background: transparent; color: var(--ink); border: 1px solid var(--edge); }
+.reuse-play .reuse-ctl button.quiet:hover { background: transparent; color: var(--link); border-color: var(--link); }
+.reuse-switch { display: inline-flex; align-items: center; gap: 0.5rem; font: 500 0.93rem/1.3 var(--sans); cursor: pointer; }
+.reuse-switch input { width: 1.05rem; height: 1.05rem; accent-color: var(--link); }
+@media (max-width: 54rem) {
+  .reuse-bench { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem; }
+  .reuse-folders { gap: 0.35rem; }
+  .reuse-play .reuse-folder { width: 2.75rem; height: 2.75rem; }
+  .reuse-play .reuse-folder::before { width: 1rem; }
+}
+@media (max-width: 430px) {
+  .reuse-bench { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reuse-wires path.go { animation: none; }
+  .reuse-dot, .reuse-play .reuse-folder, .reuse-unit { transition: none; }
+}
