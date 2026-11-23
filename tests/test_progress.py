@@ -90,7 +90,11 @@ class TestScientificProgress(unittest.TestCase):
         with patch.object(telemetry, "rows", return_value=changes), patch.object(events, "read", return_value=[future]), \
              patch.object(usage, "window", return_value={"agents": actors}):
             vector = control.outcome_vector(self.paths, task, start, stop, "codex")
-        self.assertEqual((vector["corrections"], vector["gate_fail"], vector["input_tokens"]), (1, 0, 17))
+        self.assertEqual((vector["corrections"], vector["gate_fail"]), (1, 0))
+        self.assertIsNone(vector["input_tokens"])
+        self.assertIsNone(vector["cost"])
+        self.assertEqual(vector["provider_window"]["agents"]["codex"]["totals"]["input_tokens"], 17)
+        self.assertNotIn("claude", vector["provider_window"]["agents"])
 
     def test_mixed_model_pricing_and_inclusive_codex_cache(self):
         local = self.tmp / "claude.jsonl"

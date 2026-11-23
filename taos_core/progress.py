@@ -110,8 +110,8 @@ def command(args, paths):
         report = hpc.review(hpc.read_packet(args.packet), args.packet.parent)
         summary = snapshot(report)
         result = {"format": "taos.usage.progress.v1", "question": report["question"], "campaign": summary,
-                  "accounting_note": report["accounting"]["reason"], "next": report["next"]}
-        lines = [report["question"], campaign_line(summary), report["accounting"]["reason"], report["next"]]
+                  "accounting_note": report["accounting"]["reason"], "scope": hpc.SCOPE, "next": report["next"]}
+        lines = [report["question"], campaign_line(summary), report["accounting"]["reason"], report["next"], "Output judgments use the checks supplied by the project."]
     else:
         result = project_view(paths, args.task, args.actor)
         lines = [f'{result["project"]} · project principal {result["principal"]}']

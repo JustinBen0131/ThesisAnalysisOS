@@ -197,37 +197,14 @@ def outcome_vector(paths: Paths, task: Dict[str, Any], opened_at: str, closed_at
         if agent is not None:
             agents = {agent: agents[agent]} if agent in agents else {}
         if agents:
-            totals = dict(usage_mod.ZERO)
-            models: Dict[str, int] = {}
-            cost_amount = 0.0
-            cost_seen = False
-            for data in agents.values():
-                for key, value in data["totals"].items():
-                    totals[key] = totals.get(key, 0) + value
-                for name, count in (data.get("models") or {}).items():
-                    models[name] = models.get(name, 0) + count
-                if data.get("cost"):
-                    cost_amount += float(data["cost"]["amount"])
-                    cost_seen = True
-            vector.update({
-                "input_tokens": totals["input_tokens"],
-                "cached_tokens": totals["cached_tokens"],
-                "cache_write_tokens": totals["cache_write_tokens"],
-                "output_tokens": totals["output_tokens"],
-                # Reported by Codex and already inside output_tokens: never added again.
-                "reasoning_tokens": totals["reasoning_tokens"] or None,
-                "model": max(models.items(), key=lambda item: item[1])[0] if models else None,
-                "cost": round(cost_amount, 4) if cost_seen else None,
-            })
-            for field in ("input_tokens", "cached_tokens", "cache_write_tokens", "output_tokens", "model"):
-                vector["provenance"][field] = "observed"
-            if vector["reasoning_tokens"] is not None:
-                vector["provenance"]["reasoning_tokens"] = "observed"
-            if cost_seen:
-                vector["provenance"]["cost"] = "estimated"
-            # Coarse by construction: a concurrent session in the same window and
-            # scope is counted here too. Say so rather than implying exactness.
-            vector["token_attribution"] = observed.get("attribution")
+            # A provider window can span concurrent tasks. Keep it as contextual evidence.
+            attribution = observed.get("attribution") or {}
+            vector["provider_window"] = {
+                "since": opened_at, "until": closed_at,
+                "attribution": {name: attribution.get(name) for name in agents},
+                "agents": agents,
+            }
+            vector["token_attribution"] = vector["provider_window"]["attribution"]
     except Exception:
         pass   # a host that changed its format must never break a close
     return vector

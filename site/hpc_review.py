@@ -54,7 +54,7 @@ def render():
 <template data-brief-template>{escape(hpc.BRIEF)}</template>
 <p class="pilot-local"><a href="{BRIEF_LINK}" download>Download a blank inspection brief</a> · <a href="../source/files/policies/HPC.md.html">Read the policy</a> · <a href="../source/">Get the matching project source</a></p>
 <div class="pilot-form compute-read">
-<h3>Read a review</h3><p>Open the JSON returned by <code>taos hpc review</code>. Your file stays in this browser.</p>
+<h3>Read a review</h3><p>Open the JSON returned by <code>taos hpc review</code>. Your file stays in this browser. Before sharing the JSON, check the research question, output labels, evidence paths and check settings it contains.</p>
 <label class="pilot-field" data-import-label hidden><span>Review file</span><input type="file" data-review-file accept=".json,application/json"></label>
 <p role="status" data-report-status></p><div aria-live="polite" data-imported></div>
 <details class="compute-example"><summary>Read the fictional three-sample review</summary>

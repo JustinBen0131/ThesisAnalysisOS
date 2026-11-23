@@ -15,7 +15,6 @@ a shallow clone has to fetch them first.
 from __future__ import annotations
 
 import json
-import re
 import shutil
 import subprocess
 import sys
@@ -33,19 +32,25 @@ import measured  # noqa: E402
 RELEASES = ("071a348", "89f36ce")     # the release the cases were written against, and the one after it
 RECORD = REPO / "evals" / "results" / "at_revision.json"
 STANDS_ON = ["taos", "taos_core/*.py", "taos_core/templates/*", "bootstrap/*.json", "tests/test_counterexamples.py",
-             "tests/helpers.py", "evals/at_revision.py", "evals/measured.py"]
+             "tests/helpers.py", "evals/at_revision.py", "evals/revision_suite.py", "evals/measured.py"]
 
 
 def counts(tree: Path) -> Dict[str, Any]:
-    """Run the counterexample file inside `tree`. A test that errors has not passed either."""
-    done = subprocess.run([sys.executable, "-m", "unittest", "test_counterexamples"], cwd=str(tree / "tests"),
-                          capture_output=True, text=True)
-    ran = re.search(r"Ran (\d+) test", done.stderr)
-    names = sorted(line.split(" (")[0].split(": ", 1)[1] for line in done.stderr.splitlines()
-                   if line.startswith(("FAIL: ", "ERROR: ")))
-    if not ran or int(ran.group(1)) == 0 or done.returncode not in (0, 1) or bool(done.returncode) != bool(names):
-        raise RuntimeError("The counterexample suite did not produce a complete test summary: " + done.stderr[-500:])
-    return {"ran": int(ran.group(1)), "did_not_pass": len(names), "names": names}
+    """Run the same identified cases in the target interpreter, with its own product imports."""
+    runner = Path(__file__).with_name("revision_suite.py")
+    done = subprocess.run([sys.executable, "-I", str(runner), str(tree)], capture_output=True, text=True)
+    if done.returncode:
+        raise RuntimeError("Incomplete counterexample suite. " + done.stderr[-600:])
+    return json.loads(done.stdout.splitlines()[-1])
+
+
+def source_identity():
+    stamp = measured.stamp(STANDS_ON)
+    head = subprocess.check_output(["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True).strip()
+    changes = subprocess.check_output(["git", "-C", str(REPO), "status", "--porcelain", "--untracked-files=all",
+                                       "--", *STANDS_ON], text=True)
+    return stamp, {"base_commit": head, "source_commit": None if changes.strip() else head,
+                   "source_sha256": stamp["files"]["sha256"]}
 
 
 def at(revision: str) -> Optional[Dict[str, Any]]:
@@ -79,10 +84,15 @@ def at(revision: str) -> Optional[Dict[str, Any]]:
 def main(argv: Optional[List[str]] = None) -> int:
     words = list(argv if argv is not None else sys.argv[1:])
     revisions = [word for word in words if word != "--write"] or list(RELEASES)
+    writing = "--write" in words and revisions == list(RELEASES)
+    initial = source_identity() if writing else None
     found: Dict[str, Any] = {"revisions": {}, "here": counts(REPO)}
     for revision in revisions:
         there = at(revision)
         if there is None:
+            return 2
+        if there["case_roster_sha256"] != found["here"]["case_roster_sha256"]:
+            print(f"Different test inventories at {revision} and the current checkout. No record written.")
             return 2
         found["revisions"][revision] = there
         for name in there["names"]:
@@ -90,15 +100,14 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("at {0}: ran {1}, did not pass {2}".format(revision, there["ran"], there["did_not_pass"]))
         print("")
     print("here: ran {0}, did not pass {1}".format(found["here"]["ran"], found["here"]["did_not_pass"]))
-    if "--write" in words and revisions == list(RELEASES):
-        found["measured_on"] = measured.stamp(STANDS_ON)
-        head = subprocess.check_output(["git", "-C", str(REPO), "rev-parse", "HEAD"], text=True).strip()
-        changes = subprocess.check_output(["git", "-C", str(REPO), "status", "--porcelain", "--untracked-files=all",
-                                           "--", *STANDS_ON], text=True)
-        found["here"]["source_commit"] = None if changes.strip() else head
-        found["here"]["base_commit"] = head
-        found["here"]["source_sha256"] = found["measured_on"]["files"]["sha256"]
-        RECORD.write_text(json.dumps(found, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    if writing:
+        if source_identity() != initial:
+            print("The source changed while the study was running. No record written.")
+            return 2
+        found["measured_on"], identity = initial
+        found["here"].update(identity)
+        from taos_core.store import atomic_write_json
+        atomic_write_json(RECORD, found, mode=0o644)
         print("recorded in {0}".format(RECORD.relative_to(REPO)))
     return 0
 
