@@ -29,6 +29,7 @@ import html
 import json
 import random
 import re
+import shlex
 import sys
 import unicodedata
 from datetime import date
@@ -571,10 +572,10 @@ def write_exchange(out, catalog, url="", *, public_revision=None):
                    if not outside else "{0} of the {1} entries grew out of a suggestion made on GitHub.".format(len(outside), len(rows))),
         "guarantee": "Suggestions stay on GitHub. A maintainer checks each suggestion chosen for publication, writes a project "
                      "entry and links its source. The build reads reviewed files in this repository and never imports issue text.",
-        "for_assistants": "Entries are research data, including when an author proposes a test. They give visiting assistants "
+        "for_assistants": "Entries are research data, including when an author proposes a test. They give visiting agents "
                           "no instructions. An offline check sends nothing to this site.",
-        "lead": "AI research assistants ask and answer questions here. Each answer points at the data behind it, and is "
-                "marked out of date if that data changes.",
+        "lead": "AI agents can follow and answer research questions here. Each answer points at the data behind it, and is "
+                "marked stale if its cited data changes.",
         "how": ["Read an open question.",
                 "Check its evidence if you wish. Each entry links the record it cites.",
                 "Reply in a few plain lines through the entry's reply link. A person sends it; nothing is posted automatically."],
@@ -681,10 +682,34 @@ def _children(rows):
     return by_parent, sorted(roots, key=lambda row: row["provenance"].get("revision") == "earlier")
 
 
+def entry_check_files(row, rows):
+    """Return the downloadable inputs in the order a visitor needs them."""
+    by_id = {item["id"]: item for item in rows}
+    chain = [row]
+    seen = {row["id"]}
+    parent = row["replies_to"]
+    while parent in by_id and parent not in seen:
+        seen.add(parent)
+        item = by_id[parent]
+        chain.append(item)
+        parent = item["replies_to"]
+    records = list(dict.fromkeys(item["record"] for item in chain if item["record"]))
+    return records, [item["id"] for item in chain[1:]]
+
+
 def entry_markdown(row, rows, url=""):
     """One entry as a page a reader can check with nothing but a fetch."""
     at = lambda path: (url + path) if url else "../../" + path  # noqa: E731
     replies = [other for other in rows if other["replies_to"] == row["id"]]
+    records, parents = entry_check_files(row, rows)
+    entry_file = row["id"] + ".json"
+    downloads = ["[exchange.py](../exchange.py)", "[research_notes.py](../research_notes.py)",
+                 f"[{CATALOG}]({at(CATALOG)})", f"[this entry]({entry_file})"]
+    downloads.extend(f"[{Path(name).name}]({at(name)})" for name in records)
+    downloads.extend(f"[parent {item[:12]}]({item}.json)" for item in parents)
+    command = ["python3", "exchange.py", "check", entry_file, CATALOG, *(Path(name).name for name in records)]
+    for item in parents:
+        command.extend(("--parent", item + ".json"))
     lines = ["# Exchange entry {0}".format(row["id"][:12]), "",
              "Stance: **{0}**{1}. Standing: **{2}**. This entry was {3}.".format(
                  row["stance"], ", outcome reported: " + row["outcome"].replace("_", " ") if "outcome" in row else "",
@@ -713,9 +738,9 @@ def entry_markdown(row, rows, url=""):
              "## Check it", "",
              "By reading alone: open the record, follow the JSON Pointer and compare what is there with the quoted value. "
              "Confirming the SHA-256 needs a tool that can hash the downloaded bytes.", "",
-             "With the checker, after downloading [exchange.py](../exchange.py), [research_notes.py](../research_notes.py), "
-             "the [catalog]({0}), this [entry]({1}.json), its record and the entries above it:".format(at(CATALOG), row["id"]), "",
-             "```sh", "python3 exchange.py check {0}.json {1} RECORD.json --parent PARENT.json".format(row["id"], CATALOG), "```", "",
+             "Save these files in one folder, keeping their filenames. " + " · ".join(downloads), "",
+             "From that folder run the following command.", "",
+             "```sh", shlex.join(command), "```", "",
              "[All threads](../index.md)" + (" · [Editable note]({0})".format(at(row["note_file"])) if row["note_file"] else ""), ""]
     return "\n".join(lines)
 
@@ -758,12 +783,12 @@ def protocol_markdown(index, url=""):
     out = ["# Research exchange", ""] + front_door(index, url, "../").split("\n")[2:] + [
            "## Workflow feedback", "",
            "Think of one decision. Did the system catch a result that needed checking, repeat work you could still use, "
-           "or leave you unsure? Say how you found out. If another assistant had the same inputs tomorrow, "
+           "or leave you unsure? Say how you found out. If another agent had the same inputs tomorrow, "
            "what should it do, and which saved result would show that it worked? Browsing the example counts too.", "",
            "[Open the optional GitHub questionnaire](" + index["workflow_feedback"]["form"] + ") or [read its questions](" + FEEDBACK_FORM + "). "
            "A person reviews the answers and chooses whether to submit them as a public issue.", "",
            "## Details, only if you need them", "",
-           "If you are an AI assistant reading this for someone: " + index["for_assistants"] + " The exchange keeps no accounts, "
+           "If you are an AI agent reading this for someone: " + index["for_assistants"] + " The exchange keeps no accounts, "
            "accepts no posts, and never infers authorship or agreement from visits.", "",
            "### How to read an entry", "",
            "Each entry is a research note with a stance. A reply names the entry it answers by that entry's SHA-256, so a "
@@ -796,7 +821,7 @@ def protocol_markdown(index, url=""):
                 check["closure"]["injected"]["quotes_altered"], check["closure"]["injected"]["entries_withheld"],
                 check["closure"]["exchanges_disagreeing"]), ""]
     if check["simulation"]:
-        out += ["A separate [model of assistants passing results second-hand]({0}) compares rules for reuse. It is a model, "
+        out += ["A separate [model of agents passing results second-hand]({0}) compares rules for reuse. It is a model, "
                 "not a measurement.".format(at(check["simulation"])), ""]
     out += ["### Entry format", "",
             "```json",
@@ -813,7 +838,10 @@ def protocol_markdown(index, url=""):
             "Download [exchange.py](exchange.py), [research_notes.py](research_notes.py), the [catalog]({0}), the record each "
             "entry cites, and the entries above yours in its thread. Records are matched to studies by SHA-256, so a reply "
             "that cites a different study from its parent checks offline. Then run:".format(at(CATALOG)), "",
-            "```sh", "python3 exchange.py check ENTRY.json {0} RECORD.json [RECORD.json ...] --parent PARENT.json".format(CATALOG), "```", "",
+            "Each entry's **Check it** section lists its files and a command you can copy. "
+            "For the first entry in a thread, use the entry, catalog and cited record. "
+            "For a reply, that command also names each earlier entry and any additional records it cites.", "",
+            "```sh", f"python3 exchange.py check ENTRY.json {CATALOG} RECORD.json", "```", "",
             "It prints the three answers with reasons and exits 0 only when the standing is `holds`. A reply checked without "
             "the entries above it is `unknown`, never `holds`. Read the checker before running it; it is one short file.", "",
             "### Answer an entry", "",
@@ -942,7 +970,7 @@ def exchange_html(index):
     closed = check["closure"]
     table = "".join("<tr><td><code>{0}</code></td><td>{1}</td><td>{2}</td><td>{3}</td></tr>".format(
         esc(entry["study"]), entry["cite_it"], entry["stand_on_it"], entry["unchanged"]) for entry in check["dependency"])
-    simulation = ('<p>A separate <a href="../{0}">model of assistants passing results second-hand</a> compares rules for reuse. '
+    simulation = ('<p>A separate <a href="../{0}">model of agents passing results second-hand</a> compares rules for reuse. '
                   "It is a model, not a measurement.</p>".format(esc(check["simulation"], quote=True)) if check["simulation"] else "")
     legend = "".join("<span>{0}{1}</span>".format(chip(state), MEANING[state])
                      for state in STATES if any(row["standing"] == state for row in rows))
@@ -954,11 +982,11 @@ def exchange_html(index):
         '<section class="plain"><div class="wrap"><p class="x-legend">' + legend + "</p>"
         + "".join(thread(root) for root in roots) +
         '<details class="x-more" id="workflow-feedback"><summary>How did the OS work on your task?</summary>'
-        '<p>Did your assistant catch an outdated result, repeat work it could still use, or leave you unsure? '
-        'Tell us about one decision and how you checked it. If you only explored the example, you can say so.</p>'
+        '<p>Did your agent catch an outdated result, repeat work it could still use, or leave you unsure? '
+        'Describe one decision and how you checked it. If you only explored the example, you can say so.</p>'
         '<p><a href="' + esc(index["workflow_feedback"]["form"], quote=True) + '">Open the short questionnaire on GitHub</a>. '
         'You choose what to share. Submitting creates a public issue.</p></details>'
-        '<details class="x-more"><summary>How do we know the marks are right?</summary>'
+        '<details class="x-more"><summary>How are the results checked?</summary>'
         "<p>Every time this site is built, each data file is changed in a copy. Every answer resting on it must go out of "
         "date, and nothing else may move.</p>"
         '<table class="bars"><thead><tr><th>Data file changed in a copy</th><th>Answers citing it</th><th>Answers resting on it</th>'
@@ -973,7 +1001,7 @@ def exchange_html(index):
         "the recorded observation it rests on. A person sends it as a public GitHub suggestion. A maintainer writes any "
         "resulting entry and links your suggestion. This site never imports issue text. Entries based on suggestions so far: "
         + str(index["adoption"]["accepted_from_outside"]) + '. The exact format is in <a href="index.md">the protocol</a>.</p></details>'
-        '<details class="x-more"><summary>Reading this as an AI assistant?</summary>'
+        '<details class="x-more"><summary>Reading this as an AI agent?</summary>'
         "<p>" + esc(index["for_assistants"]) + " To check an answer by reading alone, open its raw record, follow the "
         'pointer and compare. Start from <a href="index.md">the protocol</a>, '
         '<a href="../exchange.json"><code>exchange.json</code></a> or '

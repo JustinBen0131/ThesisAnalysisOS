@@ -23,6 +23,8 @@ of record.
 
 **Verify, cheapest first.**
 
+The historical replay requires a Git checkout containing the revisions named by the study. The local CLI and saved-evidence checks also work in the source ZIP.
+
 ```bash
 ./taos demo                      # the idea working on a small measurement, in a throwaway folder
 ./taos selftest                  # the whole suite, about a minute
@@ -34,7 +36,7 @@ python3 evals/mutations.py       # removes each protection in turn, about three 
 
 **For a program.** `taos why [TASK] --json` and `taos gate show --task ID
 --json` return the verdicts as data, `taos why --check` exits 1 when
-something does not hold, and `python3 evals/claims.py --json` does the same
+something does not hold, and `python3 evals/claims.py --json --strict` does the same
 for the repository's own claims.
 
 **Changing it.**
@@ -77,18 +79,47 @@ for the repository's own claims.
 
 ## Flow of one task
 
-1. Human: "work on AZ-7".
-2. Agent: `taos start --agent codex --task AZ-7 --session "AZ-7 | ..."`.
-   The store maps the session, acquires `task:AZ-7`, `branch:...`,
-   `path:<worktree>`, transitions to active, marks hot, refreshes projections,
-   writes a label, prints the capsule with the exact git commands.
-3. Agent works in the worktree. Evidence and comments land on the task.
-4. Agent: `taos gate run` → gate record under `.taos/gates/`, evidence row.
-5. Agent: `taos finish --state review --handoff-file h.md --to claude`.
-   Handoff validated and stored; transition; claims released; label written.
-6. Claude: `taos start` on the same task now succeeds; the capsule shows the
-   handoff.
-7. Human: sees the task move in the panel; answers any decision queued.
+Run the commands from a configured TAOS home with an existing task `AZ-7`.
+
+1. The human asks Codex to work on AZ-7.
+2. Codex starts the task.
+
+   ```sh
+   ./taos start --agent codex --task AZ-7 --session "AZ-7 | prepare result"
+   ```
+
+   The store maps the session and claims the task and any configured
+   branch or worktree. It marks the task active and hot, refreshes the
+   projections and prints the capsule with the workspace commands.
+3. Codex works in the worktree. Evidence and comments land on the task.
+4. Codex runs the checks. TAOS saves the check record in `.taos/gates/`
+   and adds it to the task's evidence.
+
+   ```sh
+   ./taos gate run --agent codex --task AZ-7
+   ```
+
+5. Codex generates the handoff and fills in `h.md` before finishing.
+
+   ```sh
+   ./taos handoff template AZ-7 --from codex --to claude --session "AZ-7 | prepare result" > h.md
+   ```
+
+   After the checks pass, this validates and saves the handoff, moves the
+   task to review and releases the claims.
+
+   ```sh
+   ./taos finish --agent codex --task AZ-7 --state review --session "AZ-7 | prepare result" \
+     --reason "Checks passed. Ready for review." --handoff-file h.md --to claude
+   ```
+
+6. Claude starts the same task and sees the handoff in the capsule.
+
+   ```sh
+   ./taos start --agent claude --task AZ-7 --session "AZ-7 | review result"
+   ```
+
+7. The human sees the task move in the panel and answers any queued decision.
 
 ## Modules
 

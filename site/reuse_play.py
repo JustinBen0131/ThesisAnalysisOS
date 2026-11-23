@@ -87,3 +87,29 @@ def recorded_comparison(run, finest, hidden, everything):
             f"{everything['executions'] - finest['executions']} runs were skipped, and no outdated result was used. "
             f"Leaving a folder off each list cut the reruns to {hidden['executions']} and led to {hidden['wrong']} "
             "outdated uses. Requests for the same outdated result each count.")
+
+
+def timing_observations(run):
+    timing = run["timing"]
+    sizes = timing["upkeep"]
+    opening = '<div id="timing-observations"><h3>How much work went into deciding what to reuse?</h3>'
+    link = '<p><a href="../records/reuse_frontier.json">Inspect the timing record and workload</a></p></div>'
+    if "reference_ratio" not in sizes[0]:
+        return (opening + f"<p>This earlier experiment timed six checks with {sizes[0]['files']} to "
+                f"{sizes[-1]['files']:,} files. Its clock times describe the machine used for that run.</p>" + link)
+    rows = []
+    for size in sizes:
+        ratio = size["reference_ratio"]
+        rows.append(f'<tr><th scope="row">{size["files"]:,}</th><td>{ratio["median"]:.2g}×</td>'
+                    f'<td>{ratio["low"]:.2g}–{ratio["high"]:.2g}×</td></tr>')
+    delta = timing["isolating_one_execution"]
+    difference = delta["added_reference_ratio"]
+    return (opening + '<p>The experiment timed a request for six unchanged results alongside one fresh check of eight small files. '
+            'A ratio of 2× means the request took twice as long as that reference check on this machine.</p>'
+            '<div class="scroll"><table class="claims"><caption>Time to check whether six results still apply</caption>'
+            '<thead><tr><th scope="col">Files in the workspace</th><th scope="col">Median ratio</th>'
+            '<th scope="col">95% interval</th></tr></thead><tbody>' + ''.join(rows) + '</tbody></table></div>'
+            f'<p>Across {delta["pairs"]} matched edits, the median time difference between running a check in isolation '
+            f'and in the open workspace was {difference["median"]:.2g} reference-check times '
+            f'(95% interval {difference["low"]:.2g} to {difference["high"]:.2g}). '
+            'The intervals describe repeated measurements on one machine. Other projects can have different costs.</p>' + link)

@@ -8,6 +8,7 @@ from urllib.parse import quote
 
 # Each example points inside the named test, to the assertion a visitor can inspect.
 _TESTS = (
+    ("The first-minute reads run locally", "On a fresh demo, the project summary, applicable review rule, check status and task brief were readable with networking and external programs unavailable.", "first_minute_reads_run_without_network_or_external_programs", 'self.assertIn("Measure g from the six swings"'),
     ("A recorded result", "A task has never run its check. Its record says the outcome is unknown and gives the reason.", "an_open_task_claims_nothing", 'never run for this task'),
     ("A passed check", "A check passes. Editing the project's version number immediately makes that pass unavailable.", "a_pass_does_not_cover_a_file_edited_afterwards", 'self.assertIsNone(gates.fresh_pass'),
     ("The answer names", "Editing the project settings after a check puts Cargo.toml in the reason shown to the next reviewer.", "closed_work_stands_until_a_file_changes_and_the_reason_names_the_file", 'self.assertIn("Cargo.toml"'),
@@ -16,16 +17,16 @@ _TESTS = (
     ("A change to a file", "Editing a notes file that belongs to no declared group leaves the check's status unknown.", "a_change_nobody_declared_is_unknown_and_never_rounded_to_fine", 'outside every declared domain'),
     ("A declared domain", "A data file is excluded from Git. Changing its reading still invalidates the check that listed its folder.", "an_input_git_ignores_is_still_part_of_what_a_check_stood_on", 'self.assertIsNone(gates.fresh_pass'),
     ("A check marked isolated", "The check reads a copy of the analysis code and creates a file. When it finishes, that new file is absent from the original workspace.", "an_isolated_check_sees_only_what_it_declared_and_leaves_nothing_behind", 'self.assertFalse((self.ws / "made.txt").exists())'),
-    ("Only a person", "A reviewer accepts a timing table. After an input changes, the check passes again. The edited version still needs a fresh approval from the reviewer.", "acceptance_is_of_one_version_and_does_not_carry_over", 'self.assertEqual(part(view, "acceptance")["state"], basis.STALE)'),
+    ("An acceptance records", "A reviewer accepts a timing table. After an input changes, the check passes again. The edited version still needs a fresh approval from the reviewer.", "acceptance_is_of_one_version_and_does_not_carry_over", 'self.assertEqual(part(view, "acceptance")["state"], basis.STALE)'),
     ("A work product", "Changing a timing measurement in bench.csv marks the plot that used it as outdated. A summary with no listed inputs has an unknown status.", "a_work_product_is_current_while_its_declared_inputs_are_the_same_bytes", 'bench.csv changed'),
     ("A new or lapsed", "A task was closed before its reviewer asked for the median of five runs. The new instruction appears in the reason for reviewing the closure again.", "a_new_instruction_makes_the_closure_stale_and_is_quoted", 'self.assertIn("Report the median of five runs"'),
     ("The instruction that", "A January calibration query returns reference A. A February query returns its replacement, reference B.", "a_later_replacement_does_not_erase_the_earlier_answer", 'self.quotes("calibration", "2026-02-15")'),
     ("A replacement governs", "A release temporarily requires one reviewer. On March 9, after the exception ends, the earlier two-reviewer rule applies again.", "a_temporary_replacement_gives_the_rule_back_when_it_lapses", 'self.quotes("release", "2026-03-09")'),
-    ("What governs a task", "At startup the assistant sees the instruction to benchmark on the large fixture and a reminder to warm the cache. The other task's parser instruction is left out.", "start_shows_what_stands_what_was_told_and_what_was_learned", 'self.assertIn("lesson:'),
+    ("What governs a task", "At startup the agent sees the instruction to benchmark on the large fixture and a reminder to warm the cache. The other task's parser instruction is left out.", "start_shows_what_stands_what_was_told_and_what_was_learned", 'self.assertIn("lesson:'),
     ("A reminder shown", "Three replies already include units. All three receive the reminder about units, and the repeat-mistake count stays at zero.", "a_reminder_shown_for_correct_work_is_not_a_repeated_mistake", 'self.assertEqual(sum(repeat_count'),
-    ("A setup is credited", "The assistant starts and finishes a task. With no observation of which setup ran, the session counts once and the setups receive zero credit.", "an_unobserved_profile_earns_no_credit", 'self.assertEqual(credited, 0)'),
-    ("A lapsed lease", "An assistant's one-hour assignment expires. Another assistant takes the task, and the first assistant's attempt to renew the old assignment is refused.", "a_lapsed_owner_cannot_come_back_after_reassignment", 'self.assertEqual(holders,'),
-    ("A refused start", "A repair is blocked on another task. When an assistant tries to start it, the request is refused and it acquires no assignment.", "a_refused_start_takes_nothing", 'self.assertEqual([c for c in claims.'),
+    ("A setup is credited", "The agent starts and finishes a task. With no observation of which setup ran, the session counts once and the setups receive zero credit.", "an_unobserved_profile_earns_no_credit", 'self.assertEqual(credited, 0)'),
+    ("A lapsed lease", "An agent's one-hour assignment expires. Another agent takes the task, and the first agent's attempt to renew the old assignment is refused.", "a_lapsed_owner_cannot_come_back_after_reassignment", 'self.assertEqual(holders,'),
+    ("A refused start", "A repair is blocked on another task. When an agent tries to start it, the request is refused and it acquires no assignment.", "a_refused_start_takes_nothing", 'self.assertEqual([c for c in claims.'),
     ("A label is read", "A replay row records a load with no outcome label. It contributes zero to the count of harmless outcomes.", "an_unlabelled_case_is_not_counted_as_harmless", 'self.assertEqual(result["harmless"], 0)'),
     ("A decision-bank run", "A reader gets one answer right in one condition and four in another. The scored record retains the submitted answers and their fingerprint.", "scoring_needs_sealed_lines_and_qualified_reader", 'self.assertEqual(result["answers"]["O"]'),
     ("A change is not confirmed", "A proposed speedup predicts a time saving. Entering an observed time without a source is refused, even when the value falls in the predicted range.", "a_change_is_not_confirmed_by_a_number_from_nowhere", 'with self.assertRaises(TaosError):'),
@@ -34,7 +35,7 @@ _TESTS = (
     ("Each isolated result", "The test tries a local network connection and an undeclared workspace file. It checks whether the run reported the access limits this machine could enforce.", "the_record_says_what_was_closed_and_it_was", 'self.assertEqual("network" in closed'),
     ("The setup answers", "The setup lists source and data folders as inputs to a fit. The generated settings retain both patterns and request an isolated check.", "setup_can_say_what_a_check_reads", 'self.assertEqual(config["basis"]["domains"]'),
     ("No row of this file", "A test reads the public claim register and requires an empty list of rows with a failed source check.", "no_claim_names_something_that_is_not_there_or_misquotes_a_recorded_run", 'self.assertEqual([(row["claim"]'),
-    ("The demo runs", "The demo first omits the style file from a check's inputs. The check fails, then passes when the missing input is listed.", "it_runs_from_a_clean_copy_and_shows_each_idea_with_real_output", 'ok    style        exit 0'),
+    ("The demo runs", "The demo first omits the style file from a check's inputs. The check fails, then passes when the missing input is listed.", "it_runs_from_a_clean_copy_and_shows_each_idea_with_real_output", 'declared, the same check passes'),
 )
 
 
@@ -126,11 +127,18 @@ def _measured(src):
     timing = reuse["timing"]
     small = case(timing, "upkeep", "files", 48)
     large = case(timing, "upkeep", "files", 4800)
-    upkeep = observed(f"On the test laptop, consulting {small['files']} files took {1000*small['seconds']:.1f} ms. Consulting {large['files']:,} took {1000*large['seconds']:.1f} ms.",
-                      rp, '"upkeep":', "See the file counts and times")
     pairs = timing["isolating_one_execution"]
-    paired = observed(f"On the test laptop, isolation added a median of {1000*pairs['median_seconds']:.1f} ms across {pairs['pairs']} paired runs.",
-                      rp, '"isolating_one_execution":', "See the paired timings")
+    if "reference_ratio" in small:
+        consultation = (f"Checking six saved results took {small['reference_ratio']['median']:.2g} times as long as a fresh reference check "
+                        f"with {small['files']} files, and {large['reference_ratio']['median']:.2g} times as long with {large['files']:,} files on this machine.")
+        isolation = (f"Across {pairs['pairs']} matched edits, the median difference between an isolated and open check took "
+                     f"{pairs['added_reference_ratio']['median']:.2g} reference-check times on this machine.")
+    else:
+        consultation = (f"On the test machine, checking {small['files']} files took {1000*small['seconds']:.1f} ms. "
+                        f"Checking {large['files']:,} took {1000*large['seconds']:.1f} ms.")
+        isolation = f"On the test machine, isolation added a median of {1000*pairs['median_seconds']:.1f} ms across {pairs['pairs']} paired runs."
+    upkeep = observed(consultation, rp, '"upkeep":', "See the file counts and times")
+    paired = observed(isolation, rp, '"isolating_one_execution":', "See the paired timings")
 
     model_path, model = record("model_evaluation")
     policy_path = "examples/model_evaluation/policy.json"
@@ -155,6 +163,10 @@ def _measured(src):
         raise ValueError("Read the revised outcome of the single-swing correction")
     pendulum = observed(f"One corrected swing time moved the fitted gravity from {baseline['g']:.2f} to {fit['g']:.2f} m/s². The earlier pass expired and the fresh check failed.",
                         mp, '"id": "row-6-1.05"', "Read the corrected-fit observation")
+    sp, session = record("session_footprint")
+    capsule = session["surfaces"]["task_capsule"]
+    reading = observed(f"One task brief in the demo was {capsule['lines']} lines and {capsule['bytes']:,} UTF-8 bytes when requested.",
+                       sp, '"task_capsule": {', "Inspect the saved brief and its text size")
     hp, handoff = record("handoff_audit")
     restored = case(handoff, "observations", "id", "restore-exact-bytes")
     if not (restored["csv_exact_original"] and restored["before"] == "holds" and restored["reused_gates"]):
@@ -167,10 +179,13 @@ def _measured(src):
     imbalance = observed(f"After both corrections the combined detector caught {pool['counts']['tp']} of {pool['reference_faults']} faults. Giving each instrument equal weight gave {both['equal_group_mean']}.",
                          fp, '"id": "both"', "Read the two-correction result")
     studies = {rev_path: revision, mutation_path: mutations, rp: proper, model_path: threshold_test,
-               mp: pendulum, hp: hand, fp: imbalance}
-    claims = {"Earlier releases had": revision, "The tests notice": mutations, "Reuse by basis": proper,
-              "Age limits trade": age, "In the open": missing, "Isolated, a check": isolated,
-              "Asking costs time": upkeep, "Isolating a check costs": paired}
+               mp: pendulum, hp: hand, fp: imbalance, sp: reading}
+    claims = {"Reading one demo session": reading, "Earlier releases had": revision, "The tests notice": mutations, "Reuse by basis": proper,
+              "Age limits trade": age, "In the open": missing, "Isolated, a check": isolated}
+    if any(line.startswith("| Cost of consulting") for line in src.lines("docs/CLAIMS.md")):
+        claims.update({"Cost of consulting": upkeep, "Added cost of isolating": paired})
+    else:
+        claims.update({"Asking costs time": upkeep, "Isolating a check costs": paired})
     return claims, studies, threshold_test
 
 
@@ -186,8 +201,8 @@ def _file_examples(src, claims, studies, threshold):
     if row["fail"] != ["A"] or row["sensitivity_direction"] != ["down", "up", "same"]:
         raise ValueError("Read the revised forecast for the two score corrections")
     files[prediction_path] = _example("forecast",
-        f"Before the run, the design predicted that only instrument A would fail after two score corrections. Together the instruments would still detect {pool['tp']} of {pool['tp']+pool['fn']} known faults.",
-        src.link(prediction_path, '"id": "offsetting-score-corrections"', "Read the original forecast"),
+        f"The saved prediction says that after two score corrections, only instrument A will fail. Together the instruments will still detect {pool['tp']} of {pool['tp']+pool['fn']} known faults.",
+        src.link(prediction_path, '"id": "offsetting-score-corrections"', "Read the saved prediction"),
         src.link("docs/MODEL_EVALUATION.md", "| Also correct B04", "Compare the observed result"))
     files[".codex/hooks.json"] = _example("tested",
         "Before a shell command, Codex calls a guard. One test submits a force-push command to the guard and checks that it refuses.",
@@ -206,6 +221,38 @@ def _file_examples(src, claims, studies, threshold):
         "Each instrument report records four counts in a fixed order. That lets a reader distinguish missed faults from false alarms.",
         src.link(path, '"cell_order": {', "See the required counting order"),
         src.link(prediction_path, '"cell_order": [', "See those fields in the fixture"))
+    for stem, excerpt, explanation in (
+        ("CLAIMS", "taos start` claims the task", "Starting a task records its owner and the part of the project it can edit."),
+        ("CONTEXT", "taos policy route", "An agent can look up the instructions that apply to the request in front of it."),
+        ("CONTROL", "the human's explicit choices bound", "The person sets the limits within which an agent chooses how much work to do."),
+        ("DECOMPOSITION", "one session can move it", "A job is small enough to hand off when someone can say what would make it ready for review."),
+        ("DUPLICATE_WORK", "taos task find", "Before starting, an agent can search for the earlier task and read its evidence."),
+        ("EVIDENCE", "Test or command output pasted", "A task can preserve the actual check output for the next reviewer."),
+        ("GATES", "run what needs running", "The project names the commands a piece of work must pass before review."),
+        ("GIT", "prints the lane", "Starting a task tells an agent which working directory to use."),
+        ("HANDOFFS", "Fix the panic on empty generic bounds", "A sample handoff names the specific defect the next agent is taking over."),
+        ("HARD_STOPS", "stop and ask. If you see one", "If work needs a secret, the agent asks the person how to proceed."),
+        ("OBJECTIVE", "Maximise verified progress", "The project judges progress by the useful work a person can verify for the attention it took."),
+        ("OPERATING_LOOP", "Map the human's request to exactly one task", "An incoming request is matched to one task before an agent begins."),
+        ("PANEL", "served on the loopback interface", "The optional project dashboard runs on the user's own computer."),
+        ("REPO_SPLIT", "your tasks, claims, events, handoffs, and gate runs stay", "A project can use the public software while keeping its own task and review history private."),
+        ("REVIEW", "Check the deliverable against them", "Reviewers compare the delivered work with the request and its required checks."),
+        ("SCIENCE", "Do not grade your own change", "A different agent or a person assesses a proposed change against the prediction recorded for it."),
+        ("SELF_ITERATION", "The human reviews the proposal", "An agent can suggest a new check. The operator can decline it, install it, or retire it later."),
+    ):
+        path = f"policies/{stem}.md"
+        files[path] = _example("documented", explanation, src.link(path, excerpt, "Read the policy passage"))
+    for path, excerpt, explanation in (
+        (".claude/settings.json", "hooks/session_start.py", "Claude Code can run the local status hook when a session opens."),
+        ("kernels/KERNEL_INDEX.json", '"name": "OS_KERNEL"', "The index records which files the overview draws on, so a reader can check its sources."),
+        ("atoms/promoted_atoms.json", '"id": "handoff-header-required"', "A saved check asks whether the latest handoff identifies its author, session, task and scope."),
+        ("policies/ROUTING.yaml", "triggers: [review, check your work", "A request to review the work selects the project's review instructions."),
+    ):
+        files[path] = _example("documented", explanation, src.link(path, excerpt, "Inspect the setting"))
+    files["policies/HPC.md"] = _example("tested",
+        "Two sensor files kept all five readings between them. File C arrived empty, so only C went back for review.",
+        src.link("examples/hpc/returns/C-transfer.txt", "Input manifest: 2 readings.", "Read the first delivery log"),
+        src.test("checked_and_partial_outputs_remain_distinct", '("C", "retry", 0, 2)'))
     files["taos_core/policy.py"] = _example("tested",
         "A request to run the benchmark again brings up the rule for checking whether that work already exists.",
         src.test("route_picks_the_right_policies", 'self.assertIn("policies/DUPLICATE_WORK.md"'))
@@ -215,21 +262,21 @@ def _file_examples(src, claims, studies, threshold):
         src.test("a_check_that_names_an_undeclared_domain_is_refused_not_trusted_forever",
                  'self.assertTrue(any("depends_on names analysis"'))
     aliases = {"bootstrap": "The setup answers", "rules": "The instruction that", "claims": "A lapsed lease",
-               "gates": "A check marked isolated", "standing": "Only a person", "tasks": "Only a person",
+               "gates": "A check marked isolated", "standing": "An acceptance records", "tasks": "An acceptance records",
                "basis": "The answer names", "anchors": "A change is not confirmed", "changes": "A change is not confirmed",
                "lessons": "A reminder shown", "bank": "A decision-bank run", "lifecycle": "What governs a task",
                "replay": "A label is read"}
     for module, claim in aliases.items():
         files[f"taos_core/{module}.py"] = claims[claim]
     files["taos_core/anchors.py"] = _example("tested",
-        "Once the assistant records its predicted range for a ratio, an attempt to replace that range is refused.",
+        "Once the agent records its predicted range for a ratio, an attempt to replace that range is refused.",
         src.test("a_prediction_cannot_be_rewritten_once_made", "with self.assertRaises(TaosError):"))
     for stem, text, snippet in (
-        ("AGENTS", "Before editing the parser, the assistant can check whether another assistant already holds that part of the project.", "# is it free"),
+        ("AGENTS", "Before editing the parser, the agent can check whether another agent already holds that part of the project.", "# is it free"),
         ("CLAUDE", "Claude receives the same working contract as Codex. Its setup instructions point back to that shared document.", "Everything in it applies to you exactly as"),
-        ("PRINCIPAL_KERNEL", "The setup guide gives a new assistant a concrete instruction about reporting failed work.", "Report what is true, including what failed."),
+        ("PRINCIPAL_KERNEL", "The setup guide gives a new agent a concrete instruction about reporting failed work.", "Report what is true, including what failed."),
         ("PROJECT_KERNEL", "The project guide has a place for the build and test commands a newcomer needs before editing code.", "commands beyond the gates"),
-        ("workspace_block", "A linked project tells an assistant where to find the shared task and how to check who is working there.", "before writing in an area another agent may hold"),
+        ("workspace_block", "A linked project tells an agent where to find the shared task and how to check who is working there.", "before writing in an area another agent may hold"),
     ):
         path = f"taos_core/templates/{stem}.md.tmpl"
         files[path] = _example("documented", text, src.link(path, snippet, "Read the setup instructions"))
@@ -241,6 +288,16 @@ def _file_examples(src, claims, studies, threshold):
         src.link("README.md", passage, "Read the README example"),
         src.test("it_runs_from_a_clean_copy_and_shows_each_idea_with_real_output", "stale    check fit: analysis changed: data/swings.csv"))
     files["docs/CLAIMS.md"] = claims["No row of this file"]
+    path = "examples/transit/workflow.json"
+    files[path] = _example("measured",
+        "Two missing dispatch entries keep Tuesday’s rate pending. The incoming agent can open the task brief and see which entries it still needs.",
+        src.link(path, '"tuesday-refusal": {', "Inspect the attempt to publish Tuesday’s rate"),
+        src.link("evals/transit_workflow.py", "def run_history(", "See the commands that produced the workflow"))
+    path = "examples/transit/adaptation/workflow.json"
+    files[path] = _example("measured",
+        "The next shift listed yesterday’s trips. Its new format check passed. Comparing the IDs with dispatch caught the mistake.",
+        src.link(path, '"holdout_stale-check": {', "Inspect the format check on the old trip IDs"),
+        src.link(path, '"changed-count": {', "Compare the independent dispatch count"))
     return files
 
 
@@ -259,13 +316,15 @@ def attach_policy_evidence(graph, repo):
         "The CI configuration runs the suite across Linux, macOS and two Python versions. The public count comes from discovering the tests in this checkout.",
         src.link(".github/workflows/ci.yml", 'python: ["3.9", "3.12"]', "See the operating systems and versions"),
         src.link("evals/claims.py", "countTestCases()", "See how the tests are counted"))
-    claims["The suite passes"] = suite
     nodes = [node for node in graph["nodes"] if node["k"] == "c"]
     ledger = {}
     for line in src.lines("docs/CLAIMS.md"):
         cells = [cell.strip() for cell in line.strip("|").split("|")]
         if len(cells) == 4 and cells[3].startswith(("tested", "measured")):
             ledger[re.sub(r"[`*]", "", cells[0])] = line
+    suite_row = _one((name for name in ledger if name.startswith(("The suite passes", "Cases collected by the self-test suite"))),
+                     "test suite count row")
+    claims[suite_row] = suite
     ordinary = [n["l"] for n in nodes if not n["l"].startswith("README.md repeats: ")]
     if len(ordinary) != len(set(ordinary)) or set(ordinary) != set(ledger) or len(ordinary) != len(claims):
         raise ValueError("The graph, claim register and concrete policy examples no longer match")
@@ -289,9 +348,9 @@ def attach_policy_evidence(graph, repo):
             example = claims[key]
             links = example["links"]
             if len(links) == 1:
-                if key == "Only a person":
-                    source = src.link("README.md", "accepted that version; a later edit does not inherit it.",
-                                      "Read the approval example")
+                if key == "An acceptance records":
+                    source = src.link("SECURITY.md", "reviewer name on a decision is supplied by the caller.",
+                                      "Read what a reviewer label establishes")
                 else:
                     source = src.link("docs/CLAIMS.md", ledger[name], "Read the full claim")
                 links = [*links, source]

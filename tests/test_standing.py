@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 
 from helpers import cleanup, construct_example, make_home
 
@@ -98,6 +99,80 @@ class TestWhy(Home):
         self.assertEqual(closure["state"], basis.STALE)
         self.assertIn("Report the median of five runs", closure["reason"])
         self.assertIn("governs now and is not one this was recorded under", closure["reason"])
+
+    def test_transfer_prompt_uses_current_results_and_lists_only_requested_context(self) -> None:
+        self.close()
+        for n in range(6):
+            self.store.add_evidence("CMP-1", f"row-{n}.csv", "codex", note=f"row {n}")
+        (self.ws / "row-5.csv").write_text("unshared raw row", encoding="utf-8")
+        (self.ws / "Cargo.toml").write_text("input changed since the fit", encoding="utf-8")
+        normal = json.loads(self.say("capsule", "CMP-1", "--json"))
+        draft = self.say("capsule", "CMP-1", "--transfer", "Which reading would test the calibration?")
+        self.assertEqual(self.code, 0)
+        head, encoded = draft.split("Context packet (JSON)\n", 1)
+        self.assertIn("Which reading would test the calibration?", head)
+        packet = json.loads(encoded)
+        self.assertIn(hashlib.sha256(encoded.rstrip("\n").encode("utf-8")).hexdigest(), head)
+        self.assertEqual(packet["task"]["id"], "CMP-1")
+        current = self.say("capsule", "CMP-1")
+        self.assertLess(current.index("Current standing"), current.index("Earlier evidence"))
+        self.assertEqual(packet["current_results"], [part for part in normal["standing"]["parts"] if part["kind"] != "lease"])
+        self.assertIn("stale", [part["state"] for part in packet["current_results"]])
+        self.assertEqual(packet["latest_evidence_references"][0]["ref"], "row-1.csv")
+        self.assertEqual(packet["latest_evidence_references"][-1], {"ref": "row-5.csv", "note": "row 5"})
+        self.assertEqual(packet["evidence_references_total"], len(normal["task"]["evidence"]))
+        self.assertNotIn("unshared raw row", draft)
+        self.assertNotIn(str(self.tmp), draft)
+        self.assertEqual(normal, json.loads(self.say("capsule", "CMP-1", "--json")))
+        with self.assertRaisesRegex(TaosError, "question"):
+            lifecycle.transfer_prompt(normal, "   ")
+
+    def test_a_returned_review_matches_its_question_current_project_and_selected_source(self) -> None:
+        self.close()
+        question = "Do both instruments meet the ¾ limit?"
+        source = self.tmp / "readings.csv"
+        source.write_bytes(b"instrument,hit\nA,1\nB,1\n")
+        args = ("capsule", "CMP-1", "--transfer", question, "--source", str(source))
+        draft = self.say(*args)
+        reply = json.loads(draft.split("Cite the source rows or method you actually used.\n")[1]
+                           .split("\n\nContext packet (JSON)")[0])
+        self.assertIn(hashlib.sha256(source.read_bytes()).hexdigest(), draft)
+        self.assertNotIn(str(source), draft)
+        self.assertNotIn("A,1", draft)
+        reply.update(finding="supported", conclusion="Both passed the recorded check.",
+                     evidence=["readings.csv, rows 2 and 3"], uncertainty="Only two rows were supplied.",
+                     next_check="Repeat with the held-out data.")
+        saved = self.tmp / "reply.json"
+        def write_reply():
+            saved.write_text(json.dumps(reply, ensure_ascii=False), encoding="utf-8")
+        write_reply()
+        before = self.say("capsule", "CMP-1", "--json")
+        self.assertIn("matches this task", self.say(*args, "--check-review", str(saved)))
+        self.assertEqual(self.code, 0)
+        self.assertEqual(before, self.say("capsule", "CMP-1", "--json"))
+        def rejects(why, request=args):
+            diagnostic = io.StringIO()
+            with redirect_stderr(diagnostic):
+                self.say(*request, "--check-review", str(saved))
+            self.assertNotEqual(self.code, 0)
+            self.assertIn(why, diagnostic.getvalue())
+        rejects("different question", ("capsule", "CMP-1", "--transfer", "Was the scale calibrated?",
+                                       "--source", str(source)))
+        reply["evidence"] = []
+        write_reply()
+        rejects("Cite the evidence")
+        reply["finding"] = "uncertain"
+        write_reply()
+        self.assertIn("matches this task", self.say(*args, "--check-review", str(saved)))
+        original = source.read_bytes()
+        source.write_bytes(original + b"B,0\n")
+        rejects("selected source files")
+        source.write_bytes(original)
+        self.assertIn("matches this task", self.say(*args, "--check-review", str(saved)))
+        (self.ws / "Cargo.toml").write_text("updated since review", encoding="utf-8")
+        rejects("project record differs")
+        saved.write_text('{"schema":1,"schema":2}', encoding="utf-8")
+        rejects("unique field names")
 
     def test_a_work_product_is_current_while_its_declared_inputs_are_the_same_bytes(self) -> None:
         (self.ws / "bench.csv").write_text("run,seconds\n1,9.2\n", encoding="utf-8")

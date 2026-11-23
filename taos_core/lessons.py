@@ -268,9 +268,9 @@ def _cmd_status(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    lesson = subparsers.add_parser("lesson", help="corrections that report at the moment they apply")
+    lesson = subparsers.add_parser("lesson", help="turn a correction into a reminder shown when it applies")
     sub = lesson.add_subparsers(dest="lesson_cmd", required=True)
-    agents = list(events_mod.AGENTS)
+    agents = subparsers.actors
 
     adder = sub.add_parser("add", help="turn a correction into a lesson")
     adder.add_argument("--title", required=True)

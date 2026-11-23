@@ -1,7 +1,9 @@
 cff-version: 1.2.0
 message: >-
   If you use this software or build on its ideas, please cite it as below.
-  The software license and attribution notice are in LICENSE and NOTICE.
+  The version and date identify the tagged software release. For a later
+  experiment or checkout, include its exact Git commit and the saved result
+  used. The software license and attribution notice are in LICENSE and NOTICE.
 title: "ThesisAnalysisOS: what still holds?"
 abstract: >-
   An operating layer for scientific research done with AI agents. Every

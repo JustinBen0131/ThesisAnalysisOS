@@ -126,12 +126,13 @@ def observe_state(paths: Paths, task: Dict[str, Any], blockers: List[str]) -> Di
     }
 
 
-def outcome_vector(paths: Paths, task: Dict[str, Any], opened_at: str, closed_at: str) -> Dict[str, Any]:
+def outcome_vector(paths: Paths, task: Dict[str, Any], opened_at: str, closed_at: str,
+                   agent: Optional[str] = None) -> Dict[str, Any]:
     """Only what TAOS can actually observe. Everything else stays null."""
-    since = parse_ts(opened_at)
+    since, until = parse_ts(opened_at), parse_ts(closed_at)
     gate_pass = gate_fail = decisions = handoffs = corrections = blockers = 0
     for row in events_mod.read(paths, since=opened_at):
-        if row.get("task_id") not in (task["id"], None) and row.get("type") not in ("label",):
+        if row.get("task_id") != task["id"] or parse_ts(row["ts"]) > until:
             continue
         kind = row.get("type")
         if kind == "gate_run" and row.get("task_id") == task["id"]:
@@ -148,8 +149,14 @@ def outcome_vector(paths: Paths, task: Dict[str, Any], opened_at: str, closed_at
     try:
         from . import telemetry as telemetry_mod
 
+        from .util import slugify
+
+        task_labels = {task["id"].casefold(), slugify(task["id"] + "-" + (task.get("title") or ""))}
         for row in telemetry_mod.rows(paths):
-            if parse_ts(row.get("ts", closed_at)) >= since and row.get("outcome") in ("corrected", "reworked"):
+            if (row.get("ts") and since <= parse_ts(row["ts"]) <= until
+                    and str(row.get("task_id", "")).casefold() in task_labels
+                    and (agent is None or row.get("agent") == agent)
+                    and row.get("outcome") in ("corrected", "reworked")):
                 corrections += 1
     except Exception:
         pass
@@ -177,12 +184,18 @@ def outcome_vector(paths: Paths, task: Dict[str, Any], opened_at: str, closed_at
         "provenance": dict(PROVENANCE),
     }
 
+    # A local role has no provider adapter. Other agents can be active in the same time window.
+    if agent is not None and agent not in ("codex", "claude"):
+        return vector
+
     # Both hosts write token usage to disk. Read it if it is there; stay null if not.
     try:
         from . import usage as usage_mod
 
         observed = usage_mod.window(paths, since=opened_at, until=closed_at, scoped=True)
         agents = observed.get("agents") or {}
+        if agent is not None:
+            agents = {agent: agents[agent]} if agent in agents else {}
         if agents:
             totals = dict(usage_mod.ZERO)
             models: Dict[str, int] = {}
@@ -368,7 +381,7 @@ def close_episode(paths: Paths, task: Dict[str, Any], agent: str) -> Optional[Di
         return None
     open_row = sorted(open_rows, key=lambda r: r.get("ts", ""))[-1]
     closed_at = utc_now()
-    vector = outcome_vector(paths, task, open_row["ts"], closed_at)
+    vector = outcome_vector(paths, task, open_row["ts"], closed_at, agent=agent)
     # The controller pays for itself: the last rebuild's cost is charged to this episode.
     vector["controller_seconds"] = float(state.get("overhead_seconds") or 0.0)
     j, progress, cost = utility(vector)
@@ -593,7 +606,7 @@ def _cmd_frontier(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    parser = subparsers.add_parser("control", help="the residual control law: inspect, explain, rebuild")
+    parser = subparsers.add_parser("control", help="how carefully agents are told to work, and why")
     sub = parser.add_subparsers(dest="control_cmd", required=True)
     status = sub.add_parser("status", help="parameters and per-class statistics")
     status.add_argument("--json", action="store_true")

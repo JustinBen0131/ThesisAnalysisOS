@@ -5,9 +5,12 @@ from __future__ import annotations
 import io
 import json
 import re
+import shlex
+import shutil
 import subprocess
 import sys
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from helpers import REPO
@@ -21,26 +24,27 @@ IDEAS = ["standing", "reuse", "instructions", "acceptance", "reminder", "isolati
 
 def played(**how) -> str:
     out = io.StringIO()
-    assert demo.run(out=out, **how) == 0
+    with mock.patch.object(demo, "launcher", return_value="./taos"):   # as a reader who typed ./taos sees it
+        assert demo.run(out=out, **how) == 0
     return out.getvalue()
 
 
 class TestDemo(unittest.TestCase):
     def test_it_runs_from_a_clean_copy_and_shows_each_idea_with_real_output(self) -> None:
-        text = played()
+        text = played(full=True)
         for phrase in (
             "g = 9.82 +/- 0.02 m/s^2 from 6 swings",                            # the number the task closes on
             "stale    check fit: analysis changed: data/swings.csv",            # the file that changed is named
             "g = 9.75 +/- 0.02 m/s^2 from 6 swings",                            # and the flag was right: g moved
-            "not rerun: nothing it tested has changed",                         # asked by two tasks, executed once
+            "not run again: nothing it tested has changed",                     # asked by two tasks, executed once
             "\"Use the tape-measured lengths\"",                                # what governed on the earlier date
             "\"Use the laser-measured lengths\"",                               # and on the later one
             "stale    acceptance:",                                             # a person's acceptance is of one version
             "told:      \"Quote g with its uncertainty, never alone\"",         # delivered to the next agent
             "0 repeated, 0 followed, 1 not judged, of 1 times shown",           # shown is not repeated
-            "FAIL  style        exit 2",                                        # it read a file it did not declare
+            "fails    style        ran now and failed (exit 2)",                # it read a file it did not declare
             "A file it could not find is one it did not declare.",              # and the answer says so
-            "ok    style        exit 0",                                        # declared, the same check passes
+            "holds    style        ran now and passed (exit 0)",                # declared, the same check passes
         ):
             self.assertIn(phrase, text)
         self.assertEqual(text.count("PEN-1 stands as recorded."), 2)            # the style edit left the result standing
@@ -52,8 +56,8 @@ class TestDemo(unittest.TestCase):
         self.assertLessEqual(len(lines), 36)                                    # it fits a 40-row window
         self.assertLessEqual(max(len(line) for line in lines), 80)
         for answer, about in (("holds", "the plot style is edited"), ("stale", "one swing is measured again"),
-                              ("held", "not run twice"), ("stale", "the acceptance was of the old version"),
-                              ("FAIL", "declared only the analysis"), ("ok", "the same check passes")):
+                              ("holds", "not run twice"), ("stale", "the acceptance was of the old version"),
+                              ("fails", "declared only the analysis"), ("holds", "the same check passes")):
             self.assertTrue(any(line.split()[0] == answer and about in line for line in lines if line.strip()), about)
         shaded = played(full=False, color=True)
         self.assertIn("\x1b[33mstale", shaded)                                  # the answer is shaded, the words are not
@@ -113,6 +117,26 @@ class TestDemo(unittest.TestCase):
         self.assertEqual(fit.stdout.strip(), "g = 9.82 +/- 0.02 m/s^2 from 6 swings")
         check = subprocess.run([sys.executable, str(EXAMPLE / "analysis" / "check.py")], capture_output=True, text=True)
         self.assertEqual(check.returncode, 0)
+
+    def test_kept_it_ends_with_lines_a_reader_can_paste_and_each_shows_what_it_says(self) -> None:
+        text = played(keep=True, width=80, color=False)
+        printed = [line[2:] for line in text.split("\n\n")[-1].splitlines()]    # the block the reader is told to paste
+        kept = Path(shlex.split(printed[0])[1])
+        self.addCleanup(shutil.rmtree, str(kept.parent), ignore_errors=True)
+        self.assertEqual((printed[0].split()[0], printed[1:]), ("cd", [command for command, _ in demo.BY_HAND]),
+                         "bare lines: pasting one, or all of them, runs exactly what is shown")
+        said = []
+        for command in printed[1:]:                                             # each line as printed, through a shell
+            self.assertLessEqual(len(command) + 2, 80, "a line to paste fits the screen")
+            done = subprocess.run(command, shell=True, cwd=str(kept), capture_output=True, text=True)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            said.append(done.stdout + done.stderr)
+        fit = [re.search(r"^\s+(\w+)\s+fit\s", output, re.M) for output in said]      # the answer leads the row
+        self.assertEqual((fit[0].group(1), fit[2].group(1)), ("holds", "stale"), "one swing by hand turns the fit stale")
+        self.assertRegex(said[3], r"holds\s+fit\s+ran now and passed", "run by hand, the fit passes again")
+        self.assertEqual(subprocess.run("../os/taos gate show --task PEN-2", shell=True, cwd=str(kept), capture_output=True,
+                                        text=True).stdout.count("holds"), 2, "run again, both checks hold on the new data")
+        self.assertIn("PEN-1 does not stand as recorded", said[4])
 
 
 if __name__ == "__main__":

@@ -24,14 +24,14 @@ find a compatible recorded run, it returns `unknown`.
 | Claim | Code | Check | Status |
 |---|---|---|---|
 | A recorded result is answered `holds`, `fails`, `stale` or `unknown`, with a reason; `unknown` is never turned into another answer | `taos_core/basis.py` | `tests/test_standing.py` | tested |
-| A passed check holds for the bytes it tested and stops holding when one changes, however recent it is | `gates.standing` | `test_a_pass_does_not_cover_a_file_edited_afterwards` | tested |
+| A passed check is reusable on matching recorded inputs. An edit to a recorded input invalidates that earlier pass | `gates.standing` | `test_a_pass_does_not_cover_a_file_edited_afterwards` | tested |
 | The answer names the file that changed | `basis.compare` | `test_closed_work_stands_until_a_file_changes_and_the_reason_names_the_file` | tested |
 | No route moves a task to review or done unless every check holds, or a waiver with a reason is recorded and shown | `TaskStore.transition` | `test_done_cannot_be_reached_by_a_route_that_skips_the_check`, `test_a_waived_closure_is_unverified_until_the_check_runs` | tested |
 | A result is shared by every task whose files are the same bytes, and is executed once | `gates._key`, `.taos/gate_results.json` | `tests/test_standing.py::TestSharedResult` | tested |
 | A change to a file no domain claims is `unknown`; a check naming an undeclared domain is `unknown` | `basis.compare`, `gates.standing` | `tests/test_standing.py::TestDomains` | tested |
 | A declared domain holds what its patterns match on disk, so an input git ignores is part of what a check stood on | `basis.on_disk`, `basis.snapshot` | `test_an_input_git_ignores_is_still_part_of_what_a_check_stood_on` | tested |
-| A check marked isolated can read only the files its result is filed under, and what it writes is discarded | `gates._isolated` | `test_a_check_cannot_pass_on_a_file_it_did_not_declare`, `test_an_isolated_check_sees_only_what_it_declared_and_leaves_nothing_behind` | tested |
-| Only a person accepts a result, and the acceptance is of one version | `TaskStore.accept` | `test_acceptance_is_of_one_version_and_does_not_carry_over` | tested |
+| A check marked isolated receives verified copies of its selected inputs in a temporary folder. Changes through those copies stay in that folder | `gates._isolated` | `test_a_check_cannot_pass_on_a_file_it_did_not_declare`, `test_an_isolated_check_sees_only_what_it_declared_and_leaves_nothing_behind` | tested |
+| An acceptance records the supplied reviewer label and the files and instructions of one version | `TaskStore.accept` | `test_acceptance_is_of_one_version_and_does_not_carry_over` | tested |
 | A work product is current while its declared inputs are the same bytes; with none declared it is `unknown` | `add_evidence`, `standing._artifacts` | `test_a_work_product_is_current_while_its_declared_inputs_are_the_same_bytes` | tested |
 | A new or lapsed instruction makes work closed under the old ones `stale` | `rules.binding`, `rules.changes_since` | `test_a_new_instruction_makes_the_closure_stale_and_is_quoted` | tested |
 
@@ -60,6 +60,7 @@ find a compatible recorded run, it returns `unknown`.
 | The setup answers can say which files each check reads | `_config_from` | `test_setup_can_say_what_a_check_reads` | tested |
 | No row of this file names code or a test that is not there, or a number its recorded run does not contain | `evals/claims.py` | `test_no_claim_names_something_that_is_not_there_or_misquotes_a_recorded_run` | tested |
 | The demo runs from a clean copy and prints each idea with real output | `taos_core/demo.py` | `test_it_runs_from_a_clean_copy_and_shows_each_idea_with_real_output` | tested |
+| The first-minute reads run locally on the pendulum demo with networking unavailable. SessionStart, compact status, policy routing, a task capsule and its standing return their expected answers | `hooks/session_start.py`, `taos_core/projections.py`, `taos_core/policy.py`, `taos_core/lifecycle.py`, `taos_core/standing.py` | `test_first_minute_reads_run_without_network_or_external_programs` | tested |
 
 ## Measurements
 
@@ -71,9 +72,10 @@ find a compatible recorded run, it returns `unknown`.
 | Age limits trade reruns against stale reuse | 180, 90, 48 executions with 30, 83, 161 wrong | same | measured, one workload |
 | In the open, under-declared inputs are reused wrongly | 150 wrong in 360 when every check hid one folder | same | measured, one workload |
 | Isolated, a check that reads what it did not declare never passes, and correct declarations cost no extra executions. Predicted before the code was written | 0 of 366 runs passed when every check hid one folder and ran isolated; 60 executions, 0 wrong with everything declared | same | measured, one workload |
-| Asking costs time that grows with the tree | 18.4, 51.4, 351.0 ms for 48, 480, 4,800 files | same | measured, one laptop |
-| Isolating a check costs milliseconds. Measured in pairs that differ only in the isolation, order alternating | 16.8 ms added, the median of 40 paired runs (95% interval 15.5 to 17.8 ms) | same | measured, one laptop |
-| The suite passes on Python 3.9 and 3.12, Linux and macOS | 155 tests | `./taos selftest`, and CI | tested |
+| Cost of consulting six unchanged checks at three tree sizes | 48 files 1.4× (1.3 to 1.5), 480 files 3.6× (3.3 to 3.6), 4,800 files 24× (23 to 25) the uncached check time (paired medians and 95% intervals) | same | measured, one workload and machine |
+| Added cost of isolating one check after an edit | 0.96× (0.9 to 1) the uncached check time (isolated minus open, 36 paired edits, 95% interval) | same | measured, one workload and machine |
+| Reading one demo session | compact status 458 bytes / 8 lines, PEN-1 capsule 185 bytes / 4 lines, root AGENTS.md 7,944 bytes / 194 lines | `python3 evals/session_footprint.py` | measured, fresh pendulum demo, normalized UTF-8 |
+| Cases collected by the self-test suite | 323 tests | `./taos selftest`, with Python 3.9 and 3.12 in CI | tested |
 
 ## Reported, not reproducible here
 

@@ -1,0 +1,18 @@
+/* Use the same type, focus and material as the existing pilot exhibit. */
+.compute-intake {max-width:58rem;}
+.compute-intake .pilot-form {margin:1rem 0;}
+.compute-intake :is(p,pre,small,li,dd) {overflow-wrap:anywhere;}
+.compute-intake .pilot-local {margin:1rem 0 1.6rem;}
+.compute-intake [role=status]:empty {display:none;}
+.compute-intake [data-imported]:not(:empty) {border-inline-start:3px solid var(--link);padding-inline-start:1.1rem;}
+.compute-intake h4 {margin:1.2rem 0 .4rem;font:500 1.35rem/1.2 var(--serif);}
+.compute-rows {list-style:none;margin:1rem 0;padding:0;}
+.compute-rows li {padding:.7rem 0;border-block-start:1px solid var(--line);}
+.compute-rows p {margin:.25rem 0;}
+.compute-rows small {color:var(--soft);}
+.compute-example {margin-top:.8rem;}
+.compute-example summary {cursor:pointer;color:var(--link);}
+.compute-read input[type=file] {height:auto;padding:.45rem;}
+.compute-read .pilot-facts div {align-items:baseline;}
+.hpc-planner .compute-manual {margin-top:1.5rem;}
+.hpc-planner .compute-manual > summary {cursor:pointer;color:var(--link);font-weight:600;}

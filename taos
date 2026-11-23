@@ -17,6 +17,8 @@ if sys.version_info < (3, 9):  # pragma: no cover
     sys.stderr.write("taos needs Python 3.9 or newer; found {0}\n".format(sys.version.split()[0]))
     raise SystemExit(1)
 
+sys.dont_write_bytecode = True  # running taos writes its record and nothing else: no __pycache__ in this copy
+
 from taos_core.cli import main  # noqa: E402
 
 if __name__ == "__main__":

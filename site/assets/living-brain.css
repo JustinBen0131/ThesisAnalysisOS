@@ -1,0 +1,138 @@
+/* The living brain, v4. Built on real-story-20261122/brain-v3.html (same choice sequence).
+   Everything is scoped under .lb so the section can sit inside any page of the site.
+   Colours fall back to the site's own tokens; the four answers always carry a word, never colour alone. */
+.lb {
+  --lb-card: var(--card, #0d1914); --lb-ink: var(--ink, #e9efe9); --lb-soft: var(--soft, #9bada3);
+  --lb-line: var(--line, #1d2d26); --lb-edge: var(--edge, #34483e); --lb-accent: var(--link, #e3bd6a);
+  --lb-holds: var(--holds, #6fd3a0); --lb-stale: var(--stale, #f2a23a); --lb-wrong: var(--fails, #ef8f80);
+  --lb-built: #c9d2cc; --lb-raise: rgba(255, 255, 255, 0.045);
+  --lb-serif: var(--serif, "Iowan Old Style", Georgia, serif);
+  --lb-mono: var(--mono, ui-monospace, Menlo, monospace);
+  color: var(--lb-ink);
+}
+.lb *, .lb *::before, .lb *::after { box-sizing: border-box; }
+.lb [hidden] { display: none !important; }
+
+.lb-head { max-width: 46rem; margin: 0 0 1.4rem; }
+.lb-kicker { font: 600 0.74rem/1.4 var(--lb-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--lb-soft); margin: 0 0 0.8rem; }
+.lb-title { font: 400 clamp(2rem, 3.9vw, 2.9rem)/1.07 var(--lb-serif); letter-spacing: -0.012em; margin: 0; max-width: none; }
+.lb-stakes { font-size: 1.22rem; line-height: 1.45; margin: 0.9rem 0 0; }
+.lb-stakes b { color: var(--lb-wrong); font-weight: 600; }
+
+.lb-stage { background: var(--lb-card); border: 1px solid var(--lb-line); border-radius: 18px; padding: 1.3rem 1.6rem 1.6rem;
+  display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 1.1rem 2.4rem;
+  grid-template-areas: "top top" "say say" "desk mem" "second second"; align-items: start; }
+.lb-top { grid-area: top; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.lb-say { grid-area: say; display: flex; align-items: center; justify-content: space-between; gap: 1rem 1.6rem; min-height: 5.1rem; }
+.lb-desk { grid-area: desk; }
+.lb-mem { grid-area: mem; width: 100%; max-width: 35rem; justify-self: end; }
+.lb-second { grid-area: second; }
+
+.lb-tag { font: 600 0.72rem/1 var(--lb-mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--lb-soft);
+  border: 1px solid var(--lb-edge); border-radius: 99px; padding: 0.42rem 0.8rem; transition: color 0.4s, border-color 0.4s; }
+.lb[data-mode="today"] .lb-tag { color: var(--lb-holds); border-color: var(--lb-holds); }
+.lb-steps { display: flex; align-items: center; gap: 0.45rem; margin: 0; padding: 0; font-size: 0.8rem; color: var(--lb-soft); }
+.lb-steps i { width: 1.5rem; height: 3px; border-radius: 3px; background: var(--lb-edge); transition: background 0.4s; }
+.lb-steps i.is-done { background: var(--lb-soft); }
+.lb-steps i.is-now { background: var(--lb-ink); }
+.lb-steps span { margin-left: 0.35rem; min-width: 6.2rem; }
+
+/* The check: where the number lands. Kept from v3. */
+.lb-dial { position: relative; height: 4rem; margin: 1.1rem 0.3rem 0; }
+.lb-rail { position: absolute; left: 0; right: 0; top: 30px; height: 2px; background: var(--lb-edge); }
+.lb-one { position: absolute; left: 78%; top: 16px; width: 2px; height: 30px; background: var(--lb-soft); }
+.lb-onelabel { position: absolute; left: 78%; top: -8px; transform: translateX(-50%); font-size: 0.75rem; color: var(--lb-soft); white-space: nowrap; }
+.lb-mk { position: absolute; top: 21px; left: 65%; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--lb-ink);
+  opacity: 0.25; transition: left 0.7s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s; }
+.lb[data-sw="on"] .lb-mk { left: 52%; opacity: 1; }
+.lb[data-sw="off"] .lb-mk { left: 78%; opacity: 1; }
+.lb-ref { position: absolute; top: 44px; left: 52%; transform: translateX(-50%); font-size: 0.75rem; color: var(--lb-holds);
+  white-space: nowrap; opacity: 0; transition: opacity 0.6s; }
+.lb-ref::before { content: ""; display: block; width: 2px; height: 14px; background: var(--lb-holds); margin: 0 auto 2px; }
+.lb[data-ref="1"] .lb-ref { opacity: 1; }
+.lb-readout { font-size: 0.94rem; color: var(--lb-soft); margin: 1.7rem 0 0.9rem; min-height: 2.9em; }
+.lb-readout b { color: var(--lb-ink); font-weight: 600; }
+
+/* The choice. The action sits on the thing that changes. */
+.lb-switch { display: grid; gap: 0.55rem; }
+.lb-switch button { font: inherit; font-size: 1rem; line-height: 1.35; color: var(--lb-ink); text-align: left; background: transparent;
+  border: 1px solid var(--lb-edge); border-radius: 12px; padding: 0.7rem 0.95rem; cursor: pointer; transition: border-color 0.25s, background 0.25s; }
+.lb-switch button small { display: block; color: var(--lb-soft); font-size: 0.86rem; margin-top: 0.1rem; }
+.lb-switch button:hover:not(:disabled) { border-color: var(--lb-ink); }
+.lb-switch button.is-sel { border-color: var(--lb-ink); background: var(--lb-raise); }
+.lb-switch button:disabled { cursor: default; opacity: 0.72; }
+.lb[data-ask="1"] .lb-switch button:not(.is-sel):not(:disabled) { border-color: var(--lb-accent); }
+.lb-caption { font-size: 1.16rem; line-height: 1.42; margin: 0; max-width: 46rem; }
+.lb-next { font: 600 1rem/1.3 inherit; font-family: inherit; flex: 0 0 auto; white-space: nowrap; color: #10160f; background: var(--lb-ink);
+  border: 0; border-radius: 99px; padding: 0.65rem 1.25rem; cursor: pointer; }
+.lb-next:hover { background: #fff; }
+.lb :is(button, a):focus-visible { outline: 3px solid var(--lb-accent); outline-offset: 3px; }
+
+/* The memory: a brain that holds pieces. Links exist only when something keeps them. */
+.lb-field { position: relative; aspect-ratio: 620 / 360; }
+.lb-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.lb-brain { fill: rgba(111, 211, 160, 0.035); stroke: var(--lb-edge); stroke-width: 1.4; transition: stroke 0.8s, fill 0.8s; }
+.lb[data-mode="today"] .lb-brain { stroke: var(--lb-holds); fill: rgba(111, 211, 160, 0.07); }
+.lb-folds path { fill: none; stroke: var(--lb-edge); stroke-width: 1; opacity: 0.4; }
+.lb-node { fill: transparent; stroke: var(--lb-edge); stroke-width: 1; stroke-dasharray: 3 3;
+  transition: fill 0.35s, stroke 0.35s, transform 0.35s; transform-box: fill-box; transform-origin: center; }
+.lb-node.is-built { fill: var(--lb-built); stroke: var(--lb-built); stroke-dasharray: none; }
+.lb-node.is-wrong { fill: var(--lb-wrong); stroke: var(--lb-wrong); stroke-dasharray: none; transform: translateY(4px) rotate(-5deg); }
+.lb-node.is-holds { fill: transparent; stroke: var(--lb-holds); stroke-width: 1.5; stroke-dasharray: none; }
+.lb-node.is-stale { fill: var(--lb-stale); stroke: var(--lb-stale); stroke-dasharray: none; }
+.lb-thread { fill: none; stroke: var(--lb-holds); stroke-width: 1; opacity: 0; transition: opacity 0.5s, stroke 0.35s; }
+.lb-thread.is-on { opacity: 0.5; }
+.lb-thread.is-stale { stroke: var(--lb-stale); opacity: 0.85; }
+.lb-sw { fill: var(--lb-card); stroke: var(--lb-ink); stroke-width: 2; transition: fill 0.4s, stroke 0.4s; }
+.lb[data-sw="on"] .lb-sw { fill: var(--lb-ink); }
+.lb[data-sw="off"] .lb-sw { fill: var(--lb-card); stroke: var(--lb-stale); }
+.lb-notedot { fill: var(--lb-soft); opacity: 0.5; transition: fill 0.5s, opacity 0.5s; }
+.lb[data-ref="1"] .lb-notedot { fill: var(--lb-holds); opacity: 1; }
+.lb-miss { fill: none; stroke: var(--lb-wrong); stroke-width: 1.3; stroke-dasharray: 2 6; opacity: 0; transition: opacity 0.6s; }
+.lb[data-scene="3"] .lb-miss { opacity: 0.9; }
+.lb[data-scene="2"] .lb-notedot { animation: lb-pulse 1.4s ease-in-out infinite; }
+@keyframes lb-pulse { 50% { opacity: 1; r: 9; } }
+
+.lb-fieldcap, .lb-swlabel, .lb-note { position: absolute; font-size: 0.78rem; line-height: 1.25; color: var(--lb-soft); }
+.lb-fieldcap { right: 0; top: 0; text-align: right; font-family: var(--lb-mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.lb[data-mode="today"] .lb-fieldcap { color: var(--lb-holds); }
+.lb-swlabel { left: 19%; top: 59.5%; transform: translateX(-50%); white-space: nowrap; }
+.lb-note { left: 29.6%; top: 28.9%; transform: translateY(-50%); max-width: 68%; text-align: left; font: inherit; font-size: 0.78rem;
+  background: none; border: 0; padding: 0.2rem 0.1rem; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 0.2em; color: var(--lb-soft); }
+.lb-note:hover { color: var(--lb-ink); }
+.lb[data-scene="2"] .lb-note { color: var(--lb-ink); }
+.lb[data-ref="1"] .lb-note { color: var(--lb-holds); text-decoration: none; cursor: default; }
+.lb-tracklabel { font-size: 0.9rem; color: var(--lb-soft); margin: 0.5rem 0 0; min-height: 1.5em; }
+
+/* The same story in plain sentences, for a reader or an assistant with no script. */
+.lb-plain { grid-column: 1 / -1; margin: 0; padding-left: 1.2rem; font-size: 0.97rem; color: var(--lb-soft); }
+.lb[data-live="1"] .lb-plain { display: none; }
+
+/* What anyone opening the work sees. */
+.lb-second { border-top: 1px solid var(--lb-line); padding-top: 1rem; }
+.lb-second h3 { font: 600 0.86rem/1.3 inherit; font-family: inherit; color: var(--lb-soft); margin: 0 0 0.4rem; }
+.lb-row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.4rem 0; font-size: 1rem; }
+.lb-row span:first-child { color: var(--lb-soft); }
+.lb-row .is-stale { color: var(--lb-stale); font-weight: 600; }
+.lb-limit { font-size: 0.94rem; color: var(--lb-soft); margin: 0.6rem 0 0; }
+
+.lb-after { margin: 2.6rem 0 0; max-width: 46rem; }
+.lb-after h3 { font: 400 1.7rem/1.2 var(--lb-serif); margin: 0 0 0.6rem; }
+.lb-after p { margin: 0 0 1rem; }
+.lb-scale { font-size: 1.22rem; line-height: 1.45; }
+.lb-scale em { font-style: normal; color: var(--lb-accent); }
+.lb-doors { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.5rem; }
+.lb-door { display: inline-block; text-decoration: none; font-weight: 600; border-radius: 99px; padding: 0.7rem 1.4rem; border: 1px solid var(--lb-edge); color: var(--lb-ink); }
+.lb-door:hover { border-color: var(--lb-ink); }
+.lb-door.is-primary { background: var(--lb-ink); color: #10160f; border-color: var(--lb-ink); }
+.lb-again { font: inherit; font-size: 0.9rem; color: var(--lb-soft); background: none; border: 0; padding: 0.7rem 0.4rem; cursor: pointer; text-decoration: underline; text-underline-offset: 0.2em; }
+.lb-foot { margin: 1.6rem 0 0; font-size: 0.82rem; color: var(--lb-soft); border-top: 1px solid var(--lb-line); padding-top: 0.9rem; }
+
+@media (max-width: 860px) {
+  .lb-stage { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "say" "mem" "desk" "second"; padding: 1.1rem 1rem 1.2rem; gap: 0.9rem; }
+  .lb-say { flex-direction: column; align-items: flex-start; min-height: 0; }
+  .lb-mem { justify-self: center; }
+  .lb-steps span { display: none; }
+  .lb-note { max-width: 62%; }
+}
+@media (prefers-reduced-motion: reduce) { .lb *, .lb *::before { transition: none !important; animation: none !important; } }

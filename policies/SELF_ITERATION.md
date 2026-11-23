@@ -8,16 +8,29 @@ place; every lesson must become something a machine can check or it decays.
 1. The human corrects an agent. The agent fixes the artifact and writes one
    line in `kernels/PRINCIPAL_KERNEL.md` under Corrections observed, dated.
 2. The same correction happens again. The agent proposes an atom:
-   `taos propose --kind atom --atom-json <file>`. An atom carries a check
+   `taos propose --agent <agent> --kind atom --title <title> --body <why> --atom-json <file>`. An atom carries a check
    (`regex_must_match`, `regex_must_not_match`, `file_must_exist`,
    `taos_command_exit_zero`) and, ideally, red/green fixtures so the atom
    tests itself.
-3. The human accepts the proposal and promotes it: `taos atoms promote`.
-4. `taos doctor` and every brief run the atom forever. The agent may stop
-   remembering the lesson.
+3. The human reviews the proposal. Accept with
+   `taos proposals decide <proposal-id> --status accepted --by human`
+   and install with `taos atoms promote <proposal-id> --by human`.
+   The human can also promote a pending proposal directly, which records
+   acceptance and installs the check. Decline with
+   `taos proposals decide <proposal-id> --status rejected --by human`.
+4. `taos atoms check` and `taos doctor` run the installed check until it
+   is retired. Pending, accepted but uninstalled, and declined proposals
+   leave the running checks as they were.
 
-Atoms are never promoted without the human. Rejected proposals are kept for
-30 days, then burned.
+The CLI's `human` actor label records the caller's role. It does not
+authenticate a person with access to the local account. Rejected proposals
+are kept for 30 days, then eligible for a burn.
+
+Command atoms may run the read-only readers `taos policy check`,
+`taos policy list`, `taos policy show`, `taos task list`, `taos task show`,
+and `taos why`. The checker reports older command atoms outside this set
+as failed without running them. Retire such an atom and propose an equivalent
+file, regex, or supported command check with a new ID if it is still needed.
 
 ## Kernels
 
@@ -40,6 +53,11 @@ nothing.
 A mechanism nobody uses is a cost. When a policy line, an atom, a gate, or a
 kernel section stops earning its keep, propose retiring it
 (`--kind retire`). Removing is as valuable as adding.
+
+The human can retire a specific atom with
+`taos atoms retire <atom-id> --by human --reason <reason>`.
+The command stops future checks and keeps the atom ID, decision, and reason
+on record. Retired atom IDs cannot be reused.
 
 ## Burns
 

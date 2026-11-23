@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from typing import Any, Dict, List, Optional
 
 from . import events as events_mod
+from . import plain
 from .paths import Paths
 from .store import atomic_write_json, locked, read_json, utc_now
 from .util import TaosError, short_id
 
 KINDS = ("atom", "policy", "kernel", "retire", "cleanup", "other")
 STATUSES = ("proposed", "accepted", "rejected")
+ID_RE = re.compile(r"prop_[A-Za-z0-9_-]+")
 
 
 def all_proposals(paths: Paths) -> List[Dict[str, Any]]:
@@ -32,10 +35,12 @@ def open_proposals(paths: Paths) -> List[Dict[str, Any]]:
 
 
 def get(paths: Paths, proposal_id: str) -> Dict[str, Any]:
+    if not isinstance(proposal_id, str) or not ID_RE.fullmatch(proposal_id):
+        raise TaosError("expected a proposal id from taos proposals list")
     path = paths.proposals_dir / "{0}.json".format(proposal_id)
     data = read_json(path)
-    if not isinstance(data, dict):
-        raise TaosError("no such proposal: {0}".format(proposal_id))
+    if not isinstance(data, dict) or data.get("id") != proposal_id:
+        raise TaosError(plain.missing("proposal", str(proposal_id), [p.get("id") for p in all_proposals(paths)], "taos proposals list"))
     return data
 
 
@@ -77,16 +82,35 @@ def propose(
             "note": None,
             "atom": atom,
         }
-        atomic_write_json(paths.proposals_dir / "{0}.json".format(proposal["id"]), proposal)
+        path = paths.proposals_dir / "{0}.json".format(proposal["id"])
+        if path.exists():
+            raise TaosError("proposal id is already in use. Try creating the proposal again.")
+        atomic_write_json(path, proposal)
         events_mod.emit(paths, "proposal_create", agent, proposal_id=proposal["id"], kind=kind, title=proposal["title"])
         return proposal
 
 
+def _record_decision(paths: Paths, proposal: Dict[str, Any], retry: bool = False) -> None:
+    by = proposal["decided_by"]
+    fields = {"proposal_id": proposal["id"], "status": proposal["status"]}
+    if retry and any(
+        row.get("agent") == by and all(row.get(key) == value for key, value in fields.items())
+        for row in events_mod.read(paths, types=["proposal_decide"])
+    ):
+        return
+    events_mod.emit(paths, "proposal_decide", by, **fields)
+
+
 def decide(paths: Paths, *, proposal_id: str, status: str, by: str = "human", note: Optional[str] = None) -> Dict[str, Any]:
+    if by != "human":
+        raise TaosError("the human must accept or decline the proposal")
     if status not in ("accepted", "rejected"):
         raise TaosError("a proposal is accepted or rejected")
     with locked(paths):
         proposal = get(paths, proposal_id)
+        if proposal.get("status") == status and proposal.get("decided_by") == by:
+            _record_decision(paths, proposal, retry=True)
+            return proposal
         if proposal.get("status") != "proposed":
             raise TaosError("proposal {0} is already {1}".format(proposal_id, proposal.get("status")))
         proposal["status"] = status
@@ -94,7 +118,7 @@ def decide(paths: Paths, *, proposal_id: str, status: str, by: str = "human", no
         proposal["decided_at"] = utc_now()
         proposal["note"] = str(note) if note else None
         atomic_write_json(paths.proposals_dir / "{0}.json".format(proposal["id"]), proposal)
-        events_mod.emit(paths, "proposal_decide", by, proposal_id=proposal["id"], status=status)
+        _record_decision(paths, proposal)
         return proposal
 
 
@@ -136,7 +160,7 @@ def _cmd_list(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def _cmd_decide(args: argparse.Namespace, paths: Paths) -> int:
-    proposal = decide(paths, proposal_id=args.proposal_id, status=args.status, note=args.note)
+    proposal = decide(paths, proposal_id=args.proposal_id, status=args.status, by=args.by, note=args.note)
     print("{0} {1}".format(proposal["id"], proposal["status"]))
     if proposal["status"] == "accepted" and proposal.get("kind") == "atom" and proposal.get("atom"):
         print("promote it into the checker with: taos atoms promote {0} --by human".format(proposal["id"]))
@@ -144,8 +168,8 @@ def _cmd_decide(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    propose_parser = subparsers.add_parser("propose", help="propose a change to the OS itself")
-    propose_parser.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    propose_parser = subparsers.add_parser("propose", help="suggest a change to TAOS itself")
+    propose_parser.add_argument("--agent", required=True, choices=subparsers.actors)
     propose_parser.add_argument("--kind", required=True, choices=list(KINDS))
     propose_parser.add_argument("--title", required=True)
     propose_parser.add_argument("--body", required=True)
@@ -153,7 +177,7 @@ def register(subparsers: Any) -> None:
     propose_parser.add_argument("--atom-json", dest="atom_json", help="file holding a checkable atom")
     propose_parser.set_defaults(func=_cmd_propose)
 
-    proposals = subparsers.add_parser("proposals", help="review proposals")
+    proposals = subparsers.add_parser("proposals", help="see suggested changes, and accept or reject them")
     sub = proposals.add_subparsers(dest="proposals_cmd", required=True)
 
     listing = sub.add_parser("list", help="list proposals")
@@ -164,5 +188,6 @@ def register(subparsers: Any) -> None:
     decider = sub.add_parser("decide", help="accept or reject a proposal")
     decider.add_argument("proposal_id")
     decider.add_argument("--status", required=True, choices=["accepted", "rejected"])
+    decider.add_argument("--by", default="human", choices=["human"])
     decider.add_argument("--note")
     decider.set_defaults(func=_cmd_decide)

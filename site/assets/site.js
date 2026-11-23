@@ -1,28 +1,41 @@
 /* Two small things. Without this file the page still says everything: every step is shown, one under the other. */
 (function () {
   "use strict";
-  var button = document.querySelector(".copy-commands"), code = document.getElementById("demo-commands");
-  if (!button || !code) { return; }
-  var status = button.parentElement.querySelector(".copy-status"), timeout;
-  button.hidden = false;
-  button.addEventListener("click", async function () {
-    window.clearTimeout(timeout);
-    var copied = false;
-    try {
-      await navigator.clipboard.writeText(code.textContent);
-      copied = true;
-    } catch (_) {
-      var selection = window.getSelection();
-      selection.selectAllChildren(code);
-      try { copied = document.execCommand("copy"); } catch (_) {}
-      if (copied) { selection.removeAllRanges(); }
+  var archivedRecord = document.querySelector("[data-record-archive]");
+  if (archivedRecord) {
+    function followRecordBookmark() {
+      if (location.hash === "#review" || location.hash.startsWith("#record=")) {
+        location.replace(archivedRecord.href + location.hash);
+      }
     }
-    button.classList.toggle("copied", copied);
-    status.textContent = copied ? "Copied" : "Selected — press Ctrl+C or ⌘C";
-    timeout = window.setTimeout(function () {
-      button.classList.remove("copied");
-      status.textContent = "";
-    }, copied ? 1700 : 5000);
+    followRecordBookmark();
+    window.addEventListener("hashchange", followRecordBookmark);
+  }
+  document.querySelectorAll(".command-block").forEach(function (block) {
+    var button = block.querySelector(".copy-commands");
+    var code = block.querySelector("code");
+    var status = block.querySelector(".copy-status"), timeout;
+    if (!button || !code || !status) { return; }
+    button.hidden = false;
+    button.addEventListener("click", async function () {
+      window.clearTimeout(timeout);
+      var copied = false;
+      try {
+        await navigator.clipboard.writeText(code.textContent);
+        copied = true;
+      } catch (_) {
+        var selection = window.getSelection();
+        selection.selectAllChildren(code);
+        try { copied = document.execCommand("copy"); } catch (_) {}
+        if (copied) { selection.removeAllRanges(); }
+      }
+      button.classList.toggle("copied", copied);
+      status.textContent = copied ? "Copied" : "Selected — press Ctrl+C or ⌘C";
+      timeout = window.setTimeout(function () {
+        button.classList.remove("copied");
+        status.textContent = "";
+      }, copied ? 1700 : 5000);
+    });
   });
 }());
 
@@ -109,9 +122,16 @@
     }
     function followFragment(onLoad) {
       var index = steps.findIndex(function (step) { return "#" + step.id === location.hash; });
+      if (index >= 0) {
+        var target = steps[index];
+        for (var drawer = target.closest("details"); drawer; drawer = drawer.parentElement.closest("details")) {
+          drawer.open = true;
+        }
+      }
       if (index >= 0 || onLoad) { show(index >= 0 ? index : 0, false); }
       pause();
       if (!onLoad && index >= 0) {
+        steps[current].focus({preventScroll: true});
         steps[current].scrollIntoView({block: "start", behavior: "instant"});
       }
     }

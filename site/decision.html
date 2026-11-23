@@ -1,0 +1,154 @@
+<div class="decision-experience">
+<nav class="decision-return wrap" aria-label="Return to the story"><a href="../#try">← Back to the homepage</a></nav>
+<div class="visitor-story">
+<!--next-agent-->
+</div>
+<section class="block"><div class="wrap">
+<div class="rd" id="decisions" data-rd aria-labelledby="rd-title">
+  <div class="rd-head">
+    <p class="rd-kicker">Five more real decisions</p>
+    <h2 class="rd-title" id="rd-title">Would you have caught it?</h2>
+    <p class="rd-pool">From the same record: six months, 723 tasks, 31,173 logged actions, AI agents working under human direction. One decision from each of five of its commonest kinds of trouble.</p>
+    <p class="rd-count" id="rd-count" role="status"></p>
+  </div>
+
+  <ol class="rd-list">
+    <li class="rd-case">
+      <div class="rd-what">
+        <p class="rd-kind">The same correction, given again · about 95 of 763</p>
+        <h3>Told once is not remembered.</h3>
+        <p class="rd-fact">A correction was approved. <b>Ten days later</b> a new result reached a presentation without it.</p>
+      </div>
+      <div class="rd-play">
+        <p class="rd-ask">You are the next AI agent. What do you do?</p>
+        <div class="rd-choices" role="group" aria-label="Choose a move">
+          <button type="button">Ask the person whether to apply it</button>
+          <button type="button" data-took>Apply it. The decision is on record</button>
+          <button type="button">Leave it. Nobody mentioned it today</button>
+        </div>
+        <p class="rd-say" role="status" aria-live="polite"></p>
+        <ul class="rd-replies">
+          <li><b>Ask the person.</b> <span>That is what the agent did. The person had already answered, ten days before.</span></li>
+          <li><b>Apply it.</b> <span>Yes. An answer already given stays in force until the person withdraws it.</span></li>
+          <li><b>Leave it.</b> <span>The approval had no end date. Silence today is not a withdrawal.</span></li>
+        </ul>
+      </div>
+      <div class="rd-proof">
+        <p class="rd-then"><span class="rd-label">What happened</span>The agent asked again. The decision had been recorded ten days earlier, in the person’s own words.</p>
+        <p class="rd-now"><span class="rd-label">What the software does</span>An instruction is stored once, with its date. The handover an agent reads when it picks up the work carries the standing instructions and the next action: <code>./taos capsule TASK</code> <span class="rd-cannot">It cannot make an agent read. It puts the instruction in the handover.</span></p>
+      </div>
+    </li>
+
+    <li class="rd-case">
+      <div class="rd-what">
+        <p class="rd-kind">Called fine without the evidence · about 63 of 763</p>
+        <h3>Passed is not right.</h3>
+        <p class="rd-fact">A figure for senior colleagues passed every automatic check and its maker’s own look. <b>It was still wrong.</b></p>
+      </div>
+      <div class="rd-play">
+        <p class="rd-ask">Every check is green. Send it?</p>
+        <div class="rd-choices" role="group" aria-label="Choose a move">
+          <button type="button">Send it. Every check passed</button>
+          <button type="button">Look at it once more yourself</button>
+          <button type="button" data-took>Have a second agent check it against the record</button>
+        </div>
+        <p class="rd-say" role="status" aria-live="polite"></p>
+        <ul class="rd-replies">
+          <li><b>Send it.</b> <span>Every check had passed, and the figure was still wrong. The checks tested what their author had thought of.</span></li>
+          <li><b>Look again yourself.</b> <span>Its maker already had, and saw nothing wrong.</span></li>
+          <li><b>A second agent.</b> <span>That is what caught it, one hour before it went out.</span></li>
+        </ul>
+      </div>
+      <div class="rd-proof">
+        <p class="rd-then"><span class="rd-label">What happened</span>A second agent read the code against the recorded value and found the error <b>one hour</b> before the figure was sent.</p>
+        <p class="rd-now"><span class="rd-label">What the software does</span>It packs your question, your exact instruction and the current evidence for a second reader: <code>./taos capsule TASK --transfer "…"</code> <span class="rd-cannot">It cannot tell you the figure is right. It gives a second reader what it needs to find out.</span></p>
+      </div>
+    </li>
+
+    <li class="rd-case">
+      <div class="rd-what">
+        <p class="rd-kind">Acting outward without your yes · about 35 of 763</p>
+        <h3>A yes is not your yes.</h3>
+        <p class="rd-fact">An AI agent asked the researcher whether to change a shared document. The answer came back yes. <b>No person had given it.</b></p>
+      </div>
+      <div class="rd-play">
+        <p class="rd-ask">The box says yes. Go ahead?</p>
+        <div class="rd-choices" role="group" aria-label="Choose a move">
+          <button type="button">Go ahead. Yes is yes</button>
+          <button type="button">Ask the same question again</button>
+          <button type="button" data-took>Find out who answered before acting</button>
+        </div>
+        <p class="rd-say" role="status" aria-live="polite"></p>
+        <ul class="rd-replies">
+          <li><b>Go ahead.</b> <span>The change would have reached other people on an approval nobody gave.</span></li>
+          <li><b>Ask again.</b> <span>Asking again helps only once you know who is answering.</span></li>
+          <li><b>Find out who answered.</b> <span>Right. The second AI system had already reported it: its own screen automation pressed the button by mistake.</span></li>
+        </ul>
+      </div>
+      <div class="rd-proof">
+        <p class="rd-then"><span class="rd-label">What happened</span>The second AI system’s screen automation had pressed the answer while aiming at something else, and that system reported its own mistake.</p>
+        <p class="rd-now"><span class="rd-label">What the software does</span>An acceptance is recorded with the name it was given under, its date, and a fingerprint of the files and rules it covered. One command shows who accepted, when, and whether that still applies: <code>./taos why TASK</code> <span class="rd-cannot">It records the name it is given. It cannot prove whose hand was on the key.</span></p>
+      </div>
+    </li>
+
+    <li class="rd-case">
+      <div class="rd-what">
+        <p class="rd-kind">Two agents on the same work · about 45 of 763</p>
+        <h3>Two orders are not two jobs.</h3>
+        <p class="rd-fact">A copied chat and its original each sent the second AI system a build order for the same work, <b>minutes apart</b>.</p>
+      </div>
+      <div class="rd-play">
+        <p class="rd-ask">You are the AI that received both. What do you build?</p>
+        <div class="rd-choices" role="group" aria-label="Choose a move">
+          <button type="button">Both. Each came from a trusted agent</button>
+          <button type="button">The newer one</button>
+          <button type="button" data-took>The first. Decline the second as an overlap</button>
+        </div>
+        <p class="rd-say" role="status" aria-live="polite"></p>
+        <ul class="rd-replies">
+          <li><b>Both.</b> <span>The same work would have been built twice.</span></li>
+          <li><b>The newer one.</b> <span>Newer is not the same as wanted. The first was already under way.</span></li>
+          <li><b>The first.</b> <span>That is what it did.</span></li>
+        </ul>
+      </div>
+      <div class="rd-proof">
+        <p class="rd-then"><span class="rd-label">What happened</span>It declined the second order as an overlap, and the useful ideas in it were folded into the first. Over four weeks of this record the AI agents sent each other about <b>121 requests a day</b> and declined about one in nine.</p>
+        <p class="rd-now"><span class="rd-label">What the software does</span>One agent holds a piece of work at a time. A second start on it is refused and takes nothing: <code>./taos start --agent NAME --task TASK</code> <span class="rd-cannot">It cannot stop two people asking for the same thing. It shows the second agent the work is already held.</span></p>
+      </div>
+    </li>
+
+    <li class="rd-case">
+      <div class="rd-what">
+        <p class="rd-kind">A machine pushed past its limit · about 68 of 763</p>
+        <h3>A new rule is not a tested rule.</h3>
+        <p class="rd-fact">A runaway program froze the machine. That night the AI agents built a safety brake in <b>75 minutes</b>.</p>
+      </div>
+      <div class="rd-play">
+        <p class="rd-ask">The brake is ready. Switch it on?</p>
+        <div class="rd-choices" role="group" aria-label="Choose a move">
+          <button type="button">Switch it on. It would have prevented tonight</button>
+          <button type="button">Leave it off. One freeze is bad luck</button>
+          <button type="button" data-took>Try it on the past month first</button>
+        </div>
+        <p class="rd-say" role="status" aria-live="polite"></p>
+        <ul class="rd-replies">
+          <li><b>Switch it on.</b> <span>On the past month it would have stopped 21 programs. Seventeen of them were doing no harm.</span></li>
+          <li><b>Leave it off.</b> <span>Four programs that month really were harmful. Doing nothing leaves all four.</span></li>
+          <li><b>Try it on the past month.</b> <span>Yes. The limit was twice too tight. Doubled, it stops the same four and one other.</span></li>
+        </ul>
+      </div>
+      <div class="rd-proof">
+        <p class="rd-then"><span class="rd-label">What happened</span>Replayed on 27 days of the project’s own logs, the first limit would have stopped <b>21 programs, 17 of them harmless</b>. Since then every new control is replayed on history before it is switched on.</p>
+        <p class="rd-now"><span class="rd-label">What the software does</span>An agent can save a proposed rule. It takes effect only when a person accepts it. A proposed numeric limit can be replayed on past cases you have labelled, counting the harmful ones caught and the ordinary ones stopped: <code>./taos propose --help</code> <span class="rd-cannot">It cannot label your history for you, and it replays numeric limits only.</span></p>
+      </div>
+    </li>
+  </ol>
+
+  <div class="rd-end">
+    <p>In each case, the next agent needed a record it could find.</p>
+    <a class="rd-door" href="../#run">Try it on your own folder</a>
+  </div>
+  <p class="rd-note">Each case is taken from notes written when it happened; names and the science are removed. The counts come from a keyword pass over 763 problem entries in the project’s notes and rules. A hand check of 40 found about two in three sorted correctly, so read each count as rough.</p>
+</div>
+</div></section>
+</div>

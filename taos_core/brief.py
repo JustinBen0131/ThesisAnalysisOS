@@ -273,12 +273,12 @@ def _cmd_retro(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    brief = subparsers.add_parser("brief", help="render today's brief")
+    brief = subparsers.add_parser("brief", help="today on one page: what changed and what needs you")
     brief.add_argument("--print", action="store_true")
     brief.add_argument("--json", action="store_true")
     brief.set_defaults(func=_cmd_brief)
 
-    retro_parser = subparsers.add_parser("retro", help="weekly look back, with suggestions")
+    retro_parser = subparsers.add_parser("retro", help="the week looked back on, with suggestions")
     retro_parser.add_argument("--days", type=int, default=7)
     retro_parser.add_argument("--json", action="store_true")
     retro_parser.set_defaults(func=_cmd_retro)

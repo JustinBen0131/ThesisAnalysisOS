@@ -1,0 +1,132 @@
+{
+  "format": "taos.hpc.evidence.v1",
+  "question": "Which sensor summaries can we keep after the transfer?",
+  "setting": "slurm",
+  "expected": [
+    {
+      "id": "A",
+      "basis": {
+        "input": "fictional-input-A-v1",
+        "recipe": "summary-v1",
+        "settings": "standard-v1",
+        "check": "count-and-compare-readings-v1"
+      },
+      "profile": "sensor readings",
+      "count": 2
+    },
+    {
+      "id": "B",
+      "basis": {
+        "input": "fictional-input-B-v1",
+        "recipe": "summary-v1",
+        "settings": "standard-v1",
+        "check": "count-and-compare-readings-v1"
+      },
+      "profile": "sensor readings",
+      "count": 3
+    },
+    {
+      "id": "C",
+      "basis": {
+        "input": "fictional-input-C-v1",
+        "recipe": "summary-v1",
+        "settings": "standard-v1",
+        "check": "count-and-compare-readings-v1"
+      },
+      "profile": "sensor readings",
+      "count": 2
+    }
+  ],
+  "returns": [
+    {
+      "id": "A",
+      "state": "finished",
+      "source": "fictional execution ledger, attempt A.1",
+      "receipt": {
+        "basis": {
+          "input": "fictional-input-A-v1",
+          "recipe": "summary-v1",
+          "settings": "standard-v1",
+          "check": "count-and-compare-readings-v1"
+        },
+        "count": 2,
+        "passed": true,
+        "file": "returns/A.json",
+        "sha256": "2a508424a5beaf14c767751521b257aea58484dfa7933ad6daae22abb4d74ccc"
+      }
+    },
+    {
+      "id": "B",
+      "state": "finished",
+      "source": "fictional execution ledger, attempt B.1",
+      "receipt": {
+        "basis": {
+          "input": "fictional-input-B-v1",
+          "recipe": "summary-v1",
+          "settings": "standard-v1",
+          "check": "count-and-compare-readings-v1"
+        },
+        "count": 3,
+        "passed": true,
+        "file": "returns/B.json",
+        "sha256": "2cfab2e429e1050a4fe02205c7a3d9b71a7646570d613c7cf57144e395e4b899"
+      }
+    },
+    {
+      "id": "C",
+      "state": "finished",
+      "source": "fictional execution ledger, attempt C.1",
+      "receipt": {
+        "basis": {
+          "input": "fictional-input-C-v1",
+          "recipe": "summary-v1",
+          "settings": "standard-v1",
+          "check": "count-and-compare-readings-v1"
+        },
+        "count": 0,
+        "passed": false,
+        "file": "returns/C.json",
+        "sha256": "7614757c6c116130f8f3c573a21dcc41108fc34f029245b5f5052205e3725512"
+      },
+      "diagnosis": {
+        "cause": "The staged input contained no readings.",
+        "reference": "returns/C-transfer.txt",
+        "sha256": "47e88adf95a240fcf2a91c49766f9923511b3738ce0f82b2b0d50f3b985ed41d"
+      }
+    }
+  ],
+  "batch": {
+    "ids": [
+      "C"
+    ],
+    "pilot_id": "A",
+    "representative": "A and C each contain two readings from the same sensor format. The corrected input is available.",
+    "owner": "Lab compute lead",
+    "measurement_ref": "Fictional pilot accounting for A.1",
+    "limits_ref": "Fictional lab allocation for this batch",
+    "parallel": 1,
+    "measured": {
+      "wall_seconds": 90,
+      "memory_mib": 256,
+      "output_mib": 1,
+      "scratch_mib": 24,
+      "output_files": 1,
+      "scratch_files": 2
+    },
+    "limits": {
+      "wall_seconds": 300,
+      "memory_mib": 512,
+      "free_mib": 128,
+      "free_files": 32,
+      "parallel": 2
+    }
+  },
+  "manifest": {
+    "reference": "Fictional acquisition manifest, revision 1",
+    "total": 3
+  },
+  "accounting": {
+    "file": "returns/worker-accounting.json",
+    "sha256": "f710773a12c79011307e54c0260648db4b71f7c3be7498857aa7c83093932a4c"
+  }
+}

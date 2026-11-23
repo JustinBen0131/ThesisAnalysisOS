@@ -148,7 +148,9 @@ def recall(paths: Paths, date: str) -> Dict[str, Any]:
     archive = paths.cold_dir / "{0}.tar.gz".format(date)
     manifest_path = paths.cold_dir / "{0}.manifest.json".format(date)
     if not archive.is_file() or not manifest_path.is_file():
-        raise TaosError("no burn archive for {0}".format(date))
+        kept = sorted(path.name[:-len(".tar.gz")] for path in paths.cold_dir.glob("*.tar.gz")) if paths.cold_dir.is_dir() else []
+        raise TaosError("There is no burn archive for {0}. {1}".format(
+            date, "Archives kept: {0}".format(", ".join(kept)) if kept else "No burn has been archived yet; taos burn plan shows what would be."))
     manifest = read_json(manifest_path, {}) or {}
     if sha256_file(archive) != manifest.get("archive_sha256"):
         raise TaosError("burn archive for {0} does not match its manifest".format(date))
@@ -210,7 +212,7 @@ def _cmd_recall(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    burn = subparsers.add_parser("burn", help="archive and delete expired working files")
+    burn = subparsers.add_parser("burn", help="archive, then delete, working files past their keep-by date")
     sub = burn.add_subparsers(dest="burn_cmd", required=True)
 
     planner = sub.add_parser("plan", help="what is past its TTL")

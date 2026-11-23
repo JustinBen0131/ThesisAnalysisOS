@@ -1,0 +1,56 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:05.180
+[Bus engine and tyres. Music begins.]
+
+00:00:05.180 --> 00:00:11.600
+[Notification] Dispatch asks for Monday’s
+on-time rate, and Tuesday’s if it is ready.
+
+00:00:14.900 --> 00:00:20.500
+Codex reads the departure log. Of the 18 buses
+in the log, 16 left on time. Its answer is 89%.
+
+00:00:23.500 --> 00:00:29.900
+The operator asks ChatGPT to match
+those 18 departures to the timetable.
+
+00:00:31.300 --> 00:00:38.200
+The timetable has 20 scheduled trips.
+Two spaces have no departure in the log.
+
+00:00:38.400 --> 00:00:44.150
+The operator asks Claude to check
+the dispatch records for those trips.
+
+00:00:45.400 --> 00:00:51.800
+Dispatch lists M17 and M19 as canceled.
+Both were scheduled. Neither left on time.
+
+00:00:53.000 --> 00:00:59.700
+The operator saves a rule for future reports.
+“Check every scheduled bus before reporting.”
+
+00:01:00.100 --> 00:01:06.100
+The rule and the dispatch evidence reach Codex.
+It checks all 20 scheduled trips.
+
+00:01:06.200 --> 00:01:11.800
+Monday’s corrected rate is 80%.
+Sixteen of 20 scheduled buses left on time.
+
+00:01:15.900 --> 00:01:21.600
+On Tuesday, a fresh session reads Monday’s rule.
+Two trips still need dispatch records.
+
+00:01:22.500 --> 00:01:28.200
+Codex drafts the reply. Monday is 80%.
+Tuesday’s rate is pending. The operator approves.
+
+00:01:30.400 --> 00:01:35.100
+Claude sends the approved reply to Dispatch.
+[Mail confirmation]
+
+00:01:35.400 --> 00:01:40.000
+“Leave them your decision, the evidence
+behind it, and a check they can run.”

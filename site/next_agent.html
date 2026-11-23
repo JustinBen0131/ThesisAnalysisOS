@@ -1,0 +1,46 @@
+<section class="visit-block" id="try">
+  <p class="kicker">Your turn · a real project, details removed · about a minute</p>
+  <${title_tag} class="h" id="tryh" tabindex="-1">You are the next AI agent<br>on the project.</${title_tag}>
+  <p class="stakes" id="stakes" hidden>One setting. Nineteen days. A colleague finds that later results have shifted.</p>
+  <div class="stage" id="stage">
+    <div class="tag" id="tag">Day 19</div>
+    <div class="scene" id="scene">
+      <p class="ln">A research team has been at this for 19 days. Every piece of work in front of you says finished.</p>
+    </div>
+    <p class="recap" id="recap" tabindex="-1" hidden></p>
+    <div class="days ln" style="--d:1s">
+      <div class="track" id="track" aria-hidden="true"></div>
+      <div class="tracklabel" id="tracklabel">19 days of work · every piece says finished ✓</div>
+    </div>
+    <div class="scene" id="scene2">
+      <p class="ln" style="--d:2s">The team wants its next result today. It will stand on all 19.</p>
+      <p class="ln call" style="--d:2.8s">Do you build on it?</p>
+    </div>
+    <div class="switch ln" id="switch" style="--d:2.8s" role="group" aria-label="Your choice">
+      <button id="build" type="button">Build on it<small id="buildsub">Every piece says finished.</small></button>
+      <button id="check" type="button"><span id="checkmain">Check all 19 first</span><small id="checksub">Nothing says where to look.</small></button>
+    </div>
+    <div class="meter" id="meter" hidden>
+      <div class="mrow"><span>Fed in</span><i class="mb"></i><b>100</b></div>
+      <div class="mrow"><span>The copy read back</span><i class="mb sim"></i><b id="simval">a little under 100</b></div>
+      <div class="mrow refrow"><span>The team’s own reference</span><i class="mb refbar"></i><b>a little under 100</b></div>
+    </div>
+    <p class="caption" id="caption" aria-live="polite" tabindex="-1" hidden></p>
+    <button class="next" id="next" type="button" hidden></button>
+    <div class="second" id="second" hidden>
+      <h3>What the next person or agent can use</h3>
+      <div class="row"><span>As it happened</span><span>nothing marked, for 19 days</span></div>
+      <div class="row"><span>Model result saved before the setting changed</span><strong class="s">Stale · check again</strong></div>
+      <div class="row"><span>Earlier reference measurement</span><strong class="ho">Still available to compare</strong></div>
+      <p class="limit">The recorded check names the changed file. The team’s earlier reference helps you choose which setting belongs in the analysis.</p>
+    </div>
+  </div>
+  <div class="after" id="after" hidden>
+    <p>Within a day the setting became a fixed rule for every AI agent on the project, with an automatic check that runs before it can be switched off again.</p>
+    <a class="go" href="${root}#run">Put it under your own work ↓</a>
+    <a class="case-link" href="${cases}">Five more real decisions</a>
+    <button class="v-replay" id="replay" type="button">Try the other choice</button>
+  </div>
+  <p class="note" id="note" hidden>The sequence comes from dated project notes, with identifying details removed. Each mark represents a day. The visitor’s choices and the reading of 100 illustrate the decision. The second pass shows how the software handles a declared input today. <a href="${root}workflows/transit/#handoff">Inspect a saved check</a>.</p>
+  <noscript><p>The team built on a changed setting for 19 days before a colleague noticed. With the setting recorded as an input, the old result reads “stale” as soon as that file changes. A researcher can still use the earlier reference to decide what to do next. <a href="${cases}">Five more real decisions</a>.</p></noscript>
+</section>

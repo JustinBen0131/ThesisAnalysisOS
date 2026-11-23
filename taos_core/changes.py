@@ -14,6 +14,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 from . import _science as sci
+from . import config as config_mod
 from . import events as events_mod
 from .paths import Paths
 from .store import append_jsonl, canonical_json, locked, read_jsonl, sha256_text, utc_now
@@ -47,6 +48,7 @@ def register_change(
     canary: str,
     rollback: str,
 ) -> Dict[str, Any]:
+    config_mod.require_actor(paths, builder)
     if predict_low > predict_high:
         raise TaosError("the predicted range must run low to high")
     if control_tolerance < 0:
@@ -77,6 +79,7 @@ def register_change(
 
 def seal(paths: Paths, change_id: str, agent: str) -> Dict[str, Any]:
     """Freeze the record. Nothing in SEALED_FIELDS may change after this."""
+    config_mod.require_actor(paths, agent)
     with locked(paths):
         data = sci.load(paths, "changes", "changes")
         change = sci.find(data["changes"], change_id, "change")
@@ -91,6 +94,7 @@ def seal(paths: Paths, change_id: str, agent: str) -> Dict[str, Any]:
 
 def receipt(paths: Paths, change_id: str, agent: str, value: float, note: Optional[str] = None) -> Dict[str, Any]:
     """One row per use of the changed mechanism, so its effect is counted, not estimated."""
+    config_mod.require_actor(paths, agent)
     change = sci.find(all_changes(paths), change_id, "change")
     if change["status"] == "draft":
         raise TaosError("seal {0} before it writes receipts".format(change_id))
@@ -114,6 +118,7 @@ def score(
     how the number was measured (`source`). The verdict records which: counted
     from receipts, or attested by the grader. A number from nowhere is refused.
     """
+    config_mod.require_actor(paths, grader)
     counted = len(receipts(paths, change_id))
     if not counted and not str(source or "").strip():
         raise TaosError(
@@ -217,9 +222,9 @@ def _cmd_list(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    change = subparsers.add_parser("change", help="register, seal and score a change to the system")
+    change = subparsers.add_parser("change", help="say what a change to TAOS should do, then have it graded")
     sub = change.add_subparsers(dest="change_cmd", required=True)
-    agents = list(events_mod.AGENTS)
+    agents = subparsers.actors
 
     reg = sub.add_parser("register", help="write the prediction down before the change")
     reg.add_argument("--agent", required=True, choices=agents, help="the builder")

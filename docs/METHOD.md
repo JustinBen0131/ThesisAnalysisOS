@@ -11,7 +11,7 @@ before the change. Name a control that must not move. Let someone other than
 the builder grade it. Keep the result when it goes against you.
 
 It came from one research program: a physics measurement run day to day by
-two agents under one person's direction, on shared computing, with deadlines
+AI agents under one researcher's direction, on shared computing, with deadlines
 and outside review. Every mechanism here exists because something failed
 there first.
 
@@ -165,11 +165,12 @@ executions from a log outside the workspace. Whether a reuse was wrong is
 judged from that log and from which file was edited, never from TAOS's own
 bookkeeping.
 
-The workload: 12 folders, 6 checks that each read 2 neighbouring folders, 60
-single-file edits chosen by a seeded generator. After every edit all 6
-results are relied on, 360 in total. The same 12 folders are declared to TAOS
-at six levels of detail, from one domain holding everything to one domain per
-folder.
+The seeded workload makes 60 single-file edits across 12 folders. Each of the
+6 checks reads 2 neighbouring folders. All 6 checks are requested after every
+edit, for 360 post-edit requests. The main comparison counts executions for
+those requests. The last row also counts the 6 initial attempts, for 366
+attempts in that trial. The experiment varies what TAOS is told about the same
+12 folders, from one domain holding everything to one domain per folder.
 
 Six predictions were written into the script before its first run, and it
 exits 1 if one fails. All six held. A seventh was added later with the last
@@ -186,7 +187,7 @@ two rows of the table, and has its own section below.
 | TAOS, three tasks asking the same questions | 60 | 0 |
 | TAOS, every check hiding one folder it reads | 29 | 150 |
 | TAOS, checks isolated, everything declared | 60 | 0 |
-| TAOS, checks isolated, every check hiding one folder | 366 runs, none passed | 0 |
+| TAOS, checks isolated, every check hiding one folder | 366 attempts (6 initial and 360 after edits), none passed | 0 |
 
 What the table says:
 
@@ -197,9 +198,9 @@ What the table says:
   executions equal the oracle's and no stale result is relied on. With
   nothing declared it reruns everything: slower, never wrong.
 - **The declaration is the limit.** A check that reads more than it declares
-  is reused wrongly, 150 times in 360 here. TAOS reports a change to a file
-  nobody declared as `unknown`. It cannot see an input a check has hidden
-  inside a domain it did not name.
+  is reused wrongly, 150 times in 360 post-edit requests here. TAOS reports
+  a change to a file nobody declared as `unknown`. It cannot see an input a
+  check has hidden inside a domain it did not name.
 
 ### A seventh prediction, written before its mechanism existed
 
@@ -227,20 +228,22 @@ If the isolated folder lets one undeclared file through, the first half
 fails. If isolating disturbs what a correctly declared check sees, the second
 half fails.
 
-**What happened.** P7 held. With every check isolated and hiding one folder,
-none of 366 runs passed, so nothing was ever reused, where the open workspace
-had 150 wrong reuses. With everything declared, isolation changed no count:
-60 executions and 0 wrong reuses. The cost is placing the declared files for
-each run, by hard link where the filesystem allows.
-`evals/reuse_frontier.py` measures what that adds to one execution in pairs:
-the same edit in two workspaces, one with its checks isolated, asked back to
-back with the order alternating, so a drift of the machine cancels instead
-of landing in the answer. The figure, with its interval, is in
-`docs/CLAIMS.md`.
+**What happened.** P7 held. In the isolated trial with one hidden folder per
+check, all 6 initial attempts and all 360 post-edit attempts failed. No result
+was reused. The open-workspace trial recorded 150 wrong reuses. With all inputs
+declared, isolation preserved the count of 60 post-edit executions and zero
+wrong reuses.
 
-What isolation establishes is narrower than "the check is right". It
-establishes that the result depends on the bytes it is filed under and on
-nothing else in the workspace, which is what reuse needs. A check that finds
+To measure the cost of preparing the isolated workspace and running its
+check, the timing study applies the same edit in two prepared workspaces.
+Each of 36 rounds measures the open run, the isolated run and a direct
+reference check. The six possible measurement orders occur equally often.
+Within each round, the study divides the isolated time minus the open time
+by the reference check time. The median ratio and its interval are reported
+in [the claims table](CLAIMS.md).
+
+What isolation establishes is narrower than "the check is right". For a fixed input version on a machine that enforces the restrictions, it
+limits the workspace bytes a check can read to the inputs named in its result. A check that finds
 an input missing usually fails, as these did. One that carries on without it
 gives a wrong answer, and gives the same wrong answer when rerun, so it is
 still never reused wrongly. The environment is fixed for an isolated check
@@ -250,11 +253,19 @@ today that is macOS. A file outside the workspace can still be read by its
 absolute path, and a check that needs git or the files it wrote on an
 earlier run cannot run this way.
 
+A second process can change a file while the check reads it, then put the original bytes back. The fingerprints before and after can agree even if the command read two different versions. When several people or programs can write to the inputs, give the measurement a fixed, coherent version of all its inputs, such as one immutable repository revision, and record which version ran.
+
 The other half of the gap was closed directly. A declared domain is read
 from the disk, so an input git ignores is part of what a check stood on.
 With no domains declared, the workspace is still what git lists and an
-ignored input is not seen; an isolated check that needs it fails, and says
-what it could read.
+ignored input is outside the recorded set. If Git lists no inputs, TAOS reports
+that it cannot establish the result. Naming the relevant files in
+`basis.domains` includes them in the check even in an ignored project folder.
+
+The isolated runner gives the command a separate copy of each selected input.
+It checks the copy against the recorded fingerprint before starting. Edits
+made through these copies stay in the temporary directory. Programs with
+access to other paths on the machine still require a trusted environment.
 
 ### What it costs, and the connection to transport networks
 
@@ -271,34 +282,63 @@ it is consulted, what it stood on is read and fingerprinted again. Having it
 saves transport: the check is not executed. The experiment measures both
 terms and tests three consequences of that ledger.
 
-1. **Structure lowers transport until it matches what is really read. After
-   that it is only upkeep.** Going from 1 declared domain to 6 cut executions
-   from 360 to 60. Going from 6 to 12 doubled what has to be declared and
-   maintained and saved nothing.
+1. **Structure lowers transport until it matches what is really read.**
+   Going from 1 declared domain to 6 cut post-edit executions from 360 to
+   60. At 12 domains the count stayed at 60.
 2. **Shared flows merge.** Three tasks that need the same check on the same
    files cost 60 executions, not 180. A result belongs to the bytes it
    tested, not to the task that asked.
 3. **A record pays when its upkeep is less than the transport it spares.**
-   If asking costs `h`, one execution costs `g`, and a consultation spares
-   `s` executions, reuse wins when `h < s * g`. On one laptop a toy check
-   cost 5.7 ms and each consultation spared 5 of them. Asking cost 15.5 ms
-   for 48 files, 36.9 ms for 480 and 255.6 ms for 4,800. So for these toy
-   checks reuse won on the small tree and lost on the large one, where
-   asking cost more than running all six again. The break-even check cost
-   was 3.1 ms, 7.4 ms and 51 ms. A real test suite takes seconds to
-   minutes, so the ledger favours the record by orders of magnitude; the
-   point is that the ledger can say no.
+   If asking costs `h`, each spared execution costs `g`, and a consultation
+   spares `s` executions, reuse wins when `h < s * g`. The workload saved
+   five of six executions per edit at the finest declaration. For each
+   tree size (48, 480 and 4,800 files), the separate timing study measured
+   the cost of consulting six unchanged checks in a warm process in 12
+   rounds. It expresses that cost in units of one fresh command on eight
+   files, timed in the same round. The saved record also gives raw seconds
+   and the observed ratio between the largest and smallest trees.
+
+The timing intervals use the ordered observations to bound the median,
+assuming independent rounds with a common median. Shared caches and machine
+load can correlate rounds. Read the ratios and intervals as measurements of
+this workload under the recorded conditions. Run
+`python3 evals/reuse_frontier.py --verify` to check the saved observations,
+derived summaries and code fingerprints. [Saved timing record](../evals/results/reuse_frontier.json)
 
 What does not transfer is the exponents. The papers derive power laws from
 the physics of flow in a pipe. Nothing here shows that agent work obeys such
 laws, and this experiment does not test it. What transfers is the ledger and
 the question it asks of any structure: does it pay for its upkeep with the
-transport it saves? Here that question has a measured answer, in both
-directions. The numbers of one run are in `evals/results/reuse_frontier.json`.
+transport it saves? Each consultation rereads the files in the declared
+inputs. The three tree sizes show how that cost changes in this workload.
 
-The upkeep term has a known weakness. Every consultation reads every file, so
-asking grows with the size of the tree, about 0.05 ms per file here. A cache
-keyed on file size and modification time would cut it. That is not built.
+## What an agent reads in the first minute
+
+In a fresh pendulum demo, the enabled SessionStart hook supplies compact status.
+Running `taos status --compact` prints the same text with a final newline.
+An agent requests a task capsule by ID, or receives a capsule when it starts
+the task. The demo OS root also has a rendered AGENTS.md. Whether that file
+enters the session automatically depends on the host and working directory.
+
+`python3 evals/session_footprint.py` builds the demo in a temporary directory,
+before any task is started. It counts the two CLI outputs for compact status and
+`capsule PEN-1`, and the full root AGENTS.md file. The record preserves their
+normalized text, UTF-8 byte counts, logical line counts and SHA-256 digests.
+The temporary directory is printed as `<DEMO>`, the Python executable as
+`<PYTHON>`, and the two dates in the status header as `YYYY-MM-DD`. Temporary
+shell arguments use the same spelling even if their original path needed quotes.
+Counts include trailing newlines. Hook transport JSON is outside the measurement.
+Run `python3 evals/session_footprint.py --verify` to compare a fresh demo with the
+saved record. These text sizes measure one fixture. Tokenization, host context
+and subscription usage would require separate observations.
+
+The first-minute test runs the actual hook and CLI reads in fresh Python
+interpreters. It denies socket operations and external commands, and checks
+the returned status, review-policy route, PEN-1 capsule and standing.
+These reads need no model service. The optional panel binds to loopback.
+Isolated checks also probe loopback to see which restrictions the machine
+enforces. User-configured commands can contact services and have their own
+requirements. [Source and checks](CLAIMS.md)
 
 ## What should outlast the models
 
@@ -322,5 +362,5 @@ done with them comes out better. The evidence above is mechanical: the code
 does what it says, on synthetic cases and on one small workload. It claims that
 they make an agent system *measurable*, so you can tell when a change helped,
 when a lesson failed to hold and when an instruction has quietly outlived its
-terms. Nothing here calls a model or a network. The bank writes prompts and
+terms. The bank writes prompts and
 scores answers; who or what answers is up to you.

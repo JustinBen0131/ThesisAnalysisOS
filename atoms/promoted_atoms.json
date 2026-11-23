@@ -10,11 +10,11 @@
       "check": {
         "type": "regex_must_match",
         "target": "latest_handoff",
-        "pattern": "^Agent: (codex|claude|human)\\n"
+        "pattern": "\\AAgent: [a-z][a-z0-9_-]{0,31}\\r?\\nChat/session: [^\\r\\n]+\\r?\\nTask: [^\\r\\n]+\\r?\\nClaim/scope: [^\\r\\n]+(?:\\r?\\n|$)"
       },
       "fixtures": {
-        "red": "## State\nsome text\n",
-        "green": "Agent: codex\nChat/session: X-1 | y\nTask: X-1 | t\nClaim/scope: task:X-1\n"
+        "red": "Agent: service-auditor\nChat/session: Morning shift\nTask: BUS-2 | Audit\n",
+        "green": "Agent: service-auditor\nChat/session: Morning shift\nTask: BUS-2 | Audit\nClaim/scope: task:BUS-2\n"
       }
     },
     {
@@ -37,7 +37,7 @@
       "id": "agents-md-names-the-claim-rule",
       "status": "active",
       "rule": "AGENTS.md always tells agents that a live claim by the other agent is do-not-touch.",
-      "why": "This is the one rule that keeps two agents from colliding. It must never be edited out.",
+      "why": "A live claim tells other agents who owns the work and prevents overlapping edits.",
       "review_date": "2027-03-01",
       "check": {
         "type": "regex_must_match",

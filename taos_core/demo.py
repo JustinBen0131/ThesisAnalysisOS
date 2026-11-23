@@ -10,10 +10,10 @@ The script is data: six ideas, each a few steps. A command carries the words
 the record should answer with, and the demo stops if the record answers
 differently, so the demo is a check as well as a show.
 
-One run, three readers. A person at a terminal gets one screen: a line for
-each thing that happened, led by the answer the record gave. `--full`, or a
-pipe, gets every command and what it printed. `--json` gets the same run as
-a record a program can read. How a page is drawn is `taos_core/page.py`.
+One run, three readers. Left to itself it prints one screen, to a terminal
+and to a pipe alike: a line for each thing that happened, led by the answer
+the record gave. `--full` gets every command and what it printed. `--json`
+gets the same run as a record a program can read. How a page is drawn is `taos_core/page.py`.
 """
 
 from __future__ import annotations
@@ -23,8 +23,8 @@ import contextlib
 import csv
 import io
 import json
-import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -35,9 +35,11 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from . import bootstrap as bootstrap_mod
+from . import kernels as kernels_mod
 from . import lessons as lessons_mod
 from . import rules as rules_mod
-from .page import PROMISE, SHADE, write
+from . import use as use_mod
+from .page import PROMISE, SHADE, launcher, write
 from .paths import Paths
 from .util import TaosError
 
@@ -46,7 +48,7 @@ OS_PARTS = ("taos", "taos_core", "hooks", "kernels", "atoms", "policies", "boots
             ".claude", ".codex", ".agents")
 STATES = ("holds", "fails", "stale", "unknown")
 SCHEMA = "TAOS_DEMO_V1"
-EXAMPLE = "Here: six pendulum swings, a fit for g, and a check that the fit is sane."
+EXAMPLE = "Here: six pendulum swings, a fit for g, and a check that g is 9.6 to 10.0."
 FIT = re.compile(r"g = (\S+) \+/- (\S+) (\S+) from (\d+) swings")
 
 
@@ -60,15 +62,9 @@ def scratch_home(tmp: Path, *, workspace: Path, project: str, prefix: str, gates
             shutil.copytree(str(source), str(home / name), ignore=shutil.ignore_patterns(".taos", "__pycache__", ".git"))
         elif source.is_file():
             shutil.copy2(str(source), str(home / name))
-    answers = json.loads((REPO / "bootstrap" / "answers.example.json").read_text(encoding="utf-8"))
-    answers.update(
-        project_name=project, prefix=prefix, stack="python", git_isolation="trunk", open_browser=False,
-        install_hooks_in_workspaces=False, agent_corrections=[],
-        workspaces=[{"name": workspace.name, "path": str(workspace), "primary": True, "agent": "any"}],
-        gates=gates, first_tasks=tasks,
-    )
     paths = Paths(home)
-    bootstrap_mod.construct(paths, answers, actor="system")
+    bootstrap_mod.construct(paths, use_mod.answers(paths, workspace, project=project, prefix=prefix, gates=gates,
+                                                   tasks=tasks), actor="system")
     return paths
 
 
@@ -99,6 +95,8 @@ def build(tmp: Path) -> Paths:
                "ignore": ["README.md", "AGENTS.md", "CLAUDE.md", ".taos-link.json"]},
         gates=[{"name": "fit", "command": "\"{0}\" analysis/check.py".format(sys.executable), "depends_on": ["analysis"]}],
     )
+    for name in ("PROJECT_KERNEL", "PRINCIPAL_KERNEL"):             # setting up is done: the summaries are of this project
+        kernels_mod.index_refresh(paths, name, "taos")
     return paths
 
 
@@ -184,7 +182,7 @@ def script(paths: Paths, work: Path) -> List[Moment]:
     return [
         Moment("standing", "A result holds until what it stood on changes", "holds, holds, stale", [
             ask(*fit, expect=("g = 9.82 +/- 0.02 m/s^2 from 6 swings",)),
-            ask(*check("PEN-1", "codex"), keep=_has("exit"), expect=("ok    fit",)),
+            ask(*check("PEN-1", "codex"), keep=_has("exit"), expect=("holds    fit          ran now and passed",)),
             ask("task", "transition", "PEN-1", "--to", "done", "--agent", "codex", "--reason", "g = 9.82 +/- 0.02",
                 expect=("PEN-1 -> done",)),
             ask(*why, keep=_verdicts, expect=("holds    check fit", "PEN-1 stands as recorded."), id="baseline",
@@ -199,12 +197,12 @@ def script(paths: Paths, work: Path) -> List[Moment]:
         Moment("reuse", "A pass belongs to the files, not to the task", "ran once, shared once", [
             say("The flag was right. On the new swing the same fit gives a different g."),
             ask(*fit, expect=("g = 9.75 +/- 0.02 m/s^2 from 6 swings",)),
-            ask(*check("PEN-1", "codex"), keep=_has("exit"), expect=("ok    fit",), id="rerun",
+            ask(*check("PEN-1", "codex"), keep=_has("exit"), expect=("holds    fit          ran now and passed",), id="rerun",
                 brief="the check runs again on the new swing: g = 9.75 +/- 0.02"),
             say("Another task needs the same check on the same files. It is not run twice."),
-            ask(*check("PEN-2", "claude"), keep=_has("not rerun"), id="shared",
+            ask(*check("PEN-2", "claude"), keep=_has("not run again"), id="shared",
                 brief="a second task asks the same check of the same files: not run twice",
-                expect=("held  fit", "not rerun: nothing it tested has changed")),
+                expect=("holds    fit", "not run again: nothing it tested has changed")),
         ]),
         Moment("instructions", "An instruction keeps its date", "February tape, March laser", [
             change("On January 5 the person says to use the tape-measured lengths. On March 1, the laser-measured ones.",
@@ -213,9 +211,9 @@ def script(paths: Paths, work: Path) -> List[Moment]:
                 expect=("\"Use the tape-measured lengths\"",), brief="February 10: \"Use the tape-measured lengths\" is in force"),
             ask("rule", "governing", "PEN-1", "--on", "2026-03-02", keep=_starts("\""), id="march",
                 expect=("\"Use the laser-measured lengths\"",), brief="March 2: \"Use the laser-measured lengths\" is in force"),
-            say("PEN-1 was closed before either instruction was recorded, and its closure says so."),
+            say("PEN-1 was closed with neither instruction on record, and its closure says so."),
             ask(*why, keep=_has("closure:", "as recorded"), id="closure",
-                brief="the task closed before either was recorded, and its closure says so",
+                brief="the task closed with neither on record, and its closure says so",
                 expect=("stale    closure:", "the instructions have changed since")),
         ]),
         Moment("acceptance", "Acceptance is of one version", "stale after one comment", [
@@ -242,13 +240,24 @@ def script(paths: Paths, work: Path) -> List[Moment]:
                    lambda: configure(paths, gates=checks + [undeclared])),
             ask(*check("PEN-2", "claude"), keep=_has("style", "isolated:"), id="undeclared",
                 brief="a check reads figures/style.txt but declared only the analysis",
-                expect=("FAIL  style        exit 2", "A file it could not find is one it did not declare.")),
+                expect=("fails    style        ran now and failed (exit 2)", "A file it could not find is one it did not declare.")),
             change("The declaration is corrected to name the figures, and the same check passes.",
                    lambda: configure(paths, gates=checks + [dict(undeclared, depends_on=["figures"])])),
-            ask(*check("PEN-2", "claude"), keep=_has("style", "isolated:"), expect=("ok    style        exit 0",),
+            ask(*check("PEN-2", "claude"), keep=_has("style", "isolated:"), expect=("holds    style        ran now and passed (exit 0)",),
                 id="declared", brief="the declaration is corrected and the same check passes"),
         ]),
     ]
+
+
+# After `--keep`: the demo again, by the reader's own hand. Each line is a command to paste, and what it will show.
+# The lines are printed bare, so that pasting one, or all of them, runs exactly what is shown.
+BY_HAND_SAYS = ("They show both checks holding, add a swing of your own, show the fit gone stale, "
+                "run it again, and read the closed task in full.")
+BY_HAND = (("../os/taos gate show --task PEN-2", "both checks hold"),
+           ('echo "0.90,1.90" >> data/swings.csv', "one more swing, by you"),
+           ("../os/taos gate show --task PEN-2", "the fit went stale"),
+           ("../os/taos gate run --agent human --task PEN-2", "run again: holds on new data"),
+           ("../os/taos why PEN-1", "the closed task, in full"))
 
 
 def _plain(word: str) -> bool:
@@ -310,14 +319,9 @@ def play(paths: Paths) -> Dict[str, Any]:
 
 def run(out: Any = None, keep: bool = False, as_json: bool = False, full: Optional[bool] = None,
         width: Optional[int] = None, color: Optional[bool] = None) -> int:
-    """Play the demo. Left to itself it writes the short page to a terminal and the transcript to anything else."""
+    """Play the demo. Left to itself it writes the one-screen page, to a terminal and to a pipe alike. `full` is the transcript."""
     out = out or sys.stdout
-    terminal = bool(getattr(out, "isatty", lambda: False)())
-    full = not terminal if full is None else full
-    if width is None and (terminal or not full):           # a terminal's own width; the short page is set for 80
-        width = min(shutil.get_terminal_size().columns, 100) if terminal else 80
-    if color is None:
-        color = (terminal or bool(os.environ.get("FORCE_COLOR"))) and not os.environ.get("NO_COLOR")
+    full, me = bool(full), launcher()
     tmp = Path(tempfile.mkdtemp(prefix="taos-demo-"))
     try:
         paths = build(tmp)
@@ -330,11 +334,13 @@ def run(out: Any = None, keep: bool = False, as_json: bool = False, full: Option
         closing = ("{0} commands ran in {1:.1f} s, and the record gave all {2} answers expected of it.".format(
             record["commands"], seconds, record["checked"]),)
         if not full:
-            closing += ("Each row is a real command and its answer. See them all: taos demo --full",)
+            closing += ("Each row is a real command and its answer. See them all: {0} demo --full".format(me),)
         if keep:
-            closing += ("Kept for you to look around: {0}".format(tmp), "  try: {0}/os/taos --home {0}/os why".format(tmp))
+            closing += ("Kept. Do by hand what you just watched, one line at a time. " + BY_HAND_SAYS, "",
+                        "  cd {0}".format(shlex.quote(str(tmp / "pendulum"))))
+            closing += tuple("  " + command for command, _ in BY_HAND)
         else:
-            closing += ("Nothing of yours was touched. `taos demo --keep` leaves the folder in place.",)
+            closing += ("Nothing of yours was touched. `{0} demo --keep` leaves the folder in place.".format(me),)
         write(record, out, full=full, width=width, color=color, closing=closing)
         return 0
     finally:
@@ -350,7 +356,7 @@ def register(subparsers: Any) -> None:
     demo = subparsers.add_parser("demo", help="see the idea in a minute, on a small example, touching nothing")
     demo.add_argument("--keep", action="store_true", help="leave the temporary folder in place afterwards")
     view = demo.add_mutually_exclusive_group()
-    view.add_argument("--full", action="store_true", help="every command and what it printed (what a pipe gets)")
-    view.add_argument("--brief", action="store_true", help="one line per answer (what a terminal gets)")
+    view.add_argument("--full", action="store_true", help="every command and what it printed")
+    view.add_argument("--brief", action="store_true", help="one line per answer, on one screen (the default)")
     view.add_argument("--json", action="store_true", help="the run as a record a program can read")
     demo.set_defaults(func=_cmd_demo)

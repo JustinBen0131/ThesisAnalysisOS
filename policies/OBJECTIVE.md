@@ -49,8 +49,8 @@ Every term matters:
    what you would do by default, and what changes if they answer differently.
    Three such questions are worth more than ten open ones, and an
    observation that resolves itself needs none.
-7. **Symmetry.** Two agents, same rules, same rope. Provenance says who did
-   it; it never decides who may.
+7. **Symmetry.** Apply the same project rules to every agent. Record who
+   performed an action and use the project’s permissions to decide who may act.
 
 ## How it regulates itself
 

@@ -1,0 +1,891 @@
+{
+  "observations": {
+    "approval": {
+      "by": "human",
+      "note": "Reviewed Monday at 16 of 20.",
+      "rules": {
+        "rule_2": "b01033ffbba45b3a24634d4d2aff6a2f930ba5cbecd281ae6d4d4300aac5797e"
+      },
+      "schema": "TAOS_ACCEPTANCE_V1",
+      "snapshot": {
+        "complete": true,
+        "domains": {
+          "monday": {
+            "count": 4,
+            "files": {
+              "count.py": "5f0e8a7e72c84f5e9cc83c8e1b6b8739f4b452af91636fe3b0afa7498864340b",
+              "monday-dispatch.csv": "796b1597a730842f752d38131c467c1ae689644ba6027f4ed533dbaebc34715c",
+              "monday-report.json": "b19058e01945f3336b542e88cd23f120cbdde240affa12f2ef742f0bae80da56",
+              "monday-schedule.csv": "45758f71e098a0ec4aee480731193666107cd6ea7f3d05f37117dfb291144ca7"
+            },
+            "sha256": "2a2a3d7919f5b3119ee859b67e8d8d7eff155f88ae3e4d91ef7c7501672c7d8b"
+          },
+          "presentation": {
+            "count": 1,
+            "files": {
+              "style.txt": "bf2e9b6ea7cff5a8bdeaa4c49579a1e7b1c66851439ce51c508d0a6116025288"
+            },
+            "sha256": "6618e0d0a9401c74db69fb7a167b289fb789c0eeb9ceac5643cdb81ca5b80b12"
+          },
+          "tuesday": {
+            "count": 2,
+            "files": {
+              "tuesday-dispatch.csv": "b8de7c48a2e43d760acae87bac4d77e99863c7b1198a9db11035f84322d6bd2e",
+              "tuesday-schedule.csv": "4756007e572669bb13124f01b213119d606f9b7ab00bd0f0f2fb2ce83f8e1c5f"
+            },
+            "sha256": "8b4282398f74a2d79dcefe400bd7b256b8f111c4126a69b379ed78040a5a979b"
+          }
+        },
+        "reason": "",
+        "root": "<scratch>/transit"
+      },
+      "task_id": "BUS-1",
+      "ts": "<run-time>"
+    },
+    "capsule": {
+      "blockers": [],
+      "claims": [
+        {
+          "agent": "codex",
+          "claimed_at": "<run-time>",
+          "heartbeat_at": "<run-time>",
+          "id": "clm_3",
+          "released_at": null,
+          "scopes": [
+            "task:BUS-2"
+          ],
+          "session_label": "BUS-2 | Tuesday follow-up",
+          "stale_after_hours": 6.0,
+          "status": "live",
+          "takeover_of": null
+        }
+      ],
+      "compute_reviews": [],
+      "decisions": [],
+      "gates": {
+        "configured": [
+          "Monday report"
+        ],
+        "latest": null
+      },
+      "handoff_head": "Agent: claude\nChat/session: BUS-2 | Log audit\nTask: BUS-2 | Audit the service logs\nClaim/scope: task:BUS-2\n\n## State\nMonday was reviewed at 16 of 20. Tuesday's rate is pending.\n\n## Changed\nThe corrected report counts the full timetable, including cancellations.\n\n## Evidence\nmonday-report.json; tuesday-schedule.csv; tuesday-dispatch.csv.\n\n## Risks and open questions\nT04 and T11 have no dispatch record. Their outcomes remain unknown.\n\n## Next command\npython3 -B count.py count tuesday",
+      "handoff_path": "<scratch>/os/.taos/handoffs/1_BUS-2_claude_to_codex.md",
+      "kernels": [
+        {
+          "generated_at": "<run-time>",
+          "name": "OS_KERNEL",
+          "reasons": [],
+          "status": "fresh"
+        },
+        {
+          "generated_at": "<run-time>",
+          "name": "PROJECT_KERNEL",
+          "reasons": [
+            "sources changed since this kernel was written"
+          ],
+          "status": "drifted"
+        },
+        {
+          "generated_at": "<run-time>",
+          "name": "PRINCIPAL_KERNEL",
+          "reasons": [
+            "sources changed since this kernel was written"
+          ],
+          "status": "drifted"
+        },
+        {
+          "generated_at": "<run-time>",
+          "name": "NOW_KERNEL",
+          "reasons": [
+            "sources changed since this kernel was written"
+          ],
+          "status": "drifted"
+        }
+      ],
+      "next_action": "Find the dispatch records for T04 and T11 before reporting Tuesday's rate.",
+      "related": [
+        {
+          "id": "BUS-1",
+          "kind": "relatedTo",
+          "status": "review",
+          "title": "Prepare the Monday service report"
+        }
+      ],
+      "standing": {
+        "accepted": false,
+        "closed": false,
+        "done_when": "Both days have a dispatch disposition for every scheduled trip.",
+        "instructions": [
+          {
+            "expires": null,
+            "id": "rule_2",
+            "quote": "Check every scheduled bus before reporting.",
+            "said_on": "2026-01-05",
+            "scope": "service/report"
+          }
+        ],
+        "next": [],
+        "parts": [
+          {
+            "kind": "check",
+            "name": "Monday report",
+            "reason": "passed <run-time> for BUS-1; nothing it tested has changed",
+            "state": "holds"
+          },
+          {
+            "kind": "lease",
+            "name": "codex as 'BUS-2 | Tuesday follow-up'",
+            "reason": "last heartbeat <run-time>",
+            "state": "holds"
+          }
+        ],
+        "state": "holds",
+        "status": "active",
+        "task": "BUS-2",
+        "title": "Audit the service logs"
+      },
+      "task": {
+        "archived_at": null,
+        "branch": null,
+        "canceled_at": null,
+        "comments": [
+          {
+            "agent": "claude",
+            "body": "handoff to codex: .taos/handoffs/1_BUS-2_claude_to_codex.md",
+            "session": "BUS-2 | Log audit",
+            "ts": "<run-time>"
+          }
+        ],
+        "created_at": "<run-time>",
+        "created_by": "human",
+        "done_at": null,
+        "done_when": "Both days have a dispatch disposition for every scheduled trip.",
+        "evidence": [
+          {
+            "agent": "claude",
+            "note": "Missing T04 and T11 from Tuesday's schedule. Monday verified in BUS-1.",
+            "ref": "tuesday-dispatch.csv",
+            "ts": "<run-time>"
+          }
+        ],
+        "goal": "Reconcile each scheduled trip with the dispatch record.",
+        "history": [
+          {
+            "agent": "human",
+            "from": null,
+            "reason": "created",
+            "to": "next",
+            "ts": "<run-time>"
+          },
+          {
+            "agent": "claude",
+            "from": "next",
+            "reason": "started by claude",
+            "to": "active",
+            "ts": "<run-time>"
+          },
+          {
+            "agent": "claude",
+            "from": "active",
+            "reason": "Continue the incomplete Tuesday audit.",
+            "to": "next",
+            "ts": "<run-time>"
+          },
+          {
+            "agent": "codex",
+            "from": "next",
+            "reason": "started by codex",
+            "to": "active",
+            "ts": "<run-time>"
+          }
+        ],
+        "hot": true,
+        "hot_reason": "started by codex",
+        "hot_since": "<run-time>",
+        "id": "BUS-2",
+        "labels": [
+          "service/report"
+        ],
+        "next_action": "Find the dispatch records for T04 and T11 before reporting Tuesday's rate.",
+        "owner_agent": "codex",
+        "parent_id": null,
+        "priority": "P2",
+        "relations": {
+          "blockedBy": [],
+          "blocks": [],
+          "relatedTo": [
+            "BUS-1"
+          ]
+        },
+        "sessions": [
+          {
+            "provider": "claude",
+            "session_key": "bus-2-log-audit",
+            "title": "BUS-2 | Log audit",
+            "ts": "<run-time>"
+          },
+          {
+            "provider": "codex",
+            "session_key": "bus-2-tuesday-follow-up",
+            "title": "BUS-2 | Tuesday follow-up",
+            "ts": "<run-time>"
+          }
+        ],
+        "status": "active",
+        "title": "Audit the service logs",
+        "updated_at": "<run-time>",
+        "verification": "python3 -B count.py count tuesday",
+        "workspace": "<scratch>/transit",
+        "worktree": null
+      }
+    },
+    "controls": {
+      "baseline": {
+        "acceptance": "holds",
+        "artifact": "holds",
+        "check": "holds",
+        "dispatch_sha256": "796b1597a730842f752d38131c467c1ae689644ba6027f4ed533dbaebc34715c",
+        "edited_file": null,
+        "edited_trip": null,
+        "evidence": "baseline-why",
+        "report_percent": 80,
+        "report_sha256": "b19058e01945f3336b542e88cd23f120cbdde240affa12f2ef742f0bae80da56",
+        "source_percent": 80,
+        "style_sha256": "bf2e9b6ea7cff5a8bdeaa4c49579a1e7b1c66851439ce51c508d0a6116025288"
+      },
+      "failed": {
+        "acceptance": "stale",
+        "artifact": "stale",
+        "check": "fails",
+        "dispatch_sha256": "6bec73b5a6060db75c5745bf83f75905d8efb51d3f3a4366a0c5cf6ddb21c585",
+        "edited_file": null,
+        "edited_trip": null,
+        "evidence": "failed-why",
+        "report_percent": 80,
+        "report_sha256": "b19058e01945f3336b542e88cd23f120cbdde240affa12f2ef742f0bae80da56",
+        "source_percent": 85,
+        "style_sha256": "bf2e9b6ea7cff5a8bdeaa4c49579a1e7b1c66851439ce51c508d0a6116025288"
+      },
+      "repaired": {
+        "acceptance": "stale",
+        "artifact": "stale",
+        "check": "holds",
+        "dispatch_sha256": "6bec73b5a6060db75c5745bf83f75905d8efb51d3f3a4366a0c5cf6ddb21c585",
+        "edited_file": "monday-report.json",
+        "edited_trip": null,
+        "evidence": "repaired-why",
+        "report_percent": 85,
+        "report_sha256": "e6d17b876af34d65da7491234066a3890bd207b76e120709baa68a909f467459",
+        "source_percent": 85,
+        "style_sha256": "bf2e9b6ea7cff5a8bdeaa4c49579a1e7b1c66851439ce51c508d0a6116025288"
+      },
+      "restore": {
+        "acceptance": "holds",
+        "artifact": "holds",
+        "check": "holds",
+        "dispatch_sha256": "796b1597a730842f752d38131c467c1ae689644ba6027f4ed533dbaebc34715c",
+        "edited_file": "style.txt",
+        "edited_trip": null,
+        "evidence": "restore-why",
+        "report_percent": 80,
+        "report_sha256": "b19058e01945f3336b542e88cd23f120cbdde240affa12f2ef742f0bae80da56",
+        "source_percent": 80,
+        "style_sha256": "bf2e9b6ea7cff5a8bdeaa4c49579a1e7b1c66851439ce51c508d0a6116025288"
+      },
+      "source": {
+        "acceptance": "stale",
+        "artifact": "stale",
+        "check": "stale",
+        "dispatch_sha256": "6bec73b5a6060db75c5745bf83f75905d8efb51d3f3a4366a0c5cf6ddb21c585",
+        "edited_file": "monday-dispatch.csv",
+        "edited_trip": "M18",
+        "evidence": "source-why",
+        "report_percent": 80,
+        "report_sha256": "b19058e01945f3336b542e88cd23f120cbdde240affa12f2ef742f0bae80da56",
+        "source_percent": 85,
+        "style_sha256": "bf2e9b6ea7cff5a8bdeaa4c49579a1e7b1c66851439ce51c508d0a6116025288"
+      },
+      "style": {
+        "acceptance": "stale",
+        "artifact": "holds",
+        "check": "holds",
+        "dispatch_sha256": "796b1597a730842f752d38131c467c1ae689644ba6027f4ed533dbaebc34715c",
+        "edited_file": "style.txt",
+        "edited_trip": null,
+        "evidence": "style-why",
+        "report_percent": 80,
+        "report_sha256": "b19058e01945f3336b542e88cd23f120cbdde240affa12f2ef742f0bae80da56",
+        "source_percent": 80,
+        "style_sha256": "89979e21a1222b90188d5289fb7547e920c3efcb95620622342905fc131dc51f"
+      }
+    },
+    "handoff": "Agent: claude\nChat/session: BUS-2 | Log audit\nTask: BUS-2 | Audit the service logs\nClaim/scope: task:BUS-2\n\n## State\nMonday was reviewed at 16 of 20. Tuesday's rate is pending.\n\n## Changed\nThe corrected report counts the full timetable, including cancellations.\n\n## Evidence\nmonday-report.json; tuesday-schedule.csv; tuesday-dispatch.csv.\n\n## Risks and open questions\nT04 and T11 have no dispatch record. Their outcomes remain unknown.\n\n## Next command\npython3 -B count.py count tuesday",
+    "lesson": {
+      "added_at": "<run-time>",
+      "added_by": "human",
+      "case": "case_166db4dff40f",
+      "detect": [],
+      "id": "les_1",
+      "mistake": "The draft counted only the 18 logged departures.",
+      "moments": [
+        "join"
+      ],
+      "said_on": "2026-01-05",
+      "scope": "BUS-2",
+      "status": "candidate",
+      "title": "Keep cancellations in the denominator",
+      "why": "The displayed rate rose from 80% to 89% when the cancellations disappeared.",
+      "words": "Those two canceled trips were scheduled."
+    },
+    "monday": {
+      "canceled": 2,
+      "canceled_trips": [
+        "M17",
+        "M19"
+      ],
+      "logged_percent": 89,
+      "missing_trips": [],
+      "on_time": 16,
+      "recorded": 18,
+      "scheduled": 20,
+      "scheduled_percent": 80
+    },
+    "proposal": {
+      "atom": null,
+      "body": "Apply the schedule-to-dispatch reconciliation to each new day's report; hold the rate while any trip lacks a record.",
+      "decided_at": null,
+      "decided_by": null,
+      "evidence": [
+        "tuesday-dispatch.csv"
+      ],
+      "id": "prop_1",
+      "kind": "other",
+      "note": null,
+      "proposed_at": "<run-time>",
+      "proposed_by": "claude",
+      "status": "proposed",
+      "title": "Check every service day before publication"
+    },
+    "rules": {
+      "after": [
+        {
+          "added_at": "<run-time>",
+          "added_by": "human",
+          "expires": null,
+          "id": "rule_2",
+          "quote": "Check every scheduled bus before reporting.",
+          "said_on": "2026-01-05",
+          "scope": "service/report",
+          "sha256": "b01033ffbba45b3a24634d4d2aff6a2f930ba5cbecd281ae6d4d4300aac5797e",
+          "supersedes": "rule_1"
+        }
+      ],
+      "before": [
+        {
+          "added_at": "<run-time>",
+          "added_by": "human",
+          "expires": null,
+          "id": "rule_1",
+          "quote": "Account for every scheduled trip in the morning service report.",
+          "said_on": "2026-01-04",
+          "scope": "service/report",
+          "sha256": "61eddfdbf04ad50f6dfb49e9bfd9ab2874192ec8d9216fdcf5b4bd3026a2f673",
+          "supersedes": null
+        }
+      ],
+      "unrelated": []
+    },
+    "team": [
+      {
+        "done_when": "The Monday report accounts for every scheduled trip and passes the count check.",
+        "owner": "codex",
+        "scope": "task:BUS-1",
+        "task": "BUS-1",
+        "title": "Prepare the Monday service report"
+      },
+      {
+        "done_when": "Both days have a dispatch disposition for every scheduled trip.",
+        "owner": "claude",
+        "scope": "task:BUS-2",
+        "task": "BUS-2",
+        "title": "Audit the service logs"
+      }
+    ],
+    "tuesday": {
+      "canceled": 0,
+      "canceled_trips": [],
+      "logged_percent": null,
+      "missing_trips": [
+        "T04",
+        "T11"
+      ],
+      "on_time": 9,
+      "recorded": 10,
+      "scheduled": 12,
+      "scheduled_percent": null
+    }
+  },
+  "record_sha256": "b87a7fc52c74acd89a6bb9b765dc2aa39bb83a0ab56628227e0d396cd7b52164",
+  "records": {
+    "acceptance-receipt": {
+      "command": "python3 -B -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).read_text(encoding='\"'\"'utf-8'\"'\"'), end='\"'\"''\"'\"')' <scratch>/os/.taos/acceptance/BUS-1_<run-time>.json",
+      "exit": 0,
+      "output": "{\n  \"by\": \"human\",\n  \"note\": \"Reviewed Monday at 16 of 20.\",\n  \"rules\": {\n    \"rule_2\": \"b01033ffbba45b3a24634d4d2aff6a2f930ba5cbecd281ae6d4d4300aac5797e\"\n  },\n  \"schema\": \"TAOS_ACCEPTANCE_V1\",\n  \"snapshot\": {\n    \"complete\": true,\n    \"domains\": {\n      \"monday\": {\n        \"count\": 4,\n        \"files\": {\n          \"count.py\": \"5f0e8a7e72c84f5e9cc83c8e1b6b8739f4b452af91636fe3b0afa7498864340b\",\n          \"monday-dispatch.csv\": \"796b1597a730842f752d38131c467c1ae689644ba6027f4ed533dbaebc34715c\",\n          \"monday-report.json\": \"b19058e01945f3336b542e88cd23f120cbdde240affa12f2ef742f0bae80da56\",\n          \"monday-schedule.csv\": \"45758f71e098a0ec4aee480731193666107cd6ea7f3d05f37117dfb291144ca7\"\n        },\n        \"sha256\": \"2a2a3d7919f5b3119ee859b67e8d8d7eff155f88ae3e4d91ef7c7501672c7d8b\"\n      },\n      \"presentation\": {\n        \"count\": 1,\n        \"files\": {\n          \"style.txt\": \"bf2e9b6ea7cff5a8bdeaa4c49579a1e7b1c66851439ce51c508d0a6116025288\"\n        },\n        \"sha256\": \"6618e0d0a9401c74db69fb7a167b289fb789c0eeb9ceac5643cdb81ca5b80b12\"\n      },\n      \"tuesday\": {\n        \"count\": 2,\n        \"files\": {\n          \"tuesday-dispatch.csv\": \"b8de7c48a2e43d760acae87bac4d77e99863c7b1198a9db11035f84322d6bd2e\",\n          \"tuesday-schedule.csv\": \"4756007e572669bb13124f01b213119d606f9b7ab00bd0f0f2fb2ce83f8e1c5f\"\n        },\n        \"sha256\": \"8b4282398f74a2d79dcefe400bd7b256b8f111c4126a69b379ed78040a5a979b\"\n      }\n    },\n    \"reason\": \"\",\n    \"root\": \"<scratch>/transit\"\n  },\n  \"task_id\": \"BUS-1\",\n  \"ts\": \"<run-time>\"\n}"
+    },
+    "accepted-task": {
+      "command": "./taos task show BUS-1 --json",
+      "exit": 0,
+      "output": "{\n  \"acceptance\": {\n    \"basis\": {\n      \"monday\": \"2a2a3d7919f5b3119ee859b67e8d8d7eff155f88ae3e4d91ef7c7501672c7d8b\",\n      \"presentation\": \"6618e0d0a9401c74db69fb7a167b289fb789c0eeb9ceac5643cdb81ca5b80b12\",\n      \"tuesday\": \"8b4282398f74a2d79dcefe400bd7b256b8f111c4126a69b379ed78040a5a979b\"\n    },\n    \"by\": \"human\",\n    \"note\": \"Reviewed Monday at 16 of 20.\",\n    \"receipt\": \"BUS-1_<run-time>.json\",\n    \"rules\": {\n      \"rule_2\": \"b01033ffbba45b3a24634d4d2aff6a2f930ba5cbecd281ae6d4d4300aac5797e\"\n    },\n    \"ts\": \"<run-time>\"\n  },\n  \"archived_at\": null,\n  \"branch\": null,\n  \"canceled_at\": null,\n  \"closures\": [\n    {\n      \"by\": \"codex\",\n      \"rules\": {\n        \"rule_2\": \"b01033ffbba45b3a24634d4d2aff6a2f930ba5cbecd281ae6d4d4300aac5797e\"\n      },\n      \"to\": \"review\",\n      \"ts\": \"<run-time>\",\n      \"waived\": null\n    }\n  ],\n  \"comments\": [],\n  \"created_at\": \"<run-time>\",\n  \"created_by\": \"system\",\n  \"done_at\": null,\n  \"done_when\": \"The Monday report accounts for every scheduled trip and passes the count check.\",\n  \"evidence\": [\n    {\n      \"agent\": \"codex\",\n      \"note\": \"gates FAILED: Monday report\",\n      \"ref\": \".taos/gates/BUS-1_1.json\",\n      \"ts\": \"<run-time>\"\n    },\n    {\n      \"agent\": \"codex\",\n      \"note\": \"gates passed\",\n      \"ref\": \".taos/gates/BUS-1_2.json\",\n      \"ts\": \"<run-time>\"\n    },\n    {\n      \"agent\": \"codex\",\n      \"artifact\": {\n        \"basis\": {\n          \"count.py\": \"5f0e8a7e72c84f5e9cc83c8e1b6b8739f4b452af91636fe3b0afa7498864340b\",\n          \"monday-dispatch.csv\": \"796b1597a730842f752d38131c467c1ae689644ba6027f4ed533dbaebc34715c\",\n          \"monday-schedule.csv\": \"45758f71e098a0ec4aee480731193666107cd6ea7f3d05f37117dfb291144ca7\"\n        },\n        \"dependencies_known\": true,\n        \"depends_on\": [\n          \"count.py\",\n          \"monday-dispatch.csv\",\n          \"monday-schedule.csv\"\n        ],\n        \"invalidated\": null,\n        \"producer\": \"BUS-1\",\n        \"root\": \"<scratch>/transit\",\n        \"valid\": true\n      },\n      \"note\": \"Monday numerical report checked against dispatch and the full timetable.\",\n      \"ref\": \"monday-report.json\",\n      \"ts\": \"<run-time>\"\n    },\n    {\n      \"agent\": \"codex\",\n      \"note\": \"Monday reconciled.\",\n      \"ref\": \"monday-report.json\",\n      \"ts\": \"<run-time>\"\n    }\n  ],\n  \"goal\": \"Report the on-time share of all scheduled trips.\",\n  \"history\": [\n    {\n      \"agent\": \"system\",\n      \"from\": null,\n      \"reason\": \"created\",\n      \"to\": \"next\",\n      \"ts\": \"<run-time>\"\n    },\n    {\n      \"agent\": \"codex\",\n      \"from\": \"next\",\n      \"reason\": \"started by codex\",\n      \"to\": \"active\",\n      \"ts\": \"<run-time>\"\n    },\n    {\n      \"agent\": \"codex\",\n      \"from\": \"active\",\n      \"reason\": \"Monday reconciled.\",\n      \"to\": \"review\",\n      \"ts\": \"<run-time>\"\n    }\n  ],\n  \"hot\": true,\n  \"hot_reason\": \"started by codex\",\n  \"hot_since\": \"<run-time>\",\n  \"id\": \"BUS-1\",\n  \"labels\": [\n    \"service/report\"\n  ],\n  \"next_action\": \"Reconcile the schedule with dispatch.\",\n  \"owner_agent\": \"codex\",\n  \"parent_id\": null,\n  \"priority\": \"P2\",\n  \"relations\": {\n    \"blockedBy\": [],\n    \"blocks\": [],\n    \"relatedTo\": [\n      \"BUS-2\"\n    ]\n  },\n  \"sessions\": [\n    {\n      \"provider\": \"codex\",\n      \"session_key\": \"bus-1-monday-report\",\n      \"title\": \"BUS-1 | Monday report\",\n      \"ts\": \"<run-time>\"\n    }\n  ],\n  \"status\": \"review\",\n  \"title\": \"Prepare the Monday service report\",\n  \"updated_at\": \"<run-time>\",\n  \"verification\": \"python3 -B count.py check monday\",\n  \"workspace\": \"<scratch>/transit\",\n  \"worktree\": null\n}"
+    },
+    "agent-refusal": {
+      "command": "./taos task accept BUS-1 --by codex",
+      "exit": 1,
+      "output": "only the human accepts a result; checks passing is a different fact"
+    },
+    "audit-evidence": {
+      "command": "./taos task evidence BUS-2 --agent claude --ref tuesday-dispatch.csv --note 'Missing T04 and T11 from Tuesday'\"'\"'s schedule. Monday verified in BUS-1.'",
+      "exit": 0,
+      "output": "evidence added to BUS-2"
+    },
+    "audit-start": {
+      "command": "./taos start --agent claude --task BUS-2 --session 'BUS-2 | Log audit'",
+      "exit": 0,
+      "output": "BUS-2  [P2] active  Audit the service logs\ngoal:      Reconcile each scheduled trip with the dispatch record.\nnext:      Reconcile the schedule with dispatch.\nworkspace: <scratch>/transit\nwork here:\n  cd <scratch>/transit\n  never commit on: main, master\ncontrol:   careful | balanced compute, normal reasoning, strong verify | exploit | basis: no comparable history, conservative baseline\nstands:    unknown  check Monday report: never run for this task\nstands:    holds    lease claude as 'BUS-2 | Log audit': last heartbeat <run-time>\ntold:      \"Account for every scheduled trip in the morning service report.\"  (rule_1, said 2026-01-04)\nclaim:     clm_2 by claude (BUS-2 | Log audit)\nrelatedTo  BUS-1 Prepare the Monday service report (active)\nkernels needing refresh: PROJECT_KERNEL, PRINCIPAL_KERNEL, NOW_KERNEL"
+    },
+    "audit-task": {
+      "command": "./taos task show BUS-2 --json",
+      "exit": 0,
+      "output": "{\n  \"archived_at\": null,\n  \"branch\": null,\n  \"canceled_at\": null,\n  \"comments\": [],\n  \"created_at\": \"<run-time>\",\n  \"created_by\": \"human\",\n  \"done_at\": null,\n  \"done_when\": \"Both days have a dispatch disposition for every scheduled trip.\",\n  \"evidence\": [],\n  \"goal\": \"Reconcile each scheduled trip with the dispatch record.\",\n  \"history\": [\n    {\n      \"agent\": \"human\",\n      \"from\": null,\n      \"reason\": \"created\",\n      \"to\": \"next\",\n      \"ts\": \"<run-time>\"\n    }\n  ],\n  \"hot\": false,\n  \"hot_reason\": null,\n  \"hot_since\": null,\n  \"id\": \"BUS-2\",\n  \"labels\": [\n    \"service/report\"\n  ],\n  \"next_action\": \"Reconcile the schedule with dispatch.\",\n  \"owner_agent\": null,\n  \"parent_id\": null,\n  \"priority\": \"P2\",\n  \"relations\": {\n    \"blockedBy\": [],\n    \"blocks\": [],\n    \"relatedTo\": []\n  },\n  \"sessions\": [],\n  \"status\": \"next\",\n  \"title\": \"Audit the service logs\",\n  \"updated_at\": \"<run-time>\",\n  \"verification\": \"python3 -B count.py count tuesday\",\n  \"workspace\": null,\n  \"worktree\": null\n}"
+    },
+    "baseline-control-count": {
+      "command": "python3 -B count.py count monday",
+      "exit": 0,
+      "output": "{\"canceled\": 2, \"canceled_trips\": [\"M17\", \"M19\"], \"logged_percent\": 89, \"missing_trips\": [], \"on_time\": 16, \"recorded\": 18, \"scheduled\": 20, \"scheduled_percent\": 80}"
+    },
+    "baseline-dispatch": {
+      "command": "python3 -B -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).read_text(encoding='\"'\"'utf-8'\"'\"'), end='\"'\"''\"'\"')' <scratch>/transit/monday-dispatch.csv",
+      "exit": 0,
+      "output": "trip,disposition\nM01,on_time\nM02,on_time\nM03,on_time\nM04,on_time\nM05,on_time\nM06,on_time\nM07,on_time\nM08,on_time\nM09,on_time\nM10,on_time\nM11,on_time\nM12,on_time\nM13,on_time\nM14,on_time\nM15,on_time\nM16,late\nM17,canceled\nM18,late\nM19,canceled\nM20,on_time"
+    },
+    "baseline-style": {
+      "command": "python3 -B -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).read_text(encoding='\"'\"'utf-8'\"'\"'), end='\"'\"''\"'\"')' <scratch>/transit/style.txt",
+      "exit": 0,
+      "output": "Morning service report"
+    },
+    "baseline-why": {
+      "command": "./taos why BUS-1 --json",
+      "exit": 0,
+      "output": "{\n  \"accepted\": true,\n  \"closed\": true,\n  \"done_when\": \"The Monday report accounts for every scheduled trip and passes the count check.\",\n  \"instructions\": [\n    {\n      \"expires\": null,\n      \"id\": \"rule_2\",\n      \"quote\": \"Check every scheduled bus before reporting.\",\n      \"said_on\": \"2026-01-05\",\n      \"scope\": \"service/report\"\n    }\n  ],\n  \"next\": [],\n  \"parts\": [\n    {\n      \"kind\": \"closure\",\n      \"name\": \"review\",\n      \"reason\": \"codex moved it to review on <run-day>; the same instructions govern\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"check\",\n      \"name\": \"Monday report\",\n      \"reason\": \"passed <run-time>; nothing it tested has changed\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"artifact\",\n      \"name\": \"monday-report.json\",\n      \"reason\": \"its 3 declared input(s) are unchanged\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"acceptance\",\n      \"name\": \"human\",\n      \"reason\": \"human accepted it on <run-day>; nothing has changed since\",\n      \"state\": \"holds\"\n    }\n  ],\n  \"state\": \"holds\",\n  \"status\": \"review\",\n  \"task\": \"BUS-1\",\n  \"title\": \"Prepare the Monday service report\"\n}"
+    },
+    "before-acceptance": {
+      "command": "./taos why BUS-1 --json",
+      "exit": 0,
+      "output": "{\n  \"accepted\": false,\n  \"closed\": true,\n  \"done_when\": \"The Monday report accounts for every scheduled trip and passes the count check.\",\n  \"instructions\": [\n    {\n      \"expires\": null,\n      \"id\": \"rule_2\",\n      \"quote\": \"Check every scheduled bus before reporting.\",\n      \"said_on\": \"2026-01-05\",\n      \"scope\": \"service/report\"\n    }\n  ],\n  \"next\": [],\n  \"parts\": [\n    {\n      \"kind\": \"closure\",\n      \"name\": \"review\",\n      \"reason\": \"codex moved it to review on <run-day>; the same instructions govern\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"check\",\n      \"name\": \"Monday report\",\n      \"reason\": \"passed <run-time>; nothing it tested has changed\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"artifact\",\n      \"name\": \"monday-report.json\",\n      \"reason\": \"its 3 declared input(s) are unchanged\",\n      \"state\": \"holds\"\n    }\n  ],\n  \"state\": \"holds\",\n  \"status\": \"review\",\n  \"task\": \"BUS-1\",\n  \"title\": \"Prepare the Monday service report\"\n}"
+    },
+    "capsule": {
+      "command": "./taos capsule BUS-2 --json",
+      "exit": 0,
+      "output": "{\n  \"blockers\": [],\n  \"claims\": [\n    {\n      \"agent\": \"codex\",\n      \"claimed_at\": \"<run-time>\",\n      \"heartbeat_at\": \"<run-time>\",\n      \"id\": \"clm_3\",\n      \"released_at\": null,\n      \"scopes\": [\n        \"task:BUS-2\"\n      ],\n      \"session_label\": \"BUS-2 | Tuesday follow-up\",\n      \"stale_after_hours\": 6.0,\n      \"status\": \"live\",\n      \"takeover_of\": null\n    }\n  ],\n  \"compute_reviews\": [],\n  \"decisions\": [],\n  \"gates\": {\n    \"configured\": [\n      \"Monday report\"\n    ],\n    \"latest\": null\n  },\n  \"handoff_head\": \"Agent: claude\\nChat/session: BUS-2 | Log audit\\nTask: BUS-2 | Audit the service logs\\nClaim/scope: task:BUS-2\\n\\n## State\\nMonday was reviewed at 16 of 20. Tuesday's rate is pending.\\n\\n## Changed\\nThe corrected report counts the full timetable, including cancellations.\\n\\n## Evidence\\nmonday-report.json; tuesday-schedule.csv; tuesday-dispatch.csv.\\n\\n## Risks and open questions\\nT04 and T11 have no dispatch record. Their outcomes remain unknown.\\n\\n## Next command\\npython3 -B count.py count tuesday\",\n  \"handoff_path\": \"<scratch>/os/.taos/handoffs/1_BUS-2_claude_to_codex.md\",\n  \"kernels\": [\n    {\n      \"generated_at\": \"<run-time>\",\n      \"name\": \"OS_KERNEL\",\n      \"reasons\": [],\n      \"status\": \"fresh\"\n    },\n    {\n      \"generated_at\": \"<run-time>\",\n      \"name\": \"PROJECT_KERNEL\",\n      \"reasons\": [\n        \"sources changed since this kernel was written\"\n      ],\n      \"status\": \"drifted\"\n    },\n    {\n      \"generated_at\": \"<run-time>\",\n      \"name\": \"PRINCIPAL_KERNEL\",\n      \"reasons\": [\n        \"sources changed since this kernel was written\"\n      ],\n      \"status\": \"drifted\"\n    },\n    {\n      \"generated_at\": \"<run-time>\",\n      \"name\": \"NOW_KERNEL\",\n      \"reasons\": [\n        \"sources changed since this kernel was written\"\n      ],\n      \"status\": \"drifted\"\n    }\n  ],\n  \"next_action\": \"Find the dispatch records for T04 and T11 before reporting Tuesday's rate.\",\n  \"related\": [\n    {\n      \"id\": \"BUS-1\",\n      \"kind\": \"relatedTo\",\n      \"status\": \"review\",\n      \"title\": \"Prepare the Monday service report\"\n    }\n  ],\n  \"standing\": {\n    \"accepted\": false,\n    \"closed\": false,\n    \"done_when\": \"Both days have a dispatch disposition for every scheduled trip.\",\n    \"instructions\": [\n      {\n        \"expires\": null,\n        \"id\": \"rule_2\",\n        \"quote\": \"Check every scheduled bus before reporting.\",\n        \"said_on\": \"2026-01-05\",\n        \"scope\": \"service/report\"\n      }\n    ],\n    \"next\": [],\n    \"parts\": [\n      {\n        \"kind\": \"check\",\n        \"name\": \"Monday report\",\n        \"reason\": \"passed <run-time> for BUS-1; nothing it tested has changed\",\n        \"state\": \"holds\"\n      },\n      {\n        \"kind\": \"lease\",\n        \"name\": \"codex as 'BUS-2 | Tuesday follow-up'\",\n        \"reason\": \"last heartbeat <run-time>\",\n        \"state\": \"holds\"\n      }\n    ],\n    \"state\": \"holds\",\n    \"status\": \"active\",\n    \"task\": \"BUS-2\",\n    \"title\": \"Audit the service logs\"\n  },\n  \"task\": {\n    \"archived_at\": null,\n    \"branch\": null,\n    \"canceled_at\": null,\n    \"comments\": [\n      {\n        \"agent\": \"claude\",\n        \"body\": \"handoff to codex: .taos/handoffs/1_BUS-2_claude_to_codex.md\",\n        \"session\": \"BUS-2 | Log audit\",\n        \"ts\": \"<run-time>\"\n      }\n    ],\n    \"created_at\": \"<run-time>\",\n    \"created_by\": \"human\",\n    \"done_at\": null,\n    \"done_when\": \"Both days have a dispatch disposition for every scheduled trip.\",\n    \"evidence\": [\n      {\n        \"agent\": \"claude\",\n        \"note\": \"Missing T04 and T11 from Tuesday's schedule. Monday verified in BUS-1.\",\n        \"ref\": \"tuesday-dispatch.csv\",\n        \"ts\": \"<run-time>\"\n      }\n    ],\n    \"goal\": \"Reconcile each scheduled trip with the dispatch record.\",\n    \"history\": [\n      {\n        \"agent\": \"human\",\n        \"from\": null,\n        \"reason\": \"created\",\n        \"to\": \"next\",\n        \"ts\": \"<run-time>\"\n      },\n      {\n        \"agent\": \"claude\",\n        \"from\": \"next\",\n        \"reason\": \"started by claude\",\n        \"to\": \"active\",\n        \"ts\": \"<run-time>\"\n      },\n      {\n        \"agent\": \"claude\",\n        \"from\": \"active\",\n        \"reason\": \"Continue the incomplete Tuesday audit.\",\n        \"to\": \"next\",\n        \"ts\": \"<run-time>\"\n      },\n      {\n        \"agent\": \"codex\",\n        \"from\": \"next\",\n        \"reason\": \"started by codex\",\n        \"to\": \"active\",\n        \"ts\": \"<run-time>\"\n      }\n    ],\n    \"hot\": true,\n    \"hot_reason\": \"started by codex\",\n    \"hot_since\": \"<run-time>\",\n    \"id\": \"BUS-2\",\n    \"labels\": [\n      \"service/report\"\n    ],\n    \"next_action\": \"Find the dispatch records for T04 and T11 before reporting Tuesday's rate.\",\n    \"owner_agent\": \"codex\",\n    \"parent_id\": null,\n    \"priority\": \"P2\",\n    \"relations\": {\n      \"blockedBy\": [],\n      \"blocks\": [],\n      \"relatedTo\": [\n        \"BUS-1\"\n      ]\n    },\n    \"sessions\": [\n      {\n        \"provider\": \"claude\",\n        \"session_key\": \"bus-2-log-audit\",\n        \"title\": \"BUS-2 | Log audit\",\n        \"ts\": \"<run-time>\"\n      },\n      {\n        \"provider\": \"codex\",\n        \"session_key\": \"bus-2-tuesday-follow-up\",\n        \"title\": \"BUS-2 | Tuesday follow-up\",\n        \"ts\": \"<run-time>\"\n      }\n    ],\n    \"status\": \"active\",\n    \"title\": \"Audit the service logs\",\n    \"updated_at\": \"<run-time>\",\n    \"verification\": \"python3 -B count.py count tuesday\",\n    \"workspace\": \"<scratch>/transit\",\n    \"worktree\": null\n  }\n}"
+    },
+    "claims": {
+      "command": "./taos claim status --json",
+      "exit": 0,
+      "output": "{\n  \"live\": [\n    {\n      \"agent\": \"codex\",\n      \"claimed_at\": \"<run-time>\",\n      \"heartbeat_at\": \"<run-time>\",\n      \"id\": \"clm_1\",\n      \"released_at\": null,\n      \"scopes\": [\n        \"task:BUS-1\"\n      ],\n      \"session_label\": \"BUS-1 | Monday report\",\n      \"stale_after_hours\": 6.0,\n      \"status\": \"live\",\n      \"takeover_of\": null\n    },\n    {\n      \"agent\": \"claude\",\n      \"claimed_at\": \"<run-time>\",\n      \"heartbeat_at\": \"<run-time>\",\n      \"id\": \"clm_2\",\n      \"released_at\": null,\n      \"scopes\": [\n        \"task:BUS-2\"\n      ],\n      \"session_label\": \"BUS-2 | Log audit\",\n      \"stale_after_hours\": 6.0,\n      \"status\": \"live\",\n      \"takeover_of\": null\n    }\n  ],\n  \"stale\": []\n}"
+    },
+    "correct-rule": {
+      "command": "./taos rule add --by human --scope service/report --said-on 2026-01-05 --supersedes rule_1 --quote 'Check every scheduled bus before reporting.'",
+      "exit": 0,
+      "output": "added rule_2 for service/report"
+    },
+    "create-audit": {
+      "command": "./taos task create --agent human --title 'Audit the service logs' --goal 'Reconcile each scheduled trip with the dispatch record.' --next-action 'Reconcile the schedule with dispatch.' --done-when 'Both days have a dispatch disposition for every scheduled trip.' --verification 'python3 -B count.py count tuesday' --label service/report --json",
+      "exit": 0,
+      "output": "{\n  \"archived_at\": null,\n  \"branch\": null,\n  \"canceled_at\": null,\n  \"comments\": [],\n  \"created_at\": \"<run-time>\",\n  \"created_by\": \"human\",\n  \"done_at\": null,\n  \"done_when\": \"Both days have a dispatch disposition for every scheduled trip.\",\n  \"evidence\": [],\n  \"goal\": \"Reconcile each scheduled trip with the dispatch record.\",\n  \"history\": [\n    {\n      \"agent\": \"human\",\n      \"from\": null,\n      \"reason\": \"created\",\n      \"to\": \"next\",\n      \"ts\": \"<run-time>\"\n    }\n  ],\n  \"hot\": false,\n  \"hot_reason\": null,\n  \"hot_since\": null,\n  \"id\": \"BUS-2\",\n  \"labels\": [\n    \"service/report\"\n  ],\n  \"next_action\": \"Reconcile the schedule with dispatch.\",\n  \"owner_agent\": null,\n  \"parent_id\": null,\n  \"priority\": \"P2\",\n  \"relations\": {\n    \"blockedBy\": [],\n    \"blocks\": [],\n    \"relatedTo\": []\n  },\n  \"sessions\": [],\n  \"status\": \"next\",\n  \"title\": \"Audit the service logs\",\n  \"updated_at\": \"<run-time>\",\n  \"verification\": \"python3 -B count.py count tuesday\",\n  \"workspace\": null,\n  \"worktree\": null\n}"
+    },
+    "current-rule": {
+      "command": "./taos rule governing service/report --on 2026-01-06 --json",
+      "exit": 0,
+      "output": "[\n  {\n    \"added_at\": \"<run-time>\",\n    \"added_by\": \"human\",\n    \"expires\": null,\n    \"id\": \"rule_2\",\n    \"quote\": \"Check every scheduled bus before reporting.\",\n    \"said_on\": \"2026-01-05\",\n    \"scope\": \"service/report\",\n    \"sha256\": \"b01033ffbba45b3a24634d4d2aff6a2f930ba5cbecd281ae6d4d4300aac5797e\",\n    \"supersedes\": \"rule_1\"\n  }\n]"
+    },
+    "draft": {
+      "command": "python3 -B count.py draft monday",
+      "exit": 0,
+      "output": "{\"day\": \"monday\", \"denominator\": 18, \"on_time\": 16, \"percent\": 89}"
+    },
+    "draft-check": {
+      "command": "./taos gate run --task BUS-1 --agent codex",
+      "exit": 1,
+      "output": "  fails    Monday report  ran now and failed (exit 1)\n    {\"expected\": {\"day\": \"monday\", \"denominator\": 20, \"on_time\": 16, \"percent\": 80}, \"saved\": {\"day\": \"monday\", \"denominator\": 18, \"on_time\": 16, \"percent\": 89}}\n\n1 of 1 checks did not pass; the output above says why. When it is fixed: taos gate run --task BUS-1 --agent <you>\nRecorded in .taos/gates/BUS-1_1.json"
+    },
+    "failed-control-count": {
+      "command": "python3 -B count.py count monday",
+      "exit": 0,
+      "output": "{\"canceled\": 2, \"canceled_trips\": [\"M17\", \"M19\"], \"logged_percent\": 94, \"missing_trips\": [], \"on_time\": 17, \"recorded\": 18, \"scheduled\": 20, \"scheduled_percent\": 85}"
+    },
+    "failed-why": {
+      "command": "./taos why BUS-1 --json",
+      "exit": 0,
+      "output": "{\n  \"accepted\": true,\n  \"closed\": true,\n  \"done_when\": \"The Monday report accounts for every scheduled trip and passes the count check.\",\n  \"instructions\": [\n    {\n      \"expires\": null,\n      \"id\": \"rule_2\",\n      \"quote\": \"Check every scheduled bus before reporting.\",\n      \"said_on\": \"2026-01-05\",\n      \"scope\": \"service/report\"\n    }\n  ],\n  \"next\": [\n    \"run the checks on the files as they are: taos gate run --task BUS-1 --agent <you>\",\n    \"rebuild the work products named above, or record them again with --depends-on\",\n    \"ask the person to look at this version: taos task accept BUS-1\"\n  ],\n  \"parts\": [\n    {\n      \"kind\": \"closure\",\n      \"name\": \"review\",\n      \"reason\": \"codex moved it to review on <run-day>; the same instructions govern\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"check\",\n      \"name\": \"Monday report\",\n      \"reason\": \"exit 1 on the files as they are now\",\n      \"state\": \"fails\"\n    },\n    {\n      \"kind\": \"artifact\",\n      \"name\": \"monday-report.json\",\n      \"reason\": \"monday-dispatch.csv changed\",\n      \"state\": \"stale\"\n    },\n    {\n      \"kind\": \"acceptance\",\n      \"name\": \"human\",\n      \"reason\": \"human accepted it on <run-day>; since then monday changed: monday-dispatch.csv\",\n      \"state\": \"stale\"\n    }\n  ],\n  \"state\": \"fails\",\n  \"status\": \"review\",\n  \"task\": \"BUS-1\",\n  \"title\": \"Prepare the Monday service report\"\n}"
+    },
+    "fleet-instruction": {
+      "command": "./taos rule add --by human --scope fleet/maintenance --said-on 2026-01-06 --quote 'Record each tire inspection in the fleet log.'",
+      "exit": 0,
+      "output": "added rule_3 for fleet/maintenance"
+    },
+    "fleet-rule": {
+      "command": "./taos rule governing fleet/maintenance --on 2026-01-06 --json",
+      "exit": 0,
+      "output": "[\n  {\n    \"added_at\": \"<run-time>\",\n    \"added_by\": \"human\",\n    \"expires\": null,\n    \"id\": \"rule_3\",\n    \"quote\": \"Record each tire inspection in the fleet log.\",\n    \"said_on\": \"2026-01-06\",\n    \"scope\": \"fleet/maintenance\",\n    \"sha256\": \"f90d379121f2d7adc0f3f951deb0733dc141c1cd1050f4c0be3c1e6bb8454e0d\",\n    \"supersedes\": null\n  }\n]"
+    },
+    "human-accept": {
+      "command": "./taos task accept BUS-1 --by human --note 'Reviewed Monday at 16 of 20.'",
+      "exit": 0,
+      "output": "BUS-1 accepted by human, for the files and instructions as they are now"
+    },
+    "lesson-add": {
+      "command": "./taos lesson add --by human --scope BUS-2 --said-on 2026-01-05 --title 'Keep cancellations in the denominator' --words 'Those two canceled trips were scheduled.' --mistake 'The draft counted only the 18 logged departures.' --why 'The displayed rate rose from 80% to 89% when the cancellations disappeared.' --moment join",
+      "exit": 0,
+      "output": "added les_1 as a candidate: Keep cancellations in the denominator"
+    },
+    "lesson-at-join": {
+      "command": "./taos lesson at join --agent codex --task BUS-2 --json",
+      "exit": 0,
+      "output": "[\n  {\n    \"added_at\": \"<run-time>\",\n    \"added_by\": \"human\",\n    \"case\": \"case_166db4dff40f\",\n    \"detect\": [],\n    \"id\": \"les_1\",\n    \"mistake\": \"The draft counted only the 18 logged departures.\",\n    \"moments\": [\n      \"join\"\n    ],\n    \"said_on\": \"2026-01-05\",\n    \"scope\": \"BUS-2\",\n    \"status\": \"candidate\",\n    \"title\": \"Keep cancellations in the denominator\",\n    \"why\": \"The displayed rate rose from 80% to 89% when the cancellations disappeared.\",\n    \"words\": \"Those two canceled trips were scheduled.\"\n  }\n]"
+    },
+    "monday-count": {
+      "command": "python3 -B count.py count monday",
+      "exit": 0,
+      "output": "{\"canceled\": 2, \"canceled_trips\": [\"M17\", \"M19\"], \"logged_percent\": 89, \"missing_trips\": [], \"on_time\": 16, \"recorded\": 18, \"scheduled\": 20, \"scheduled_percent\": 80}"
+    },
+    "next-action": {
+      "command": "./taos task update BUS-2 --agent claude --set 'next_action=Find the dispatch records for T04 and T11 before reporting Tuesday'\"'\"'s rate.'",
+      "exit": 0,
+      "output": "updated BUS-2"
+    },
+    "old-day": {
+      "command": "./taos rule governing service/report --on 2026-01-04 --json",
+      "exit": 0,
+      "output": "[\n  {\n    \"added_at\": \"<run-time>\",\n    \"added_by\": \"human\",\n    \"expires\": null,\n    \"id\": \"rule_1\",\n    \"quote\": \"Account for every scheduled trip in the morning service report.\",\n    \"said_on\": \"2026-01-04\",\n    \"scope\": \"service/report\",\n    \"sha256\": \"61eddfdbf04ad50f6dfb49e9bfd9ab2874192ec8d9216fdcf5b4bd3026a2f673\",\n    \"supersedes\": null\n  }\n]"
+    },
+    "overlap": {
+      "command": "./taos claim check --agent codex --scope task:BUS-2",
+      "exit": 4,
+      "output": "held by claude: task:BUS-2 (BUS-2 | Log audit)"
+    },
+    "passing-check": {
+      "command": "./taos gate run --task BUS-1 --agent codex",
+      "exit": 0,
+      "output": "  holds    Monday report  ran now and passed (exit 0)\n\nEvery check passes. What BUS-1 rests on now: taos why BUS-1\nRecorded in .taos/gates/BUS-1_2.json"
+    },
+    "proposal": {
+      "command": "./taos proposals list --json",
+      "exit": 0,
+      "output": "[\n  {\n    \"atom\": null,\n    \"body\": \"Apply the schedule-to-dispatch reconciliation to each new day's report; hold the rate while any trip lacks a record.\",\n    \"decided_at\": null,\n    \"decided_by\": null,\n    \"evidence\": [\n      \"tuesday-dispatch.csv\"\n    ],\n    \"id\": \"prop_1\",\n    \"kind\": \"other\",\n    \"note\": null,\n    \"proposed_at\": \"<run-time>\",\n    \"proposed_by\": \"claude\",\n    \"status\": \"proposed\",\n    \"title\": \"Check every service day before publication\"\n  }\n]"
+    },
+    "propose-check": {
+      "command": "./taos propose --agent claude --kind other --title 'Check every service day before publication' --body 'Apply the schedule-to-dispatch reconciliation to each new day'\"'\"'s report; hold the rate while any trip lacks a record.' --evidence tuesday-dispatch.csv",
+      "exit": 0,
+      "output": "proposed prop_1: Check every service day before publication"
+    },
+    "read-handoff": {
+      "command": "./taos handoff latest BUS-2 --print",
+      "exit": 0,
+      "output": "<scratch>/os/.taos/handoffs/1_BUS-2_claude_to_codex.md\n\nAgent: claude\nChat/session: BUS-2 | Log audit\nTask: BUS-2 | Audit the service logs\nClaim/scope: task:BUS-2\n\n## State\nMonday was reviewed at 16 of 20. Tuesday's rate is pending.\n\n## Changed\nThe corrected report counts the full timetable, including cancellations.\n\n## Evidence\nmonday-report.json; tuesday-schedule.csv; tuesday-dispatch.csv.\n\n## Risks and open questions\nT04 and T11 have no dispatch record. Their outcomes remain unknown.\n\n## Next command\npython3 -B count.py count tuesday"
+    },
+    "rebuild": {
+      "command": "python3 -B count.py write monday",
+      "exit": 0,
+      "output": "{\"day\": \"monday\", \"denominator\": 20, \"on_time\": 17, \"percent\": 85}"
+    },
+    "related-tasks": {
+      "command": "./taos task relate BUS-1 relatedTo BUS-2 --agent human",
+      "exit": 0,
+      "output": "linked BUS-1 relatedTo BUS-2"
+    },
+    "repaired-check": {
+      "command": "./taos gate run --task BUS-1 --agent codex",
+      "exit": 0,
+      "output": "  holds    Monday report  ran now and passed (exit 0)\n\nEvery check passes. What BUS-1 rests on now: taos why BUS-1\nRecorded in .taos/gates/BUS-1_5.json"
+    },
+    "repaired-control-count": {
+      "command": "python3 -B count.py count monday",
+      "exit": 0,
+      "output": "{\"canceled\": 2, \"canceled_trips\": [\"M17\", \"M19\"], \"logged_percent\": 94, \"missing_trips\": [], \"on_time\": 17, \"recorded\": 18, \"scheduled\": 20, \"scheduled_percent\": 85}"
+    },
+    "repaired-why": {
+      "command": "./taos why BUS-1 --json",
+      "exit": 0,
+      "output": "{\n  \"accepted\": true,\n  \"closed\": true,\n  \"done_when\": \"The Monday report accounts for every scheduled trip and passes the count check.\",\n  \"instructions\": [\n    {\n      \"expires\": null,\n      \"id\": \"rule_2\",\n      \"quote\": \"Check every scheduled bus before reporting.\",\n      \"said_on\": \"2026-01-05\",\n      \"scope\": \"service/report\"\n    }\n  ],\n  \"next\": [\n    \"rebuild the work products named above, or record them again with --depends-on\",\n    \"ask the person to look at this version: taos task accept BUS-1\"\n  ],\n  \"parts\": [\n    {\n      \"kind\": \"closure\",\n      \"name\": \"review\",\n      \"reason\": \"codex moved it to review on <run-day>; the same instructions govern\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"check\",\n      \"name\": \"Monday report\",\n      \"reason\": \"passed <run-time>; nothing it tested has changed\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"artifact\",\n      \"name\": \"monday-report.json\",\n      \"reason\": \"monday-dispatch.csv changed\",\n      \"state\": \"stale\"\n    },\n    {\n      \"kind\": \"acceptance\",\n      \"name\": \"human\",\n      \"reason\": \"human accepted it on <run-day>; since then monday changed: monday-dispatch.csv, monday-report.json\",\n      \"state\": \"stale\"\n    }\n  ],\n  \"state\": \"stale\",\n  \"status\": \"review\",\n  \"task\": \"BUS-1\",\n  \"title\": \"Prepare the Monday service report\"\n}"
+    },
+    "report-after-fleet-rule": {
+      "command": "./taos why BUS-1 --json",
+      "exit": 0,
+      "output": "{\n  \"accepted\": true,\n  \"closed\": true,\n  \"done_when\": \"The Monday report accounts for every scheduled trip and passes the count check.\",\n  \"instructions\": [\n    {\n      \"expires\": null,\n      \"id\": \"rule_2\",\n      \"quote\": \"Check every scheduled bus before reporting.\",\n      \"said_on\": \"2026-01-05\",\n      \"scope\": \"service/report\"\n    }\n  ],\n  \"next\": [],\n  \"parts\": [\n    {\n      \"kind\": \"closure\",\n      \"name\": \"review\",\n      \"reason\": \"codex moved it to review on <run-day>; the same instructions govern\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"check\",\n      \"name\": \"Monday report\",\n      \"reason\": \"passed <run-time>; nothing it tested has changed\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"artifact\",\n      \"name\": \"monday-report.json\",\n      \"reason\": \"its 3 declared input(s) are unchanged\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"acceptance\",\n      \"name\": \"human\",\n      \"reason\": \"human accepted it on <run-day>; nothing has changed since\",\n      \"state\": \"holds\"\n    }\n  ],\n  \"state\": \"holds\",\n  \"status\": \"review\",\n  \"task\": \"BUS-1\",\n  \"title\": \"Prepare the Monday service report\"\n}"
+    },
+    "report-evidence": {
+      "command": "./taos task evidence BUS-1 --agent codex --ref monday-report.json --artifact --depends-on monday-schedule.csv --depends-on monday-dispatch.csv --depends-on count.py --note 'Monday numerical report checked against dispatch and the full timetable.'",
+      "exit": 0,
+      "output": "evidence added to BUS-1"
+    },
+    "report-review": {
+      "command": "./taos finish --agent codex --task BUS-1 --state review --reason 'Monday reconciled.' --evidence monday-report.json --session 'BUS-1 | Monday report'",
+      "exit": 0,
+      "output": "BUS-1 -> review\nreleased claims: clm_1\ncontrol:   episode closed, j=<runtime score> not clean\nstands:    holds    closure: codex moved it to review on <run-day>; the same instructions govern\nstands:    holds    check Monday report: passed <run-time>; nothing it tested has changed\nstands:    holds    artifact monday-report.json: its 3 declared input(s) are unchanged"
+    },
+    "report-start": {
+      "command": "./taos start --agent codex --task BUS-1 --session 'BUS-1 | Monday report'",
+      "exit": 0,
+      "output": "BUS-1  [P2] active  Prepare the Monday service report\ngoal:      Report the on-time share of all scheduled trips.\nnext:      Reconcile the schedule with dispatch.\nworkspace: <scratch>/transit\nwork here:\n  cd <scratch>/transit\n  never commit on: main, master\ncontrol:   careful | balanced compute, normal reasoning, strong verify | exploit | basis: no comparable history, conservative baseline\nstands:    unknown  check Monday report: never run for this task\nstands:    holds    lease codex as 'BUS-1 | Monday report': last heartbeat <run-time>\ntold:      \"Account for every scheduled trip in the morning service report.\"  (rule_1, said 2026-01-04)\nclaim:     clm_1 by codex (BUS-1 | Monday report)\nrelatedTo  BUS-2 Audit the service logs (next)\nkernels needing refresh: PROJECT_KERNEL, PRINCIPAL_KERNEL, NOW_KERNEL"
+    },
+    "report-task": {
+      "command": "./taos task show BUS-1 --json",
+      "exit": 0,
+      "output": "{\n  \"archived_at\": null,\n  \"branch\": null,\n  \"canceled_at\": null,\n  \"comments\": [],\n  \"created_at\": \"<run-time>\",\n  \"created_by\": \"system\",\n  \"done_at\": null,\n  \"done_when\": \"The Monday report accounts for every scheduled trip and passes the count check.\",\n  \"evidence\": [],\n  \"goal\": \"Report the on-time share of all scheduled trips.\",\n  \"history\": [\n    {\n      \"agent\": \"system\",\n      \"from\": null,\n      \"reason\": \"created\",\n      \"to\": \"next\",\n      \"ts\": \"<run-time>\"\n    }\n  ],\n  \"hot\": false,\n  \"hot_reason\": null,\n  \"hot_since\": null,\n  \"id\": \"BUS-1\",\n  \"labels\": [\n    \"service/report\"\n  ],\n  \"next_action\": \"Reconcile the schedule with dispatch.\",\n  \"owner_agent\": null,\n  \"parent_id\": null,\n  \"priority\": \"P2\",\n  \"relations\": {\n    \"blockedBy\": [],\n    \"blocks\": [],\n    \"relatedTo\": []\n  },\n  \"sessions\": [],\n  \"status\": \"next\",\n  \"title\": \"Prepare the Monday service report\",\n  \"updated_at\": \"<run-time>\",\n  \"verification\": \"python3 -B count.py check monday\",\n  \"workspace\": null,\n  \"worktree\": null\n}"
+    },
+    "restore-control-count": {
+      "command": "python3 -B count.py count monday",
+      "exit": 0,
+      "output": "{\"canceled\": 2, \"canceled_trips\": [\"M17\", \"M19\"], \"logged_percent\": 89, \"missing_trips\": [], \"on_time\": 16, \"recorded\": 18, \"scheduled\": 20, \"scheduled_percent\": 80}"
+    },
+    "restore-why": {
+      "command": "./taos why BUS-1 --json",
+      "exit": 0,
+      "output": "{\n  \"accepted\": true,\n  \"closed\": true,\n  \"done_when\": \"The Monday report accounts for every scheduled trip and passes the count check.\",\n  \"instructions\": [\n    {\n      \"expires\": null,\n      \"id\": \"rule_2\",\n      \"quote\": \"Check every scheduled bus before reporting.\",\n      \"said_on\": \"2026-01-05\",\n      \"scope\": \"service/report\"\n    }\n  ],\n  \"next\": [],\n  \"parts\": [\n    {\n      \"kind\": \"closure\",\n      \"name\": \"review\",\n      \"reason\": \"codex moved it to review on <run-day>; the same instructions govern\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"check\",\n      \"name\": \"Monday report\",\n      \"reason\": \"passed <run-time>; nothing it tested has changed\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"artifact\",\n      \"name\": \"monday-report.json\",\n      \"reason\": \"its 3 declared input(s) are unchanged\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"acceptance\",\n      \"name\": \"human\",\n      \"reason\": \"human accepted it on <run-day>; nothing has changed since\",\n      \"state\": \"holds\"\n    }\n  ],\n  \"state\": \"holds\",\n  \"status\": \"review\",\n  \"task\": \"BUS-1\",\n  \"title\": \"Prepare the Monday service report\"\n}"
+    },
+    "resume": {
+      "command": "./taos start --task BUS-2 --agent codex --session 'BUS-2 | Tuesday follow-up'",
+      "exit": 0,
+      "output": "BUS-2  [P2] active  Audit the service logs\ngoal:      Reconcile each scheduled trip with the dispatch record.\nnext:      Find the dispatch records for T04 and T11 before reporting Tuesday's rate.\nworkspace: <scratch>/transit\nwork here:\n  cd <scratch>/transit\n  never commit on: main, master\ncontrol:   careful | balanced compute, normal reasoning, strong verify | exploit | basis: 2 comparable, 0% clean\nCurrent standing, checked against the files now:\nstands:    holds    check Monday report: passed <run-time> for BUS-1; nothing it tested has changed\nstands:    holds    lease codex as 'BUS-2 | Tuesday follow-up': last heartbeat <run-time>\ntold:      \"Check every scheduled bus before reporting.\"  (rule_2, said 2026-01-05)\nlesson:    Keep cancellations in the denominator: \"Those two canceled trips were scheduled.\"  (les_1, said 2026-01-05, case case_166db4dff40f)\nclaim:     clm_3 by codex (BUS-2 | Tuesday follow-up)\nrelatedTo  BUS-1 Prepare the Monday service report (review)\nEarlier evidence, oldest first. Read the standing above for the current verdicts.\nevidence:  tuesday-dispatch.csv  Missing T04 and T11 from Tuesday's schedule. Monday verified in BUS-1.\n<run-time> claude: handoff to codex: .taos/handoffs/1_BUS-2_claude_to_codex.md\nkernels needing refresh: PROJECT_KERNEL, PRINCIPAL_KERNEL, NOW_KERNEL\n\nlatest handoff: <scratch>/os/.taos/handoffs/1_BUS-2_claude_to_codex.md\nAgent: claude\nChat/session: BUS-2 | Log audit\nTask: BUS-2 | Audit the service logs\nClaim/scope: task:BUS-2\n\n## State\nMonday was reviewed at 16 of 20. Tuesday's rate is pending.\n\n## Changed\nThe corrected report counts the full timetable, including cancellations.\n\n## Evidence\nmonday-report.json; tuesday-schedule.csv; tuesday-dispatch.csv.\n\n## Risks and open questions\nT04 and T11 have no dispatch record. Their outcomes remain unknown.\n\n## Next command\npython3 -B count.py count tuesday"
+    },
+    "save-handoff": {
+      "command": "./taos finish --agent claude --task BUS-2 --state next --reason 'Continue the incomplete Tuesday audit.' --session 'BUS-2 | Log audit' --handoff-file <scratch>/audit-handoff.md --to codex",
+      "exit": 0,
+      "output": "BUS-2 -> next\nreleased claims: clm_2\ncontrol:   episode closed, j=<runtime score> not clean\nstands:    holds    check Monday report: passed <run-time> for BUS-1; nothing it tested has changed\n\nCodex, please continue from this handoff:\n\n<scratch>/os/.taos/handoffs/1_BUS-2_claude_to_codex.md\n\nRead the full file first, then run `taos capsule <TASK-ID>` before acting."
+    },
+    "scope-report": {
+      "command": "./taos task update BUS-1 --agent human --set labels=service/report",
+      "exit": 0,
+      "output": "updated BUS-1"
+    },
+    "source-check": {
+      "command": "./taos gate run --task BUS-1 --agent codex",
+      "exit": 1,
+      "output": "  fails    Monday report  ran now and failed (exit 1)\n    {\"expected\": {\"day\": \"monday\", \"denominator\": 20, \"on_time\": 17, \"percent\": 85}, \"saved\": {\"day\": \"monday\", \"denominator\": 20, \"on_time\": 16, \"percent\": 80}}\n\n1 of 1 checks did not pass; the output above says why. When it is fixed: taos gate run --task BUS-1 --agent <you>\nRecorded in .taos/gates/BUS-1_4.json"
+    },
+    "source-control-count": {
+      "command": "python3 -B count.py count monday",
+      "exit": 0,
+      "output": "{\"canceled\": 2, \"canceled_trips\": [\"M17\", \"M19\"], \"logged_percent\": 94, \"missing_trips\": [], \"on_time\": 17, \"recorded\": 18, \"scheduled\": 20, \"scheduled_percent\": 85}"
+    },
+    "source-count": {
+      "command": "python3 -B count.py count monday",
+      "exit": 0,
+      "output": "{\"canceled\": 2, \"canceled_trips\": [\"M17\", \"M19\"], \"logged_percent\": 94, \"missing_trips\": [], \"on_time\": 17, \"recorded\": 18, \"scheduled\": 20, \"scheduled_percent\": 85}"
+    },
+    "source-dispatch": {
+      "command": "python3 -B -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).read_text(encoding='\"'\"'utf-8'\"'\"'), end='\"'\"''\"'\"')' <scratch>/transit/monday-dispatch.csv",
+      "exit": 0,
+      "output": "trip,disposition\nM01,on_time\nM02,on_time\nM03,on_time\nM04,on_time\nM05,on_time\nM06,on_time\nM07,on_time\nM08,on_time\nM09,on_time\nM10,on_time\nM11,on_time\nM12,on_time\nM13,on_time\nM14,on_time\nM15,on_time\nM16,late\nM17,canceled\nM18,on_time\nM19,canceled\nM20,on_time"
+    },
+    "source-why": {
+      "command": "./taos why BUS-1 --json",
+      "exit": 0,
+      "output": "{\n  \"accepted\": true,\n  \"closed\": true,\n  \"done_when\": \"The Monday report accounts for every scheduled trip and passes the count check.\",\n  \"instructions\": [\n    {\n      \"expires\": null,\n      \"id\": \"rule_2\",\n      \"quote\": \"Check every scheduled bus before reporting.\",\n      \"said_on\": \"2026-01-05\",\n      \"scope\": \"service/report\"\n    }\n  ],\n  \"next\": [\n    \"run the checks on the files as they are: taos gate run --task BUS-1 --agent <you>\",\n    \"rebuild the work products named above, or record them again with --depends-on\",\n    \"ask the person to look at this version: taos task accept BUS-1\"\n  ],\n  \"parts\": [\n    {\n      \"kind\": \"closure\",\n      \"name\": \"review\",\n      \"reason\": \"codex moved it to review on <run-day>; the same instructions govern\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"check\",\n      \"name\": \"Monday report\",\n      \"reason\": \"monday changed: monday-dispatch.csv\",\n      \"state\": \"stale\"\n    },\n    {\n      \"kind\": \"artifact\",\n      \"name\": \"monday-report.json\",\n      \"reason\": \"monday-dispatch.csv changed\",\n      \"state\": \"stale\"\n    },\n    {\n      \"kind\": \"acceptance\",\n      \"name\": \"human\",\n      \"reason\": \"human accepted it on <run-day>; since then monday changed: monday-dispatch.csv\",\n      \"state\": \"stale\"\n    }\n  ],\n  \"state\": \"stale\",\n  \"status\": \"review\",\n  \"task\": \"BUS-1\",\n  \"title\": \"Prepare the Monday service report\"\n}"
+    },
+    "standard-add": {
+      "command": "./taos rule add --by human --scope service/report --said-on 2026-01-04 --quote 'Account for every scheduled trip in the morning service report.'",
+      "exit": 0,
+      "output": "added rule_1 for service/report"
+    },
+    "standard-rule": {
+      "command": "./taos rule governing service/report --on 2026-01-04 --json",
+      "exit": 0,
+      "output": "[\n  {\n    \"added_at\": \"<run-time>\",\n    \"added_by\": \"human\",\n    \"expires\": null,\n    \"id\": \"rule_1\",\n    \"quote\": \"Account for every scheduled trip in the morning service report.\",\n    \"said_on\": \"2026-01-04\",\n    \"scope\": \"service/report\",\n    \"sha256\": \"61eddfdbf04ad50f6dfb49e9bfd9ab2874192ec8d9216fdcf5b4bd3026a2f673\",\n    \"supersedes\": null\n  }\n]"
+    },
+    "style-check": {
+      "command": "./taos gate run --task BUS-1 --agent codex",
+      "exit": 0,
+      "output": "  holds    Monday report  not run again: nothing it tested has changed since <run-time>\n\nEvery check passes. What BUS-1 rests on now: taos why BUS-1\nRecorded in .taos/gates/BUS-1_3.json"
+    },
+    "style-control-count": {
+      "command": "python3 -B count.py count monday",
+      "exit": 0,
+      "output": "{\"canceled\": 2, \"canceled_trips\": [\"M17\", \"M19\"], \"logged_percent\": 89, \"missing_trips\": [], \"on_time\": 16, \"recorded\": 18, \"scheduled\": 20, \"scheduled_percent\": 80}"
+    },
+    "style-edit": {
+      "command": "python3 -B -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).read_text(encoding='\"'\"'utf-8'\"'\"'), end='\"'\"''\"'\"')' <scratch>/transit/style.txt",
+      "exit": 0,
+      "output": "MORNING SERVICE REPORT"
+    },
+    "style-why": {
+      "command": "./taos why BUS-1 --json",
+      "exit": 0,
+      "output": "{\n  \"accepted\": true,\n  \"closed\": true,\n  \"done_when\": \"The Monday report accounts for every scheduled trip and passes the count check.\",\n  \"instructions\": [\n    {\n      \"expires\": null,\n      \"id\": \"rule_2\",\n      \"quote\": \"Check every scheduled bus before reporting.\",\n      \"said_on\": \"2026-01-05\",\n      \"scope\": \"service/report\"\n    }\n  ],\n  \"next\": [\n    \"ask the person to look at this version: taos task accept BUS-1\"\n  ],\n  \"parts\": [\n    {\n      \"kind\": \"closure\",\n      \"name\": \"review\",\n      \"reason\": \"codex moved it to review on <run-day>; the same instructions govern\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"check\",\n      \"name\": \"Monday report\",\n      \"reason\": \"passed <run-time>; nothing it tested has changed\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"artifact\",\n      \"name\": \"monday-report.json\",\n      \"reason\": \"its 3 declared input(s) are unchanged\",\n      \"state\": \"holds\"\n    },\n    {\n      \"kind\": \"acceptance\",\n      \"name\": \"human\",\n      \"reason\": \"human accepted it on <run-day>; since then presentation changed: style.txt\",\n      \"state\": \"stale\"\n    }\n  ],\n  \"state\": \"stale\",\n  \"status\": \"review\",\n  \"task\": \"BUS-1\",\n  \"title\": \"Prepare the Monday service report\"\n}"
+    },
+    "tuesday-count": {
+      "command": "python3 -B count.py count tuesday",
+      "exit": 0,
+      "output": "{\"canceled\": 0, \"canceled_trips\": [], \"logged_percent\": null, \"missing_trips\": [\"T04\", \"T11\"], \"on_time\": 9, \"recorded\": 10, \"scheduled\": 12, \"scheduled_percent\": null}"
+    },
+    "tuesday-refusal": {
+      "command": "python3 -B count.py write tuesday",
+      "exit": 3,
+      "output": "Rate pending. Missing dispatch records: T04, T11"
+    },
+    "unrelated": {
+      "command": "./taos rule governing fleet/maintenance --on 2026-01-06 --json",
+      "exit": 0,
+      "output": "[]"
+    },
+    "write-report": {
+      "command": "python3 -B count.py write monday",
+      "exit": 0,
+      "output": "{\"day\": \"monday\", \"denominator\": 20, \"on_time\": 16, \"percent\": 80}"
+    }
+  },
+  "scenes": {
+    "change": {
+      "evidence": [
+        "fleet-instruction",
+        "fleet-rule",
+        "report-after-fleet-rule",
+        "baseline-style",
+        "style-edit",
+        "style-why",
+        "style-check",
+        "restore-why",
+        "baseline-dispatch",
+        "source-dispatch",
+        "source-count",
+        "source-why",
+        "source-check",
+        "failed-why",
+        "rebuild",
+        "repaired-check",
+        "repaired-why"
+      ]
+    },
+    "correction": {
+      "evidence": [
+        "monday-count",
+        "draft",
+        "draft-check",
+        "correct-rule",
+        "old-day",
+        "current-rule",
+        "unrelated",
+        "lesson-add",
+        "propose-check",
+        "proposal",
+        "write-report",
+        "passing-check"
+      ]
+    },
+    "handoff": {
+      "evidence": [
+        "tuesday-count",
+        "tuesday-refusal",
+        "next-action",
+        "audit-evidence",
+        "save-handoff",
+        "resume",
+        "capsule",
+        "lesson-at-join",
+        "read-handoff"
+      ]
+    },
+    "review": {
+      "evidence": [
+        "report-evidence",
+        "report-review",
+        "before-acceptance",
+        "agent-refusal",
+        "human-accept",
+        "baseline-why",
+        "accepted-task",
+        "acceptance-receipt",
+        "style-why",
+        "source-why",
+        "repaired-why"
+      ]
+    },
+    "standard": {
+      "evidence": [
+        "standard-add",
+        "standard-rule",
+        "scope-report"
+      ]
+    },
+    "team": {
+      "evidence": [
+        "report-task",
+        "create-audit",
+        "audit-task",
+        "related-tasks",
+        "report-start",
+        "audit-start",
+        "claims",
+        "overlap"
+      ]
+    }
+  },
+  "schema": "transit-workflow/1",
+  "scope": "Deterministic command replay with fictional rows and scripted human, codex and claude labels.",
+  "sources": {
+    "bootstrap/answers.example.json": "3be8a24afb6b69e93ab4c4c87b2a4f3714ae458bf8fe9bd6e752fcad6450ffa8",
+    "bootstrap/answers.schema.json": "5d888f22174dab4f56eeecd12ddb6de2c2c72c44799bd09407e85c9ffb9c0ac2",
+    "evals/transit_workflow.py": "71087b0e7264b05fafa6722cd0d9b50ab2d733e69f9a6384f5f5f0610189244e",
+    "examples/transit/count.py": "5f0e8a7e72c84f5e9cc83c8e1b6b8739f4b452af91636fe3b0afa7498864340b",
+    "examples/transit/monday-dispatch.csv": "796b1597a730842f752d38131c467c1ae689644ba6027f4ed533dbaebc34715c",
+    "examples/transit/monday-schedule.csv": "45758f71e098a0ec4aee480731193666107cd6ea7f3d05f37117dfb291144ca7",
+    "examples/transit/style.txt": "bf2e9b6ea7cff5a8bdeaa4c49579a1e7b1c66851439ce51c508d0a6116025288",
+    "examples/transit/tuesday-dispatch.csv": "b8de7c48a2e43d760acae87bac4d77e99863c7b1198a9db11035f84322d6bd2e",
+    "examples/transit/tuesday-schedule.csv": "4756007e572669bb13124f01b213119d606f9b7ab00bd0f0f2fb2ce83f8e1c5f",
+    "kernels/KERNEL_INDEX.json": "ed9f5da5b80e1268093c94c376e6963621e8f475c027b32dea453d980a99916f",
+    "taos": "58fa0d76b7326f31463b2b8990afca1fdf532579bf3e58f5e160ea68cce32863",
+    "taos_core/__init__.py": "66629c3555bb4a5eb5d6ab16af575f0adf6b656cfd82f59dea5b15e19a40326c",
+    "taos_core/_science.py": "72488b088fcb3a9f12f3fed832d9d9d6272a0ae9e816b783e3bcced66cb81cda",
+    "taos_core/anchors.py": "63866bcad11b202ef48c643c9c6b468b533a408f7b279d65e9a5a205c6e6e870",
+    "taos_core/atoms.py": "1b113ba76d07bfcb50f764becb31b1017c2da7777a26926a79e125da65c785bb",
+    "taos_core/bank.py": "0a1d44111921e036cb0a6d6a19cd173b69fedf9c1ccd7ef6294ee0d052b69fc7",
+    "taos_core/basis.py": "86c1e1c9fcd5db9453aef85ec6f315888293b3656dd73a4b4e358e21f34e614c",
+    "taos_core/bootstrap.py": "b6894a2611d7aefc978f1dfaee5d698356fc261f3a2c521858f6acb6e5bb0386",
+    "taos_core/brief.py": "e164373c3b0f1894eb0f3263c4c6717b16d8022ce7ce0593fe40395078d7aee6",
+    "taos_core/burn.py": "3acae1bcf4363db406647a9279a371a51004fad9c555e4417a6c7f78a70dac31",
+    "taos_core/changes.py": "f26c0a5dc1bdc25fb1043317e35fbc9fcd6beb95a918e58abac51755757c8b62",
+    "taos_core/claims.py": "07beb6e62538c93385d168a665eed6391251be063e1e6ba4eaa37b58f08a1f63",
+    "taos_core/cli.py": "dc856252f7bf5be0d4fa7bfbb5a056c5315ee192b4b2824bbd97bef67f8ab9b6",
+    "taos_core/config.py": "1dae50f3cd2d0eb0460e9cdf3a0a9620deece1415ddb4238311423b3ff050bb1",
+    "taos_core/control.py": "a9fab3c3551a14d6376ad436126992d1bcee13a10011ee03d9fd8d9ea56c8016",
+    "taos_core/decisions.py": "ea76401780a93b7bedca1df132617e859abe9598c50805ae576d51fd049c6022",
+    "taos_core/demo.py": "e7fe8cf969b450ed624640c6a0a0f3977d7e3c3b66107af8a810fc21123a23ac",
+    "taos_core/doctor.py": "243c505bd8b63568222ade179b4db3e3665b16a8d2e62eb3a0a62ed8300aa836",
+    "taos_core/events.py": "688a9ab160a2342f34f0dbe93f8d2589180bd22eeab9de02f768fb8dbffae816",
+    "taos_core/gates.py": "f6248c9c6f746ea0a7da8dc8bbcc06f1185f4b0e329eca4eb5d8db2d085f12cb",
+    "taos_core/handoff.py": "79368dc51a82170a36e5511ec9a8686ac8c48b9f9cb6a2353048c1c5e4cfb5d5",
+    "taos_core/hpc.py": "4df80fae9e4ea8020e18855fda81f1da7edd8e203b0738f79b26de4388ab26c9",
+    "taos_core/kernels.py": "ae2b8e0a02ffb5f14a8cf7a3eb677025e79b642df1daff9053c8bbe82ad12a11",
+    "taos_core/lessons.py": "5abcc2cafaa59ba67419dd919f69caff0b40ffa9eb5cc1e258f81d57f8f71a35",
+    "taos_core/lifecycle.py": "e29cae87ffa90a31d9d781996804b6d23eef6772f49e14b9a282b78a43c3f550",
+    "taos_core/mcp_stdio.py": "aa51d77a24a3024a1ff15fe56e1a0de1abc3dc73cdf09c5aef8d5fd88772ace7",
+    "taos_core/page.py": "44a5d24e840ff9aff37570142823c55b705654c3436057a4eb0772f859851dd4",
+    "taos_core/panel.py": "f214a7d0c42ee5c920baa22dc91cabcb74858f3b859583ad1b210e9f7d06f294",
+    "taos_core/paths.py": "3e84e3bc70632fdac2d995a0b93e25bee83ef5ad8e7cf0b9a2d224f4ac829878",
+    "taos_core/plain.py": "182be6352d35712a8bc836d1488f7dc00adc21962fc7fbc066b3d4c69bdc3a59",
+    "taos_core/policy.py": "dbffa785ee8e344f5ae157a3047f49d5d5dfa4ca73370f073b7cbd74e30059be",
+    "taos_core/progress.py": "70dc2536f149c0cc38ae03b7e2e1716e5bc560194430e4788b7556d09940059f",
+    "taos_core/projections.py": "125b2f1009a44ca9572170ab5b3ef601ba8b81cd7ab4474dbda4cb98f43f41f7",
+    "taos_core/proposals.py": "4e784e3d242e7605c8c726485f13eaeebdc59ca8558fe6afbfaea44ffb16c1d0",
+    "taos_core/replay.py": "e3f91b1e89c4f4650c8230d6050020fad70cd737ded064392c8a3fe8d2bc3831",
+    "taos_core/reviews.py": "4c0de05e9c5a9c95a420f679918a3aebd3fdda2b2d245bb1fa86acbffbf0e2b6",
+    "taos_core/rules.py": "9ada1ca6e865f4b4ce0c08f88b7d93c1d9353677ee427070c55c58b91fb7bd29",
+    "taos_core/standing.py": "022747ed95545cf9816ee92eab0db77b657dcaf327b4f870458c18e804e4a925",
+    "taos_core/store.py": "026680d57d1e839efcc7814c5e39ce17bd310ceddeccb318e768919416285ec1",
+    "taos_core/tasks.py": "1974b6ec37f9aa20b9bc0e2a2fd047bf7471ead3953e0259f6d61baf4a59bab7",
+    "taos_core/telemetry.py": "4ee1e676c6c83f5f067bf490fa3ff846b16605deb0cce8b692fb80a0f645fa10",
+    "taos_core/usage.py": "0297a322c09941ea76e6bd85d7ea6bb1aa146de60792ebf35f2f3365ff710774",
+    "taos_core/use.py": "7e4cac7bb7997bf1fc30fe56840ebfd3aabdac41b3dff245cb20a21fb45c5e7c",
+    "taos_core/util.py": "e02eb73a86172fcf632efed3f27bf9d1d8253d54ba0f3bc788101672bae2dba0",
+    "taos_core/welcome.py": "121776e21d3f8a9fe678d672c787e20d5656cd5b3e71a2821e0f9e2df314dd63"
+  }
+}

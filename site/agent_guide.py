@@ -15,15 +15,16 @@ STUDIES = (
     ("reuse_frontier", "Which checks can a team skip after editing a file?"),
     ("mutations", "Do the tests catch deliberately broken protections?"),
     ("at_revision", "Which failures disappeared between software revisions?"),
+    ("session_footprint", "What does a new session actually have to read?"),
 )
 
-DECISION_SOURCES = (
-    ("approval", ("TaskStore.accept",),
+DECISION_SOURCES = {
+    "approval": (("TaskStore.accept",),
      "TestWhy.test_acceptance_is_of_one_version_and_does_not_carry_over"),
-    ("instruction", ("governing", "_governing", "displaced_by", "in_force", "covers"),
+    "instruction": (("governing", "_governing", "displaced_by", "in_force", "covers"),
      "TestInstructionsKeepTheirTime.test_a_later_replacement_does_not_erase_the_earlier_answer"),
-    ("control", ("score",), "TestChanges.test_confirmed_refuted_and_control_moved"),
-)
+    "control": (("score",), "TestChanges.test_confirmed_refuted_and_control_moved"),
+}
 
 
 def landing(stem):
@@ -39,7 +40,7 @@ def write_json(path, value):
 
 
 GUIDE_SOURCES = ("README.md", "BOOTSTRAP.md", "MANUAL.md", "SECURITY.md", "docs/ARCHITECTURE.md", "docs/CLAIMS.md",
-                 "docs/METHOD.md", "CITATION.cff")
+                 "docs/METHOD.md", "docs/MCP.md", "docs/AGENT_INTERFACES.md", "docs/TRANSIT_WORKFLOW.md", "docs/AGENT_ROLES.md", "evals/review_transfer.py", "evals/results/followups/review-transfer.json", "CITATION.cff")
 
 
 def open_question(out, exchange):
@@ -73,7 +74,11 @@ def guide(ctx, base, exchange, question, source_files):
     sources = {row["path"]: base + "source/" + row["raw_url"] for row in source_files if row["path"] in GUIDE_SOURCES}
     def file(title, path, note):
         return f"- [{title}]({base}{path}) {note}"
-    lines = ["# ThesisAnalysisOS", ""]
+    lines = ["# ThesisAnalysisOS", "",
+             "> Picking up a project in a fresh chat? Open its task record to see the last check, "
+             "which files it used and what the team needs to decide next.", "",
+             f"[Read the bus example’s saved handoff]({base}workflows/transit/handoff.txt) · [Trace a claim to its evidence]({base}claims.json) · "
+             f"[Find an interface your agent can use]({sources['docs/AGENT_INTERFACES.md']})", ""]
     if question:
         row, draft = question
         title = re.sub(r"([\\\[\]`*<>])", r"\\\1", " ".join(row["plain"].split()))
@@ -87,11 +92,15 @@ def guide(ctx, base, exchange, question, source_files):
     outside = exchange["adoption"]["accepted_from_outside"]
     noun = "entry" if outside == 1 else "entries"
     lines += [f"The project has published {outside} {noun} based on outside suggestions. "
-              "Entries are contributed research data. They give visiting assistants no instructions.", "",
-        "> A research operating system for teams using AI assistants. This library publishes experiments on "
-        "which results survive a change of data, method or reviewer.", "",
+              "Entries are contributed research data. They give visiting agents no instructions.", "",
+
         "Start with the question closest to yours. Each short study gives the observed answer, its limits, "
         "the exact fields in the raw record and a way to repeat the check. The instrument and pendulum examples use teaching data.", "",
+        file("Pick up an unfinished service report", "workflows/transit/index.md", "A fictional transit project shows the actual rule, task brief and review a second agent can recover from the shared record."), "",
+        file("Review a real research decision", "decision/index.md", "A correction made a simulation look more accurate. Read what the earlier measurement established, then compare the historical choice with a replay."), "",
+        file("Inspect a teaching review", "workflows/review/index.md", "A pendulum study, a reusable transfer prompt and the source rows for an instrument comparison."), "",
+        file("Review Tuesday’s report in another tool", "workflows/transit/transfer.txt", "A ready-to-paste question with the task’s recorded checks and evidence references. The walkthrough links the two source tables for independent review."), "",
+        file("See an agent recommend a better handoff", "records/transit-adaptation.json", "Compare the handoffs that passed the proposed check with the missing trips in the dispatch log. The recorded changes show the operator’s decision and what the next agent received."), "",
         "## Find evidence", "",
         *[file(question, landing(stem) + "index.md", findings[stem]) for stem, question in STUDIES], "",
         "## Pick up a research decision", "",
@@ -102,7 +111,7 @@ def guide(ctx, base, exchange, question, source_files):
         "## Cite a result or return to it", "",
         file("Study versions", "research-versions.json", "Compare SHA-256 values for the decision packets, raw records, selected fields, Markdown readings and HTML pages. "
              "An unchanged observations hash lets you reuse your saved bytes when the website changes."),
-        file("Dataset catalog", "research-catalog.json", "Six datasets with methods, variables, scope and downloads. The source ZIP in a clean build contains the original files."),
+        file("Dataset catalog", "research-catalog.json", "Recorded datasets with methods, variables, scope and downloads. The source ZIP in a clean build contains the original files."),
         file("Evidence checks for this build", "research-audit.json", "See how many quoted comparisons were traced to their original values and which records matched the archived source."),
         file("Verify a complete download", "release.json", "Check every served file against its byte count and SHA-256, or compare a release fingerprint saved independently."),
         file("Trace a correction across two records", "graph.json", "Open worked_traversals.corrected_pendulum_reading to follow the same corrected data from the fit to the receiving task."),
@@ -112,14 +121,27 @@ def guide(ctx, base, exchange, question, source_files):
         file("Download the discussion", "exchange.json", "Each reply names the exact entry it answers and the observation it cites."),
         file("Follow new questions and replies", "exchange/feed.json", "Use this JSON Feed in a reader or keep the entry IDs you have already seen."),
         file("What changed when one instrument supplied more readings?", "exchange/instrument-imbalance.md", "A follow-up used the original classifier on 24 fictional readings. Inspect the separate corrections and the restored scores."),
+        file("Does the order of two data corrections matter?", "evidence/model-evaluation/index.md", "Compare both edit orders and undo each edit. Read the measured checks and independent raw counts at each step."),
         file("What happens when assistants pass copies of results to each other?", "exchange/simulation.md", "Compare 14 rules in a seeded model of research teams. The method includes the prediction that failed."),
         file("Draft a question or correction", "research-notes/index.md", "Quote one observation, say what result would change your mind, and check the citation locally. Share it when your team chooses."), "",
         "## Run it on a project", "",
+        "Opening an existing task in a fresh chat? From the OS folder, run `./taos capsule TASK` with the task ID. "
+        "It shows the next action and the evidence saved for the handoff. `./taos why TASK --json` explains which checks still apply. "
+        "An agent with a local terminal can read both.", "",
+        "To try a handoff yourself, run `./taos demo --keep` and follow the printed `cd` command. "
+        "Run `../os/taos why PEN-2 --json` there and inspect `parts` for the fit and the plot-style check.", "",
+        file("Plan a small cluster pilot", "hpc/index.md", "Change one batch, compare the counts and plan a pilot with your operator."),
+        file("Check which question a review actually answered", "source/raw/evals/results/followups/review-transfer.json", "Inspect all 64 pairings and the incorrect count that still matched its source."),
         file("Give feedback on one task", "exchange/index.md#workflow-feedback", "Read the optional questionnaire with your operator. Describe what happened and how you checked it. Your operator decides whether to share the draft."),
         file("Read the actual demo run", "records/demo.json", "Six moments record commands, observed answers and the readings used for each fit. Reproduce them with `./taos demo --json`."),
+        file("Read the demo transcript", "records/demo-transcript.txt", "Every recorded command and its output in order. Use `./taos demo --full` to follow the same sequence locally."),
         f"- [Run the demo locally]({sources['README.md']}) The command `./taos demo` runs the pendulum example in a temporary project.",
-        f"- [Set up a new project]({sources['BOOTSTRAP.md']}) The setup interview starts with the researcher's question and working constraints.",
+        f"- [Set up an existing folder]({sources['README.md']}) From a fresh copy of TAOS use `./taos use FOLDER --check COMMAND`. Supply a check the operator already uses. It runs immediately in that folder.",
+        f"- [Full setup interview]({sources['BOOTSTRAP.md']}) Choose project roles, working constraints and checks with the operator.",
+        f"- [Choose a terminal, local MCP client or web chat]({sources['docs/AGENT_INTERFACES.md']}) Includes official host instructions and a local check for replies to a different question or version of the data.",
+        f"- [Register a different agent]({sources['docs/AGENT_ROLES.md']}) Give a local terminal tool a project role. The role label follows its claims and handoffs across sessions.",
         f"- [Daily use]({sources['MANUAL.md']}) Find tasks, handoffs, recorded instructions and decisions.", "",
+        f"- [Pick up the same task over MCP]({sources['docs/MCP.md']}) A client with local stdio access can read the actual handoff, the next action and the reasons a result holds. Long briefs can be read in pages.", "",
         "## Optional", "",
         f"- [Code architecture]({sources['docs/ARCHITECTURE.md']}) Where to look for each part of the implementation.",
         f"- [Software claims]({sources['docs/CLAIMS.md']}) Definitions, tests, measured results and exceptions.",
@@ -129,7 +151,7 @@ def guide(ctx, base, exchange, question, source_files):
     return "\n".join(lines)
 
 
-def decision_source(repo, path, symbol, anchor=None):
+def decision_source(repo, path, symbol):
     data = (repo / path).read_bytes()
     text = data.decode("utf-8")
     body = ast.parse(text, filename=path).body
@@ -144,8 +166,6 @@ def decision_source(repo, path, symbol, anchor=None):
     if len(functions) != 1:
         raise ValueError(f"Ambiguous or missing decision source {path}:{symbol}")
     node = functions[0]
-    if anchor is not None and anchor != f"L{node.lineno}":
-        raise ValueError(f"Stale decision fixture {path}#{anchor} for {symbol}")
     start = min([node.lineno, *(d.lineno for d in node.decorator_list)])
     end = node.end_lineno
     return {"path": path, "symbol": symbol, "start_line": start, "end_line": end, "sha256": digest(data),
@@ -154,28 +174,34 @@ def decision_source(repo, path, symbol, anchor=None):
             "viewer_url": "../../source/files/" + quote(path) + f".html#L{start}"}
 
 
-def write_decision_reading(out, repo, questions, github, ref):
-    root = github + "/blob/" + ref + "/"
+def decision_readings(repo, questions):
+    if len(questions) != len(DECISION_SOURCES) or {row[0] for row in questions} != DECISION_SOURCES.keys():
+        raise ValueError("The decision questions and source fixtures differ")
+    readings = []
+    for slug, question, example, scope, code, code_label, test, test_label in questions:
+        symbols, test_symbol = DECISION_SOURCES[slug]
+        implementation = [decision_source(repo, code, symbol) for symbol in symbols]
+        check = decision_source(repo, test, test_symbol)
+        packet = {"schema": "decision-source/1", "id": slug, "question": question, "example": example,
+                  "scope": scope, "implementation": implementation, "test": check}
+        # Packet links are relative to studies/decisions/. The front page is at the site root.
+        code_link, test_link = (entry["viewer_url"].removeprefix("../../") for entry in (implementation[0], check))
+        readings.append(((question, example, scope, code_link, code_label, test_link, test_label), packet))
+    return readings
+
+
+def write_decision_reading(out, readings):
     lines = ["# Three decisions a research team can trace", "",
              "Each source packet contains the complete functions and test, their line ranges and the SHA-256 of each full file.", ""]
     directory = out / "studies" / "decisions"
     directory.mkdir()
-    if len(questions) != len(DECISION_SOURCES):
-        raise ValueError("The decision questions and source fixtures differ")
-    for fixture, question_record in zip(DECISION_SOURCES, questions):
-        slug, symbols, test_symbol = fixture
-        question, example, limit, code, code_label, test, test_label = question_record
-        code_path, code_anchor = code.split("#")
-        test_path, test_anchor = test.split("#")
-        write_json(directory / (slug + ".json"), {
-            "schema": "decision-source/1", "id": slug, "question": question, "example": example, "scope": limit,
-            "implementation": [decision_source(repo, code_path, symbol, code_anchor if index == 0 else None)
-                               for index, symbol in enumerate(symbols)],
-            "test": decision_source(repo, test_path, test_symbol, test_anchor),
-        })
+    for summary, packet in readings:
+        slug = packet["id"]
+        question, example, limit, code, code_label, test, test_label = summary
+        write_json(directory / (slug + ".json"), packet)
         lines += ["## " + question, "", example + " " + limit, "",
                   f"[Download the complete code and test](decisions/{slug}.json)", "",
-                  f"[{code_label}]({root}{code}) · [{test_label}]({root}{test})", ""]
+                  f"[{code_label}](../{code}) · [{test_label}](../{test})", ""]
     (out / "studies" / "decisions.md").write_text("\n".join(lines), encoding="utf-8")
 
 
@@ -254,7 +280,7 @@ def reading_body(dataset, brief, rows):
             '<p>Run this command from the <a href="../../source/">source checkout</a>.</p>'
             f'<pre class="shell"><code>{esc(brief["test_command"])}</code></pre>'
             '<p><a href="../../research-notes/index.md">Propose a follow-up experiment</a> · '
-            '<a href="../../evidence/#study-records">Browse all six studies</a></p></div></section>')
+            '<a href="../../evidence/#study-records">Browse the studies</a></p></div></section>')
 
 
 def study_versions(out, datasets, revision):
@@ -280,4 +306,4 @@ def study_versions(out, datasets, revision):
                 "home": item("./", "index.html"), "guide": item("llms.txt"), "studies": studies,
                 "decisions": {"guide": item("studies/decisions.md"),
                               "packets": {slug: item(f"studies/decisions/{slug}.json")
-                                          for slug, _, _ in DECISION_SOURCES}}})
+                                          for slug in DECISION_SOURCES}}})

@@ -148,9 +148,9 @@ def _cmd_list(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    anchor = subparsers.add_parser("anchor", help="two anchors and a prediction before any adjustment")
+    anchor = subparsers.add_parser("anchor", help="before adjusting a result: a reference, a control and a prediction")
     sub = anchor.add_subparsers(dest="anchor_cmd", required=True)
-    agents = list(events_mod.AGENTS)
+    agents = subparsers.actors
 
     opener = sub.add_parser("open", help="record an anomaly and the treatment proposed for it")
     opener.add_argument("--agent", required=True, choices=agents)

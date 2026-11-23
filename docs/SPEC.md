@@ -7,15 +7,15 @@ elsewhere disagrees with this file, this file wins until it is amended.
 ## 0. What this is, in one paragraph
 
 ThesisAnalysisOS ("TAOS") is a local-first, zero-dependency operating layer
-that lets one human ("the principal") run two coding agents (OpenAI Codex and
-Anthropic Claude Code) as interchangeable peers over the same durable work
-state. It gives the agents one task store with stable IDs, scope-local claims
+that lets one person ("the principal") coordinate multiple named AI agents
+over the same durable project record. Each role can record tasks, claims and
+handoffs. Roles can represent sessions in the same tool or in different tools. It gives the agents one task store with stable IDs, scope-local claims
 so they never collide, a handoff format so a session can die without losing
 the work, a daily brief and a local panel so the human sees truth without
 reading files, and a small self-iteration loop (correction atoms, kernels,
 proposals, burns) so the system gets tighter instead of heavier over time. It
 was distilled from a year of running the same design on a physics thesis with
-both agents in daily use. Everything is plain files under one directory; the
+Codex and Claude sessions in daily use. Everything is plain files under one directory; the
 human can switch the panel on and off at will and delete the directory to
 uninstall.
 
@@ -33,7 +33,7 @@ uninstall.
 4. **Claims are scope-local mutexes with heartbeats.** A live claim held by
    the other agent on an overlapping scope is do-not-touch. Reading is free.
    Stale takeover is explicit, requires a reason, and is logged.
-5. **Agent brand is provenance, never authority.** `agent: codex|claude` on
+5. **Agent brand is provenance, never authority.** a configured local agent name on
    every event, comment, claim, and label. No rule may branch on brand.
 6. **Evidence over memory.** `done`, `review`, and `blocked` transitions
    require a reason; `done` requires at least one evidence pointer. Nothing is
@@ -249,7 +249,7 @@ promote it with `taos atoms promote <prop_id>`.
 ```json
 {"ts": "…", "agent": "claude", "task_id": "az7-fix-ssa", "phase": "start|iterate|handoff|done|abandoned",
  "outcome": "landed|reworked|corrected|blocked|unknown", "modality": "code|docs|planning|review|ops|mixed|unknown",
- "task": "short sanitized descriptor", "counterpart": "codex|claude|null"}
+ "task": "short sanitized descriptor", "counterpart": "registered agent or null"}
 ```
 `task_id` must match `^[a-z0-9][a-z0-9-]{2,60}$`; `task` is truncated to 80
 chars and stripped of URLs and anything matching `secret_patterns`. Rows with
@@ -262,7 +262,7 @@ unknown keys are rejected.
   "id": "handoff-header-required", "status": "active",
   "rule": "Every handoff starts with the four-line attribution header.",
   "why": "…", "review_date": "2026-12-31",
-  "check": {"type": "regex_must_match", "target": "latest_handoff", "pattern": "^Agent: (codex|claude)\\n"},
+  "check": {"type": "regex_must_match", "target": "latest_handoff", "pattern": "\\AAgent: [a-z][a-z0-9_-]{0,31}\\r?\\nChat/session: [^\\r\\n]+\\r?\\nTask: [^\\r\\n]+\\r?\\nClaim/scope: [^\\r\\n]+(?:\\r?\\n|$)"},
   "fixtures": {"red": "…text that must FAIL…", "green": "…text that must PASS…"}
 }]}
 ```
@@ -570,8 +570,8 @@ taos claim release --agent A (--id CLM | --scope S) [--force]
 taos claim check --agent A --scope S...
 
 taos start --agent A --task ID --session S [--scope S]... [--takeover --reason R]
-taos finish --agent A --task ID --state review|done|blocked|waiting|next --reason R [--evidence E] --session S [--handoff-file F --to codex|claude] [--comment C]
-taos capsule ID [--json]
+taos finish --agent A --task ID --state review|done|blocked|waiting|next --reason R [--evidence E] --session S [--handoff-file F --to AGENT] [--comment C]
+taos capsule ID [--json | --transfer "review question" [--source FILE]... [--check-review REPLY.json]]
 
 taos handoff template ID --from A --to B --session S       # prints template to stdout
 taos handoff write ID --from A --to B --session S (--file F | --stdin)
@@ -629,7 +629,7 @@ When not constructed: exactly `TAOS not constructed. To set it up for someone's 
 
 ## 7. Hooks (shared Codex/Claude contract)
 
-Both agents send PreToolUse JSON on stdin with `tool_name` and `tool_input`
+The bundled Codex and Claude hook adapters receive PreToolUse JSON on stdin with `tool_name` and `tool_input`
 (`tool_input.command` for shell). Both accept on stdout
 `{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "allow|deny|ask", "permissionDecisionReason": "…"}}`
 and treat exit code 2 as a block with the reason on stderr. The scripts must
@@ -683,7 +683,7 @@ If not constructed, the text is the bootstrap line.
 `final_message`, or the last assistant text in `transcript_path` if present;
 parses the marker; appends one sanitized label row via `telemetry.label`; exits 0
 always. Marker format (documented in AGENTS.md):
-`<!-- ep: id=<slug> phase=<start|iterate|handoff|done|abandoned> outcome=<landed|reworked|corrected|blocked|unknown> modality=<code|docs|planning|review|ops|mixed|unknown> [counterpart=codex|claude] -->`
+`<!-- ep: id=<slug> phase=<start|iterate|handoff|done|abandoned> outcome=<landed|reworked|corrected|blocked|unknown> modality=<code|docs|planning|review|ops|mixed|unknown> [counterpart=<configured agent name>] -->`
 
 `.claude/settings.json`: `permissions.deny` for secret reads and the store
 files; `permissions.ask` for git push, rm -r; hooks: PreToolUse (matcher
@@ -984,9 +984,9 @@ the worst of its parts (`basis.worst`).
   builds a throwaway home from `examples/measurement` and plays a script of
   six ideas against it. Each command in the script carries the words the
   record should answer with, and the demo exits non-zero if the record
-  answers differently. A terminal gets one line per answer, a pipe or
-  `--full` gets every command and what it printed, and `--json` gets the
-  run as a `TAOS_DEMO_V1` record. `evals/at_revision.py`, `evals/mutations.py` and
+  answers differently. By default it prints one line per answer on one
+  screen, to a terminal and to a pipe alike; `--full` gets every command and
+  what it printed, and `--json` gets the run as a `TAOS_DEMO_V1` record. `evals/at_revision.py`, `evals/mutations.py` and
   `evals/reuse_frontier.py` are described in `docs/METHOD.md`; given
   `--write`, each stores its numbers in `evals/results/<name>.json` with
   `measured_on`, the bytes of the code it measured (`evals/measured.py`).

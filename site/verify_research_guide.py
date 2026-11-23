@@ -2,35 +2,39 @@
 
 import argparse
 import ast
+from base64 import b64encode
 from decimal import Decimal, InvalidOperation
 from fractions import Fraction
 from hashlib import sha256
 from html.parser import HTMLParser
 import json
+import posixpath
 from pathlib import Path, PurePosixPath
 import re
+from xml.etree import ElementTree
 from urllib.parse import unquote, urljoin, urlsplit
 from zipfile import BadZipFile, ZipFile
 
 
 STUDIES = {
     "at_revision", "mutations", "reuse_frontier", "measurement_audit",
-    "model_evaluation", "handoff_audit",
+    "model_evaluation", "handoff_audit", "session_footprint",
 }
 DECISION_FIXTURES = {
-    "approval": ("taos_core/tasks.py", ("TaskStore.accept",), 335,
-                 "tests/test_standing.py", "TestWhy.test_acceptance_is_of_one_version_and_does_not_carry_over", 64),
-    "instruction": ("taos_core/rules.py", ("governing", "_governing", "displaced_by", "in_force", "covers"), 91,
+    "approval": ("taos_core/tasks.py", ("TaskStore.accept",),
+                 "tests/test_standing.py", "TestWhy.test_acceptance_is_of_one_version_and_does_not_carry_over"),
+    "instruction": ("taos_core/rules.py", ("governing", "_governing", "displaced_by", "in_force", "covers"),
                     "tests/test_counterexamples.py",
-                    "TestInstructionsKeepTheirTime.test_a_later_replacement_does_not_erase_the_earlier_answer", 49),
-    "control": ("taos_core/changes.py", ("score",), 107, "tests/test_science.py",
-                "TestChanges.test_confirmed_refuted_and_control_moved", 41),
+                    "TestInstructionsKeepTheirTime.test_a_later_replacement_does_not_erase_the_earlier_answer"),
+    "control": ("taos_core/changes.py", ("score",), "tests/test_science.py",
+                "TestChanges.test_confirmed_refuted_and_control_moved"),
 }
 DETAIL_ROUTES = {
     "at_revision": "evidence/#revision-comparison",
     "mutations": "evidence/#seeded-faults",
     "reuse_frontier": "evidence/#reuse-full",
     "handoff_audit": "evidence/#handoff-audit",
+    "session_footprint": "evidence/#session-reading",
     "measurement_audit": "evidence/pendulum/",
     "model_evaluation": "evidence/model-evaluation/",
 }
@@ -72,7 +76,7 @@ class Page(HTMLParser):
         super().__init__()
         self.links, self.metadata, self.rows, self.ids = [], [], [], set()
         self.source_lines = {}
-        self.script_count = 0
+        self.scripts = []
         self._script = self._row = self._cell = None
         self._source_line = self._source_text = None
         self.feed(data.decode("utf-8"))
@@ -85,7 +89,7 @@ class Page(HTMLParser):
         if tag in {"link", "a"} and "href" in attrs:
             self.links.append((tag, attrs))
         if tag == "script":
-            self.script_count += 1
+            self.scripts.append(attrs)
             if attrs.get("type") == "application/ld+json":
                 self._script = []
         if tag == "tr":
@@ -291,6 +295,15 @@ def expected_observations(stem, raw):
         row, address = locate(raw, "cases", "figure-caption")
         expect(fields(address, "id", "executed", "reused"),
                f"{len(row['executed'])} checks executed, {len(row['reused'])} reused")
+    elif stem == "session_footprint":
+        require(raw["schema"] == "taos-session-footprint-v1", "Unknown session reading record")
+        require(set(raw["surfaces"]) == {"compact_status", "task_capsule", "agents_md"}, "Unexpected session reading surfaces")
+        for name, row in raw["surfaces"].items():
+            text = row["text"].encode("utf-8")
+            require((len(text), len(row["text"].splitlines()), hash_bytes(text)) ==
+                    (row["bytes"], row["lines"], row["sha256"]), f"Session text disagrees with its recorded size or digest: {name}")
+            expect(fields("/surfaces/" + name, "lines", "bytes", "delivery"),
+                   f"{row['lines']} lines, {row['bytes']:,} UTF-8 bytes. {row['delivery']}")
     elif stem == "handoff_audit":
         rows = raw["observations"]
         counts = raw["counts"]
@@ -333,12 +346,30 @@ def verify_observations(stem, document, raw):
     return len(rows), sources
 
 
+def verify_terminal_image(data):
+    """The README's generated diagram uses only text, geometry and solid colors."""
+    require(b"<?" not in data and b"<!" not in data, "Unexpected markup in the terminal image")
+    namespace = "{http://www.w3.org/2000/svg}"
+    tags = {namespace + name for name in ("svg", "g", "title", "rect", "text", "path")}
+    attrs = {"aria-label", "d", "fill", "font-family", "font-size", "font-weight", "height", "role", "rx",
+             "stroke", "stroke-width", "textLength", "viewBox", "width", "x", "y"}
+    root = ElementTree.fromstring(data)
+    require(root.tag == namespace + "svg", "The terminal image is missing its SVG root")
+    for node in root.iter():
+        require(node.tag in tags and node.attrib.keys() <= attrs, "Unexpected element or attribute in the terminal image")
+        for attr in ("fill", "stroke"):
+            if attr in node.attrib:
+                require(re.fullmatch(r"none|#[0-9a-fA-F]{6}", node.attrib[attr]), "Unexpected paint in the terminal image")
+
+
 def verify_sources(site, revision):
     path = site.root / "source/index.json"
     manifest = load(path.read_bytes())
     require(manifest["schema"] == "source-snapshot/1" and manifest["revision"] == revision,
             "Source snapshot belongs to a different build revision")
     manifest_files, raw_paths = {}, set()
+    theme = (site.root / "assets/theme.js").read_bytes()
+    integrity = "sha256-" + b64encode(sha256(theme).digest()).decode("ascii")
     for entry in manifest["files"]:
         name = entry["path"]
         original = PurePosixPath(name)
@@ -349,7 +380,9 @@ def verify_sources(site, revision):
         viewer = site.path(entry["viewer_url"], "source/index.json")
         require(viewer.is_relative_to(site.root / "source/files"), f"Invalid viewer route: {name}")
         viewer_page = Page(viewer.read_bytes())
-        require(not viewer_page.script_count and (entry["bytes"] == 0 or "L1" in viewer_page.ids),
+        theme_url = posixpath.relpath("assets/theme.js", viewer.relative_to(site.root).parent.as_posix())
+        require(viewer_page.scripts == [{"src": theme_url + "?v=" + hash_bytes(theme)[:16], "integrity": integrity}]
+                and (entry["bytes"] == 0 or "L1" in viewer_page.ids),
                 f"Invalid line-numbered source viewer: {name}")
         link = entry["raw_url"]
         if link is None:
@@ -357,11 +390,14 @@ def verify_sources(site, revision):
             continue
         raw = site.path(link, "source/index.json")
         legal_file = name in {"LICENSE", "NOTICE"} and raw == site.root / "source/raw" / name
-        require(raw.is_relative_to(site.root / "source/raw") and (raw.suffix.lower() in RAW_TEXT or legal_file)
+        opener = name == "docs/opener.svg" and raw == site.root / "source/raw/docs/opener.svg"
+        require(raw.is_relative_to(site.root / "source/raw") and (raw.suffix.lower() in RAW_TEXT or legal_file or opener)
                 and raw not in raw_paths and original.suffix.lower() not in {".html", ".htm", ".xhtml"},
                 f"Unsafe raw-source route: {link}")
         raw_paths.add(raw)
         data = raw.read_bytes()
+        if opener:
+            verify_terminal_image(data)
         require(len(data) == entry["bytes"] and hash_bytes(data) == entry["sha256"], f"Changed raw source: {name}")
         route = viewer.relative_to(site.root).as_posix()
         require(any(tag == "a" and site.path(attr["href"], route) == raw for tag, attr in viewer_page.links),
@@ -369,7 +405,16 @@ def verify_sources(site, revision):
     return manifest_files, len(raw_paths)
 
 
-def verify_decision_source(site, document, entry, expected_path, symbol, anchor, sources):
+def verify_saved_handoff(site, source_files, guide_links):
+    handoff = site.root / "workflows/transit/handoff.txt"
+    if handoff.exists() or handoff in guide_links:
+        source = source_files["examples/transit/workflow.json"]["raw_url"]
+        recorded = load(site.path(source, "source/index.json").read_bytes())["observations"]["handoff"]
+        require(handoff in guide_links and handoff.read_bytes() == recorded.encode("utf-8"),
+                "The plain-text handoff must match the recorded note and be linked from the agent guide")
+
+
+def verify_decision_source(site, document, entry, expected_path, symbol, sources):
     require(entry["path"] == expected_path and entry["symbol"] == symbol,
             f"Wrong source or symbol in {document}: expected {expected_path}:{symbol}")
     manifest = sources[expected_path]
@@ -389,7 +434,6 @@ def verify_decision_source(site, document, entry, expected_path, symbol, anchor,
     matches = [node for node in scope if type(node) in {ast.FunctionDef, ast.AsyncFunctionDef} and node.name == name]
     require(len(matches) == 1, f"Expected exactly one function {symbol} in {expected_path}")
     function = matches[0]
-    require(anchor is None or function.lineno == anchor, f"Stale decision anchor for {symbol}")
     start = min([function.lineno] + [decorator.lineno for decorator in function.decorator_list])
     end = function.end_lineno
     whole_lines = file.splitlines(keepends=True)[start - 1:end]
@@ -402,15 +446,21 @@ def verify_decision_source(site, document, entry, expected_path, symbol, anchor,
     shown = Page(viewer.read_bytes()).source_lines
     require([shown.get(line) for line in range(start, end + 1)] == [line.splitlines()[0] for line in whole_lines],
             f"Viewer and quoted source differ for {symbol}")
+    return viewer_url
 
 
 def verify_decisions(site, sources, guide_links):
     reading_path = site.root / "studies/decisions.md"
     require(reading_path in guide_links, "The guide does not link the decision reading")
     reading = reading_path.read_bytes()
-    reading_links = site.markdown_links("studies/decisions.md", reading)
+    reading_document = "studies/decisions.md"
+    reading_links = site.markdown_links(reading_document, reading)
+    home_links = {site.url(attrs["href"]) for tag, attrs in site.home.links if tag == "a"}
+    home_text = (site.root / "index.md").read_text(encoding="utf-8")
+    home_md_links = {site.url(href, "index.md") for href in MD_LINK.findall(home_text)}
+    reading_targets = {site.url(href, reading_document) for href in MD_LINK.findall(reading.decode("utf-8"))}
     excerpts = 0
-    for slug, (code_path, symbols, code_line, test_path, test, test_line) in DECISION_FIXTURES.items():
+    for slug, (code_path, symbols, test_path, test) in DECISION_FIXTURES.items():
         document = f"studies/decisions/{slug}.json"
         packet_path = site.root / document
         require(packet_path in guide_links and packet_path in reading_links,
@@ -419,9 +469,12 @@ def verify_decisions(site, sources, guide_links):
         require(packet["schema"] == "decision-source/1" and packet["id"] == slug
                 and f"## {packet['question']}\n" in reading.decode("utf-8"), f"Wrong source packet for {slug}")
         require(len(packet["implementation"]) == len(symbols), f"Wrong implementation list for {slug}")
-        for index, (entry, symbol) in enumerate(zip(packet["implementation"], symbols)):
-            verify_decision_source(site, document, entry, code_path, symbol, code_line if index == 0 else None, sources)
-        verify_decision_source(site, document, packet["test"], test_path, test, test_line, sources)
+        code_targets = [verify_decision_source(site, document, entry, code_path, symbol, sources)
+                        for entry, symbol in zip(packet["implementation"], symbols)]
+        test_target = verify_decision_source(site, document, packet["test"], test_path, test, sources)
+        for target in (code_targets[0], test_target):
+            require(target in home_links and target in home_md_links and target in reading_targets,
+                    f"The public reading is missing the verified source line for {slug}: {target.geturl()}")
         excerpts += len(symbols) + 1
     return excerpts
 
@@ -489,7 +542,7 @@ def verify(root: Path, *, writing_report: bool = False) -> dict:
     site = Site(root)
     versions = load((site.root / "research-versions.json").read_bytes())
     require(versions["format"] == 1 and versions["algorithm"] == "sha256", "Unknown research version manifest")
-    require(set(versions["studies"]) == STUDIES, "Research version manifest does not list exactly six studies")
+    require(set(versions["studies"]) == STUDIES, "Research version manifest differs from the expected study set")
     revision = versions["build_revision"]
     require(load((site.root / "standing.json").read_bytes())["revision"] == revision,
             "Site and research versions disagree about the revision")
@@ -520,7 +573,7 @@ def verify(root: Path, *, writing_report: bool = False) -> dict:
     datasets = catalog["dataset"]
     wanted = {f"evals/results/{stem}.json" for stem in STUDIES}
     require(len(datasets) == len(STUDIES) and {d["identifier"] for d in datasets} == wanted
-            and len({d["@id"] for d in datasets}) == len(STUDIES), "Catalog does not list exactly six distinct datasets")
+            and len({d["@id"] for d in datasets}) == len(STUDIES), "Catalog identifiers differ from the expected distinct datasets")
     graph = load((site.root / "graph.json").read_bytes())
     run_nodes = [node for node in graph["nodes"] if node["k"] == "r"]
     graph_runs = {node["l"]: node["sha256"] for node in run_nodes}
@@ -599,6 +652,7 @@ def verify(root: Path, *, writing_report: bool = False) -> dict:
                     f"Markdown observation differs from its selected raw evidence for {stem}: {row['label']}")
         site.markdown_links(folder + "index.md", markdown)
     source_files, downloads = verify_sources(site, revision)
+    verify_saved_handoff(site, source_files, guide_links)
     excerpts = verify_decisions(site, source_files, guide_links)
     notes = verify_notes(site, records, digests, raw_bytes)
     archived = verify_archive(site, archives, revision, raw_bytes)

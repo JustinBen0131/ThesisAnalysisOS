@@ -59,7 +59,7 @@
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
-      "items": {"enum": ["codex", "claude"]}
+      "items": {"type": "string", "pattern": "^(?!(?:human|system|any)$)[a-z][a-z0-9_-]{0,31}$"}
     },
     "workspaces": {
       "type": "array",
@@ -71,7 +71,7 @@
           "name": {"type": "string", "maxLength": 60},
           "path": {"type": "string", "pattern": "^[/~]", "minLength": 2},
           "primary": {"type": "boolean"},
-          "agent": {"enum": ["codex", "claude", "any"]}
+          "agent": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,31}$"}
         }
       }
     },

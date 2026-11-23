@@ -1,0 +1,50 @@
+/* Pilot forms use native controls and retain a printable worksheet without scripting. */
+.hpc-planner [hidden] { display: none !important; }
+#hpc-pilot { scroll-margin-block-start: 7.75rem; }
+.pilot-local { margin: -.4rem 0 1.25rem; color: var(--soft); }
+.pilot-form, .pilot-after { max-width: 58rem; background: var(--card); border: 1px solid var(--edge); border-radius: .45rem; }
+.pilot-form { min-width:0; margin-inline:0; padding: clamp(1rem, 2.7vw, 2rem); }
+.pilot-form-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .65rem 1rem; margin-bottom: 1rem; }
+.pilot-form h3, .pilot-result h4 { font: 500 clamp(1.45rem, 2.5vw, 2rem)/1.15 var(--serif); margin: 0; }
+.pilot-form fieldset { min-width: 0; padding: 1.1rem 0 0; margin: 1.2rem 0 0; border: 0; border-top: 1px solid var(--line); }
+.pilot-form legend { padding: 0 .65rem 0 0; color: var(--ink); font-weight: 650; }
+.pilot-grid, .pilot-numbers { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: .9rem 1.2rem; }
+.pilot-numbers { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.pilot-field { display: grid; align-content: start; gap: .27rem; min-width: 0; font-size: 1rem; }
+.pilot-field + .pilot-field, fieldset > .pilot-field, .pilot-toggle { margin-top: .9rem; }
+.pilot-grid { margin-top: 1rem; }
+.pilot-grid .pilot-field, .pilot-numbers .pilot-field { margin-top: 0; }
+.pilot-field > span { font-weight: 650; color: var(--ink); }
+.pilot-form input:not([type=checkbox]), .pilot-form select {
+  appearance: auto; display:block; min-width:0; width:100%; height:2.65rem; padding:.35rem .6rem;
+  border:1px solid var(--edge); border-radius:.25rem; background:var(--paper); color:var(--ink); font:inherit;
+}
+.pilot-field small, .pilot-form fieldset > p { color: var(--soft); line-height: 1.45; }
+.pilot-toggle { display:flex; align-items:center; gap:.6rem; font-weight:600; }
+.pilot-toggle input { width:1.15rem; height:1.15rem; }
+.pilot-primary, .pilot-example { cursor:pointer; font:600 .95rem/1.35 var(--sans); }
+.pilot-primary { min-height:2.7rem; margin-top:1.1rem; padding:.55rem .9rem; border:1px solid #296343; border-radius:.3rem; background:#285d43; color:white; }
+.pilot-example { background:transparent; color:var(--link); border:0; padding:.35rem 0; text-decoration:underline; text-underline-offset:.18rem; }
+.pilot-form :is(button,input,select,h4):focus-visible, .pilot-after summary:focus-visible { outline:2px solid var(--link); outline-offset:2px; }
+.pilot-result { border-inline-start:3px solid var(--link); padding:.5rem 0 .35rem 1rem; margin-top:1.3rem; }
+.pilot-result h4 { font-size:1.4rem; scroll-margin-block-start:7.75rem; }
+.pilot-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.8rem; margin:1rem 0; padding:.8rem 1rem; border:1px solid var(--edge); border-radius:.3rem; background:var(--paper); }
+.pilot-metrics dt { color:var(--soft); font-size:.86rem; }
+.pilot-metrics dd { margin:.18rem 0 0; font:550 clamp(1.35rem,2.4vw,2rem)/1.2 var(--serif); }
+.pilot-facts { margin:.85rem 0; }
+.pilot-facts > div { display:grid; grid-template-columns:minmax(9rem, .52fr) minmax(0,1.48fr); gap:.4rem 1rem; padding:.45rem 0; border-top:1px solid var(--line); }
+.pilot-facts dt { font-weight:650; }
+.pilot-facts dd { margin:0; }
+.pilot-result [data-reading] > p { margin:.65rem 0; }
+.pilot-export { display:flex; align-items:center; gap:.7rem; margin-top:.9rem; }
+.pilot-export button { padding:.45rem .8rem; border:1px solid var(--edge); border-radius:.3rem; color:var(--ink); background:var(--paper); font:600 .94rem/1.4 var(--sans); cursor:pointer; }
+.pilot-export [role=status] { color:var(--soft); }
+.pilot-plain { margin:.7rem 0 0; }
+.pilot-plain summary { cursor:pointer; color:var(--link); font-size:.94rem; }
+.pilot-plain pre { white-space:pre-wrap; overflow-wrap:anywhere; padding:.9rem; background:var(--paper); border:1px solid var(--line); }
+@media(max-width:36rem) { .pilot-facts > div {grid-template-columns:1fr; gap:.1rem;} .pilot-metrics {grid-template-columns:1fr; gap:.45rem;} .pilot-metrics > div {display:flex;align-items:baseline;justify-content:space-between;gap:.4rem;} }
+.pilot-after { margin:1rem 0 0; }
+.pilot-after > summary { padding:1rem clamp(1rem,2.7vw,2rem); font-weight:650; cursor:pointer; }
+.pilot-after .pilot-form { border:0; border-top:1px solid var(--line); border-radius:0; }
+@media(max-width:46rem) { .pilot-numbers {grid-template-columns:repeat(2,minmax(0,1fr));} }
+@media(max-width:36rem) { .pilot-grid,.pilot-numbers {grid-template-columns:1fr;} }

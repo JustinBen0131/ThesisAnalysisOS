@@ -5,19 +5,21 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from . import config as config_mod
 from . import events as events_mod
 from . import tasks as tasks_mod
 from .paths import Paths
-from .store import atomic_write_text, parse_ts, utc_now
+from .store import atomic_write_text
 from .util import TaosError
 
 HEADER_RE = re.compile(
-    r"^Agent:\s*(codex|claude|human)\s*\n"
+    r"^Agent:[ \t]*(?P<agent>[a-z][a-z0-9_-]{0,31})[ \t]*\n"
     r"Chat/session:\s*.+\n"
-    r"Task:\s*[A-Z][A-Z0-9]{1,7}-[0-9]+\s*\|\s*.+\n"
+    r"Task:\s*(?P<task>[A-Z][A-Z0-9]{1,7}-[0-9]+)\s*\|\s*.+\n"
     r"Claim/scope:\s*.+\n",
     re.MULTILINE,
 )
@@ -60,7 +62,7 @@ def template(task: Dict[str, Any], from_agent: str, to_agent: str, session: str)
 
 def validate(text: str) -> List[str]:
     problems: List[str] = []
-    if not HEADER_RE.search(text or ""):
+    if not HEADER_RE.match(text or ""):
         problems.append(
             "missing the four-line header (Agent / Chat-session / Task / Claim-scope) at the top"
         )
@@ -74,7 +76,7 @@ def validate(text: str) -> List[str]:
 
 
 def _filename(task_id: str, from_agent: str, to_agent: str) -> str:
-    stamp = parse_ts(utc_now()).strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     return "{0}_{1}_{2}_to_{3}.md".format(stamp, task_id, from_agent, to_agent)
 
 
@@ -89,7 +91,13 @@ def write(
 ) -> Path:
     store = tasks_mod.TaskStore(paths)
     task = store.get(task_id)
+    parties = config_mod.project_agents(paths) + ["human"]
+    if from_agent not in parties or to_agent not in parties:
+        raise TaosError("Both handoff parties must be on this project roster or human.")
     problems = validate(body)
+    header = HEADER_RE.match(body)
+    if header and (header["agent"] != from_agent or header["task"] != task["id"]):
+        problems.append("the header must name the sending agent and the task being handed off")
     if problems:
         raise TaosError(
             "handoff rejected: {0}. Start from `taos handoff template {1} --from {2} --to {3} --session '{4}'`.".format(
@@ -121,7 +129,7 @@ def list_for(paths: Paths, task_id: Optional[str] = None) -> List[Path]:
         return []
     items = sorted(paths.handoffs_dir.glob("*.md"))
     if task_id:
-        items = [p for p in items if "_{0}_".format(task_id) in p.name]
+        items = [p for p in items if p.name.split("_", 2)[1:2] == [task_id]]
     return items
 
 
@@ -194,20 +202,20 @@ def _cmd_wrapper(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    handoff = subparsers.add_parser("handoff", help="hand work to the other agent")
+    handoff = subparsers.add_parser("handoff", help="a note from which the other agent can continue the work")
     sub = handoff.add_subparsers(dest="handoff_cmd", required=True)
 
     template_parser = sub.add_parser("template", help="print a handoff skeleton")
     template_parser.add_argument("task_id")
-    template_parser.add_argument("--from", dest="from_agent", required=True, choices=["codex", "claude", "human"])
-    template_parser.add_argument("--to", dest="to_agent", required=True, choices=["codex", "claude", "human"])
+    template_parser.add_argument("--from", dest="from_agent", required=True, choices=subparsers.agents + ["human"])
+    template_parser.add_argument("--to", dest="to_agent", required=True, choices=subparsers.agents + ["human"])
     template_parser.add_argument("--session", required=True)
     template_parser.set_defaults(func=_cmd_template)
 
     write_parser = sub.add_parser("write", help="validate and store a handoff")
     write_parser.add_argument("task_id")
-    write_parser.add_argument("--from", dest="from_agent", required=True, choices=["codex", "claude", "human"])
-    write_parser.add_argument("--to", dest="to_agent", required=True, choices=["codex", "claude", "human"])
+    write_parser.add_argument("--from", dest="from_agent", required=True, choices=subparsers.agents + ["human"])
+    write_parser.add_argument("--to", dest="to_agent", required=True, choices=subparsers.agents + ["human"])
     write_parser.add_argument("--session", required=True)
     group = write_parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--file")
@@ -221,6 +229,6 @@ def register(subparsers: Any) -> None:
 
     wrapper_parser = sub.add_parser("wrapper", help="paste-ready text pointing at a handoff")
     wrapper_parser.add_argument("path")
-    wrapper_parser.add_argument("--to", dest="to_agent", required=True, choices=["codex", "claude", "human"])
+    wrapper_parser.add_argument("--to", dest="to_agent", required=True, choices=subparsers.agents + ["human"])
     wrapper_parser.add_argument("--summary", action="append")
     wrapper_parser.set_defaults(func=_cmd_wrapper)

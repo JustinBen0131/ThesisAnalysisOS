@@ -38,9 +38,11 @@ from typing import Any, Dict, List, Optional, Tuple
 from . import basis
 from . import config as config_mod
 from . import events as events_mod
+from . import page, plain
 from . import tasks as tasks_mod
 from .paths import Paths
-from .store import age_hours, atomic_write_json, canonical_json, locked, parse_ts, read_json, sha256_text, utc_now
+from .plain import shell
+from .store import age_hours, atomic_write_json, canonical_json, locked, parse_ts, read_json, sha256_file, sha256_text, utc_now
 from .util import TaosError
 
 TAIL_LINES = 25
@@ -92,7 +94,8 @@ def _isolation(gate: Dict[str, Any]) -> Any:
 def _definition(gate: Dict[str, Any], settings: Dict[str, Any]) -> str:
     said: Dict[str, Any] = {"command": str(gate["command"]), "depends_on": _depends(gate), "basis": settings}
     if _isolation(gate):
-        said["isolated"] = _isolation(gate)     # a run in the open workspace does not answer for an isolated check
+        said["isolated"] = _isolation(gate)
+        said["input_copy"] = "verified"  # Older runs shared storage with the project files.
     return sha256_text(canonical_json(said))
 
 
@@ -191,11 +194,9 @@ def _isolated(cwd: Path, snap: Dict[str, Any], filed: Dict[str, str], command: s
     """Run a check where only the files its result is filed under exist.
 
     A result is reused for as long as the bytes it is filed under are the
-    same. That is sound only if the check could read nothing else. Here it is
-    made true: those files are placed in an empty folder, by hard link where
-    the filesystem allows and by copy otherwise, and the check runs there. A
-    file it did not declare is not there to be read. What it writes is
-    discarded: a check is a question, not a step that produces files.
+    same. Copy each selected file into an empty folder and verify its bytes
+    against the saved input hash before running the check there. Changes
+    within that folder are discarded when the command finishes.
 
     Three more ways to read something else are closed where they can be. The
     environment is fixed everywhere. The network and the rest of the workspace
@@ -205,12 +206,12 @@ def _isolated(cwd: Path, snap: Dict[str, Any], filed: Dict[str, str], command: s
     """
     if not snap.get("complete"):
         return 125, "cannot isolate: {0}".format(snap.get("reason") or "the workspace could not be read"), []
-    names: List[str] = []
+    inputs: Dict[str, str] = {}
     for domain in filed:
         entry = (snap.get("domains") or {}).get(domain)
         if entry and entry.get("files") is None:
             return 125, "cannot isolate: {0} holds {1} files, too many to place; split the domain".format(domain, entry.get("count")), []
-        names.extend((entry or {}).get("files") or {})
+        inputs.update((entry or {}).get("files") or {})
     root = Path(tempfile.mkdtemp(prefix="taos-isolated-"))
     scratch, home, tmp = root / "work", root / "home", root / "tmp"
     prefix = _closed(cwd, root) if closes() else None
@@ -221,13 +222,15 @@ def _isolated(cwd: Path, snap: Dict[str, Any], filed: Dict[str, str], command: s
     try:
         for folder in (scratch, home, tmp):
             folder.mkdir()
-        for name in sorted(set(names)):
+        for name, expected in sorted(inputs.items()):
             target = scratch / name
             target.parent.mkdir(parents=True, exist_ok=True)
             try:
-                os.link(str(cwd / name), str(target))
-            except OSError:
-                shutil.copy2(str(cwd / name), str(target))
+                shutil.copy2(cwd / name, target)
+                if sha256_file(target) != expected:
+                    return 125, "cannot isolate: an input changed while preparing the check: " + name, []
+            except OSError as error:
+                return 125, "cannot isolate: could not prepare {0}: {1}".format(name, error), []
         code, tail = _execute(command, scratch, timeout, env=_fixed_environment(home, tmp), prefix=prefix)
     finally:
         shutil.rmtree(str(root), ignore_errors=True)
@@ -281,11 +284,21 @@ def latest(paths: Paths, task_id: str) -> Optional[Dict[str, Any]]:
     directory = paths.state / "gates"
     if not directory.is_dir():
         return None
-    files = sorted(directory.glob("{0}_*.json".format(task_id)))
+    files = sorted(directory.glob("{0}_*.json".format(task_id)), key=_run_order)
     if not files:
         return None
     data = read_json(files[-1], None)
     return data if isinstance(data, dict) else None
+
+
+def _run_order(path: Path) -> Tuple[str, int]:
+    """Runs in the order they were made: by their second, then by their number within it.
+
+    Sorting the names as text puts `_10` before `_2`, so the tenth run in one second would hide behind the ninth."""
+    stamp, _, serial = path.stem.rpartition("_")
+    if serial.isdigit():
+        return stamp.rpartition("_")[2], int(serial)
+    return serial, 1
 
 
 def standing(paths: Paths, task_id: str, snap: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
@@ -305,12 +318,15 @@ def standing(paths: Paths, task_id: str, snap: Optional[Dict[str, Any]] = None) 
     if snap is None:
         snap = basis.snapshot(_where(paths, task, record), settings)
     results = {result.get("name"): result for result in (record or {}).get("results", [])}
+    same = {result.get("definition"): result for result in (record or {}).get("results", []) if result.get("definition")}
     kept = (record or {}).get("snapshot") or {}
     known = _known(paths) if snap.get("complete") else {}
     out = []
     for gate in gates:
         shared = known.get(_key(_definition(gate, settings), basis.digests(snap, _depends(gate)))) if known else None
-        result = shared or results.get(_name(gate))
+        # Two checks may share one command. A result answers for every check with that exact definition, under its
+        # own name, so a run recorded under the other name is still this check's run.
+        result = shared or results.get(_name(gate)) or same.get(_definition(gate, settings))
         undeclared = sorted(set(_depends(gate) or []) - set(settings.get("domains") or {}))
         if undeclared:
             verdict = basis.verdict(basis.UNKNOWN, "it depends on {0}, which basis.domains in the config does not declare".format(
@@ -354,14 +370,16 @@ def fresh_pass(paths: Paths, task_id: str, hours: Optional[float] = None) -> Opt
 def run(paths: Paths, *, task_id: str, agent: str, workspace: Optional[str] = None, timeout: int = 1800,
         force: bool = False) -> Dict[str, Any]:
     """Run the gates that need running. A gate whose last pass still holds is reused, and the record says so."""
+    config_mod.require_actor(paths, agent)
     gates = config_mod.gates(paths)
     if not gates:
-        raise TaosError("no gates are configured. Add them to .taos/config.json under \"gates\".")
+        raise TaosError(NONE_CONFIGURED)
     store = tasks_mod.TaskStore(paths)
     task = store.get(task_id)
     cwd = _workspace_for(paths, task, workspace)
     if not cwd.is_dir():
-        raise TaosError("gate workspace does not exist: {0}".format(cwd))
+        raise TaosError("The checks for {0} run in {1}, and that folder does not exist. Run them somewhere else: "
+                        "taos gate run --task {0} --workspace <folder>".format(task["id"], shell(str(cwd))))
 
     settings = _settings(paths)
     before = basis.snapshot(cwd, settings)
@@ -373,6 +391,7 @@ def run(paths: Paths, *, task_id: str, agent: str, workspace: Optional[str] = No
         name = _name(gate)
         if name in held:
             result = dict(held[name])   # this exact check already ran on exactly these files
+            result["name"] = name       # recorded under the check it answers, even when another check shares its command
             result.setdefault("tail", "")
             result["reused_from"] = result.get("reused_from") or result["ran_at"]
             results.append(result)
@@ -447,17 +466,62 @@ def run(paths: Paths, *, task_id: str, agent: str, workspace: Optional[str] = No
 # --------------------------------------------------------------------------
 
 
-def _cmd_run(args: argparse.Namespace, paths: Paths) -> int:
-    record = run(paths, task_id=args.task, agent=args.agent, workspace=args.workspace, timeout=args.timeout, force=args.force)
-    for result in record["results"]:
+NONE_CONFIGURED = "No checks are configured yet. Add them to .taos/config.json under \"gates\"; policies/GATES.md says how."
+
+
+def _by_hand() -> bool:
+    """A person typing at a terminal, not a script or an agent reading a pipe."""
+    return page.terminal(sys.stdin) and page.terminal(sys.stdout)
+
+
+def _say(line: str = "") -> None:
+    """A line for the reader. At a terminal a recorded UTC time reads on the local clock; a pipe gets it as recorded."""
+    print(plain.fold(plain.local(line)) if page.terminal(sys.stdout) else line)
+
+
+def _row(state: str, name: str, words: str, wide: int) -> str:
+    """One check: its answer first, then its name, then why. `gate run` and `gate show` share the columns."""
+    return "  {0:<8} {1}  {2}".format(state, name.ljust(max(wide, 11)), words)
+
+
+def rows(record: Dict[str, Any]) -> List[str]:
+    """What one run answered, a row for each check, with the end of a failing check's output under its row."""
+    wide, said = max(len(result["name"]) for result in record["results"]), []
+    for result in record["results"]:                               # a run answers in the same four words as everything else
         if result["name"] in record["reused"]:
-            print("held  {0:<12} not rerun: nothing it tested has changed since {1}".format(result["name"], result["reused_from"]))
+            said.append(_row(basis.HOLDS, result["name"], "not run again: nothing it tested has changed since {0}".format(
+                result["reused_from"]), wide))
             continue
-        print("{0}  {1:<12} exit {2}".format("ok  " if result["exit"] == 0 else "FAIL", result["name"], result["exit"]))
+        said.append(_row(basis.HOLDS if result["exit"] == 0 else basis.FAILS, result["name"],
+                         "ran now and {0} (exit {1})".format("passed" if result["exit"] == 0 else "failed", result["exit"]), wide))
         if result["exit"] != 0 and result["tail"]:
-            print("    " + result["tail"].replace("\n", "\n    "))
-    print("")
-    print("gates {0} -> {1}".format("passed" if record["ok"] else "failed", record["path"]))
+            said.append("    " + result["tail"].replace("\n", "\n    "))
+    return said
+
+
+def _again(task_id: str) -> str:
+    """The command that runs a task's checks again, as the reader would type it."""
+    return "taos gate run --task {0}{1}".format(shell(task_id), "" if _by_hand() else " --agent <you>")
+
+
+def _cmd_run(args: argparse.Namespace, paths: Paths) -> int:
+    agent = args.agent or ("human" if _by_hand() else None)        # at a terminal the person running it is the human
+    if agent is None:
+        sys.stderr.write("taos gate run needs --agent: who is running the checks.\n"
+                         "  taos gate run --agent <{0}> --task {1}\n"
+                         "At a terminal it is you, and --agent human is assumed.\n".format("|".join(config_mod.project_agents(paths) + list(config_mod.RESERVED_ACTORS)), shell(args.task)))
+        return 2
+    record = run(paths, task_id=args.task, agent=agent, workspace=args.workspace, timeout=args.timeout, force=args.force)
+    for line in rows(record):
+        _say(line)
+    _say()
+    failed = [result for result in record["results"] if result["exit"] != 0]
+    if failed:
+        _say("{0} of {1} checks did not pass; the output above says why. When it is fixed: {2}".format(
+            len(failed), len(record["results"]), _again(record["task_id"])))
+    else:
+        _say("Every check passes. What {0} rests on now: taos why {0}".format(shell(record["task_id"])))
+    _say("Recorded in {0}".format(record["path"]))
     return 0 if record["ok"] else 1
 
 
@@ -468,19 +532,27 @@ def _cmd_show(args: argparse.Namespace, paths: Paths) -> int:
         lean = [{key: value for key, value in verdict.items() if key != "result"} for verdict in verdicts]
         print(json.dumps({"latest": record, "standing": lean}, indent=2, sort_keys=True))
         return 0
+    if not verdicts:
+        print(NONE_CONFIGURED)
+        return 0
+    task = tasks_mod.TaskStore(paths).get(args.task)["id"]
+    _say("{0}, each check on the files as they are now:".format(task))
+    wide = max(len(verdict["gate"]) for verdict in verdicts)
+    for verdict in verdicts:                                       # the answer leads the row (docs/INTERFACE.md, rule 1)
+        _say(_row(verdict["state"], verdict["gate"], verdict["reason"], wide))
     if record is None:
-        print("no gate runs for {0}".format(args.task))
+        _say("{0} has not been checked yet. Check it: {1}".format(task, _again(task)))
+    elif any(verdict["state"] != basis.HOLDS for verdict in verdicts):
+        _say("Last run {0}, in {1}. Run the checks again: {2}".format(record["ran_at"], record["workspace"], _again(task)))
     else:
-        print("{0}  {1}  {2}".format(record["ran_at"], "ok" if record["ok"] else "FAILED", record["workspace"]))
-    for verdict in verdicts:
-        print("  {0:<12} {1:<8} {2}".format(verdict["gate"], verdict["state"], verdict["reason"]))
+        _say("Last run {0}, in {1}.".format(record["ran_at"], record["workspace"]))
     return 0
 
 
 def _cmd_list(args: argparse.Namespace, paths: Paths) -> int:
     gates = config_mod.gates(paths)
     if not gates:
-        print("no gates configured")
+        print(NONE_CONFIGURED)
         return 0
     for gate in gates:
         depends = _depends(gate)
@@ -491,11 +563,12 @@ def _cmd_list(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    gate = subparsers.add_parser("gate", help="the commands that must pass before review")
+    gate = subparsers.add_parser("gate", help="run the checks, and see whether each still holds")
     sub = gate.add_subparsers(dest="gate_cmd", required=True)
 
     runner = sub.add_parser("run", help="run the gates that need it and record what each result stood on")
-    runner.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    runner.add_argument("--agent", choices=subparsers.actors,
+                        help="who runs the checks; at a terminal, human unless you say otherwise")
     runner.add_argument("--task", required=True)
     runner.add_argument("--workspace", help="run somewhere other than the task's worktree or the primary workspace")
     runner.add_argument("--timeout", type=int, default=1800)

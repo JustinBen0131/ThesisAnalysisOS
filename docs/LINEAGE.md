@@ -1,17 +1,17 @@
 # Lineage
 
-This OS is the generalized second version of a control plane that ran a
-two-agent physics thesis for a year: several hundred tasks, Codex and Claude
-in daily use, a multi-thousand-line policy stack, and every collision, lost
-handoff, and phantom record paid for at least once. This file records what
-was kept, what was cut, and why, so nobody re-adds the cut parts by accident.
+The original physics project used Codex and Claude over a
+year of daily work. One researcher coordinated several hundred tasks and
+recorded the conflicting edits and lost handoffs that shaped this design.
+Today's project roster gives each participating session its own role name.
+[Configuring project roles](AGENT_ROLES.md)
 
 ## Kept, because it worked
 
 - **Stable ids allocated only by the tool.** A hand-written id once pointed at
   a task that did not exist anywhere else. Never again.
 - **Scope-local claims with heartbeats and logged takeover.** The only thing
-  that reliably kept two agents from editing the same files.
+  that helped prevent overlapping edits in the original project.
 - **Hot work selective on entry, persistent on lifecycle.** A rail that fills
   itself is noise; a rail you have to opt into stays meaningful.
 - **Handoffs as files with a fixed shape.** Chat transcripts did not survive
@@ -58,3 +58,9 @@ was kept, what was cut, and why, so nobody re-adds the cut parts by accident.
   practice, so the guard enforces it rather than a policy line asking for it.
 - The daily brief lost its human-formatting layer (Google Docs, colour bands)
   and kept only the part that mattered: the top line and what needs you.
+
+## How to compare the record with other tools
+
+- **Which work needs doing again?** GNU Make compares a target with its prerequisites. In the pendulum example, the plot colour changes while the six timing inputs stay the same. TAOS can reuse the recorded fit. [How GNU Make works](https://www.gnu.org/software/make/manual/html_node/How-Make-Works.html)
+- **Where did a number come from?** W3C PROV describes entities, activities and responsible agents. AiiDA connects scientific data and processes in a provenance graph. For the two-instrument study, trace the pooled count back to each instrument’s rows. [W3C PROV-DM](https://www.w3.org/TR/prov-dm/) · [AiiDA provenance](https://aiida.readthedocs.io/projects/aiida-core/en/stable/topics/provenance/concepts.html)
+- **Where should the next session begin?** LangGraph saves a thread’s state in checkpoints. An incoming TAOS reviewer can ask which checks still hold, read the researcher’s dated instruction and find the next action in a task packet. The transit walkthrough also shows which report version the operator accepted. [LangGraph persistence](https://docs.langchain.com/oss/python/langgraph/persistence)

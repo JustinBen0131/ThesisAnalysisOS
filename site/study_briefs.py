@@ -168,6 +168,19 @@ def _handoff(record):
     return finding, rows
 
 
+def _session(record):
+    surfaces = record["surfaces"]
+    rows = []
+    for key, label in (("compact_status", "Project status"), ("task_capsule", "One task brief"),
+                       ("agents_md", "Project instructions")):
+        row = surfaces[key]
+        prefix = "/surfaces/" + key
+        value = f"{row['lines']} lines, {row['bytes']:,} UTF-8 bytes. {row['delivery']}"
+        rows.append(_observation(label, value, prefix + "/lines", prefix + "/bytes", prefix + "/delivery"))
+    return (f"The brief for one task was {surfaces['task_capsule']['lines']} lines. "
+            "The status and project instructions are available separately.", rows)
+
+
 def study_briefs(records_dir: Path, dataset_by_stem: dict) -> dict:
     """All paths are site-root relative; each observation's pointers resolve within its raw JSON file."""
     specs = {
@@ -176,6 +189,7 @@ def study_briefs(records_dir: Path, dataset_by_stem: dict) -> dict:
         "reuse_frontier": (_reuse, "source/raw/evals/reuse_frontier.py", "evidence/#reuse-full"),
         "measurement_audit": (_measurement, "records/measurement-method.md", "evidence/pendulum/"),
         "model_evaluation": (_model, "records/model-evaluation/docs/MODEL_EVALUATION.md", "evidence/model-evaluation/"),
+        "session_footprint": (_session, "source/raw/evals/session_footprint.py", "evidence/#session-reading"),
         "handoff_audit": (_handoff, "records/handoff-method.md", "evidence/#handoff-audit"),
     }
     briefs = {}
@@ -193,7 +207,7 @@ def study_briefs(records_dir: Path, dataset_by_stem: dict) -> dict:
         if stem == "mutations":
             scope += " The runner requires the unmodified test modules to pass first. One seeded fault tests macOS isolation."
         command = f"python3 evals/{stem}.py"
-        if stem in {"measurement_audit", "model_evaluation", "handoff_audit"}:
+        if stem in {"measurement_audit", "model_evaluation", "handoff_audit", "session_footprint"}:
             command += " --verify"
         briefs[stem] = dict(question=dataset["name"], finding=finding, method=dataset["measurementTechnique"], scope=scope,
                             observations=observations, test_command=command, method_path=method_path, detail_path=detail_path)

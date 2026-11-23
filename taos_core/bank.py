@@ -176,9 +176,9 @@ def _cmd_score(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    bank = subparsers.add_parser("bank", help="replay past decisions as a standing test")
+    bank = subparsers.add_parser("bank", help="test a reader on past decisions with known answers")
     sub = bank.add_subparsers(dest="bank_cmd", required=True)
-    agents = list(events_mod.AGENTS)
+    agents = subparsers.actors
 
     adder = sub.add_parser("add", help="add a past decision as a case")
     adder.add_argument("--request", required=True)

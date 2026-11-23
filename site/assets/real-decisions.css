@@ -1,0 +1,67 @@
+/* Five real decisions. The evolved form of the five-decision workshop (site/review_practice.py):
+   the same three-choice shape, with every case taken from the project's own record.
+   A reader who presses nothing still gets the fact and the lesson of all five. Scoped under .rd. */
+.rd {
+  --rd-card: var(--card, #0d1914); --rd-ink: var(--ink, #e9efe9); --rd-soft: var(--soft, #9bada3);
+  --rd-line: var(--line, #1d2d26); --rd-edge: var(--edge, #34483e); --rd-accent: var(--link, #e3bd6a);
+  --rd-holds: var(--holds, #6fd3a0); --rd-stale: var(--stale, #f2a23a);
+  --rd-serif: var(--serif, "Iowan Old Style", Georgia, serif);
+  --rd-mono: var(--mono, ui-monospace, Menlo, monospace);
+  color: var(--rd-ink);
+}
+.rd *, .rd *::before, .rd *::after { box-sizing: border-box; }
+.rd-head { max-width: 46rem; margin: 0 0 1.8rem; }
+.rd-kicker { font: 600 0.74rem/1.4 var(--rd-mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--rd-soft); margin: 0 0 1rem; }
+.rd-title { font: 400 clamp(1.9rem, 3.6vw, 2.7rem)/1.1 var(--rd-serif); letter-spacing: -0.012em; margin: 0; max-width: none; }
+.rd-pool { font-size: 1.12rem; line-height: 1.5; margin: 0.9rem 0 0; }
+.rd-count { font-size: 0.86rem; color: var(--rd-soft); margin: 0.5rem 0 0; min-height: 1.4em; }
+
+.rd-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.9rem; counter-reset: rd; }
+.rd-case { counter-increment: rd; background: var(--rd-card); border: 1px solid var(--rd-line); border-radius: 16px; padding: 1.2rem 1.5rem 1.3rem;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.4rem 2.4rem; align-items: start; transition: border-color 0.3s; }
+.rd-case.is-done { border-color: var(--rd-edge); }
+.rd-what { grid-column: 1; }
+.rd-play { grid-column: 2; grid-row: 1 / span 2; }
+.rd-kind { display: flex; align-items: center; gap: 0.6rem; font: 600 0.7rem/1.3 var(--rd-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--rd-soft); margin: 0 0 0.55rem; }
+.rd-kind::before { content: counter(rd, decimal-leading-zero); color: var(--rd-accent); }
+.rd-case h3 { font: 400 1.65rem/1.15 var(--rd-serif); margin: 0 0 0.45rem; }
+.rd-fact { font-size: 1.04rem; line-height: 1.5; margin: 0; }
+.rd-fact b { font-weight: 650; color: var(--rd-accent); }
+
+.rd-ask { font-size: 1rem; font-weight: 600; margin: 0 0 0.55rem; }
+.rd-choices { display: grid; gap: 0.4rem; }
+.rd-choices button { font: inherit; font-size: 0.97rem; line-height: 1.35; text-align: left; color: var(--rd-ink); background: transparent;
+  border: 1px solid var(--rd-edge); border-radius: 10px; padding: 0.55rem 0.8rem; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.rd-choices button:hover { border-color: var(--rd-ink); }
+.rd-choices button[aria-pressed="true"] { border-color: var(--rd-ink); background: rgba(255, 255, 255, 0.045); }
+.rd-choices button[data-took][aria-pressed="true"] { border-color: var(--rd-holds); }
+.rd :is(button, a):focus-visible { outline: 3px solid var(--rd-accent); outline-offset: 3px; }
+.rd-say { font-size: 0.97rem; line-height: 1.45; margin: 0.55rem 0 0; min-height: 2.9em; }
+.rd-say:empty { min-height: 0; }
+.rd-replies { margin: 0.5rem 0 0; padding: 0; list-style: none; font-size: 0.93rem; color: var(--rd-soft); }
+.rd-replies li { margin: 0.25rem 0; }
+.rd-replies b { color: var(--rd-ink); font-weight: 600; }
+
+.rd-proof { grid-column: 1 / -1; border-top: 1px solid var(--rd-line); margin-top: 0.9rem; padding-top: 0.85rem;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.3rem 2.4rem; font-size: 0.97rem; line-height: 1.5; }
+.rd-proof p { margin: 0; }
+.rd-proof .rd-label { display: block; font: 600 0.68rem/1.4 var(--rd-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--rd-soft); margin-bottom: 0.15rem; }
+.rd-proof .rd-now .rd-label { color: var(--rd-holds); }
+.rd-cannot { display: block; margin-top: 0.3rem; color: var(--rd-soft); }
+.rd-proof code { font-family: var(--rd-mono); font-size: 0.86em; color: var(--rd-ink); background: rgba(255, 255, 255, 0.05); border-radius: 5px; padding: 0.1em 0.4em; white-space: nowrap; }
+
+/* Armed by the script: the reply list becomes one live line, and the record waits for a choice. */
+.rd[data-live="1"] .rd-replies { display: none; }
+.rd[data-live="1"] .rd-case:not(.is-done) .rd-proof { display: none; }
+
+.rd-end { margin: 1.8rem 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem 1.4rem; }
+.rd-end p { margin: 0; font-size: 1.12rem; max-width: 34rem; }
+.rd-door { display: inline-block; text-decoration: none; font-weight: 600; border-radius: 99px; padding: 0.7rem 1.4rem; background: var(--rd-ink); color: var(--paper, #10160f); border: 1px solid var(--rd-ink); }
+.rd-note { margin: 1.4rem 0 0; font-size: 0.82rem; color: var(--rd-soft); border-top: 1px solid var(--rd-line); padding-top: 0.9rem; max-width: 52rem; }
+
+@media (max-width: 860px) {
+  .rd-case, .rd-proof { grid-template-columns: minmax(0, 1fr); }
+  .rd-play { grid-column: 1; grid-row: auto; margin-top: 0.8rem; }
+  .rd-case { padding: 1.05rem 1rem 1.1rem; }
+}
+@media (prefers-reduced-motion: reduce) { .rd * { transition: none !important; } }

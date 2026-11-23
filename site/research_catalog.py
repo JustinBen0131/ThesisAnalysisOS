@@ -1,4 +1,4 @@
-"""Describe the six downloadable research records using Schema.org JSON-LD."""
+"""Describe the downloadable research records using Schema.org JSON-LD."""
 
 import hashlib
 import json
@@ -38,9 +38,9 @@ EXPERIMENTS = (
         "reuse_frontier", "When does tracking the inputs to a check save work without reusing an obsolete result?",
         "Apply {edits} seeded file edits to a workspace with {checks} checks and compare execution logs "
         "against the folders each check actually read.",
-        "The workload uses small file checks, and its timing and break-even estimates describe one machine.",
+        "The workload uses small file checks. Consultation and isolation timings describe the recorded machine and workload.",
         ("Check executions after the initial runs", "Reuses after an input changed",
-         "Time spent checking inputs", "Break-even execution time"),
+         "Time spent checking inputs", "Paired time spent running a check in isolation"),
         "evidence/#reuse-full",
     ),
     Experiment(
@@ -61,6 +61,14 @@ EXPERIMENTS = (
         ("True positives, false negatives, false positives and true negatives by instrument and pooled",
          "Direction of sensitivity change", "Executed and reused checks", "Group and pooled check outcomes"),
         "evidence/model-evaluation/",
+    ),
+    Experiment(
+        "session_footprint", "What does a new session actually have to read?",
+        "Construct the pendulum demo and collect its compact project status, one task brief and the generated instructions as {surfaces} separate texts. "
+        "Count their UTF-8 bytes and lines after replacing temporary paths, the Python executable path and the status dates with fixed labels.",
+        "One local demo. The host determines which instructions it loads. The recorded sizes describe the text the software returns.",
+        ("UTF-8 bytes", "Text lines", "How the text reaches an assistant", "SHA-256 of the normalized text"),
+        "evidence/#session-reading",
     ),
     Experiment(
         "handoff_audit", "Which earlier check can another task cite after the data changes or is restored?",
@@ -88,6 +96,8 @@ def _study_sizes(stem: str, raw: dict) -> dict:
         return {"readings": len(raw["baseline_rows"]), "cases": len(raw["cases"])}
     if stem == "model_evaluation":
         return {"readings": sum(raw["baseline_counts"]["pooled"]), "cases": len(raw["cases"])}
+    if stem == "session_footprint":
+        return {"surfaces": len(raw["surfaces"])}
     observations = raw["observations"]
     return {"requests": len(observations), "tasks": len({row["task"] for row in observations})}
 

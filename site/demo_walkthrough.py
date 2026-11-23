@@ -1,9 +1,12 @@
 """Project a real command-line demo into reader decisions and check its numerical evidence."""
 import html
 import json
+import os
 import re
 import subprocess
 import sys
+import tempfile
+from pathlib import Path
 from datetime import date
 from decimal import Decimal
 from fractions import Fraction
@@ -28,12 +31,29 @@ def require(condition, reason):
         raise ValueError("Demo walkthrough: " + reason)
 
 
-def capture(repo):
-    run = subprocess.run([sys.executable, str(repo / "taos"), "demo", "--json"], cwd=repo,
-                         capture_output=True, text=True, encoding="utf-8")
+def capture(repo, *, keep=False, env=None):
+    args = [sys.executable, str(repo / "taos"), "demo", "--json"] + (["--keep"] if keep else [])
+    run = subprocess.run(args, cwd=repo, env=env, capture_output=True, text=True, encoding="utf-8")
     if run.returncode:
         raise ValueError("The demo could not produce its run record: " + run.stderr[-800:])
     return json.loads(run.stdout)
+
+
+def capture_review_session(repo):
+    """Read the successor's actual brief in the same temporary run the visitor replays."""
+    with tempfile.TemporaryDirectory(prefix="taos-site-review-") as scratch:
+        env = dict(os.environ, TMPDIR=scratch, PYTHONDONTWRITEBYTECODE="1", NO_COLOR="1")
+        record = capture(repo, keep=True, env=env)
+        kept = Path(record["kept"]).resolve()
+        kept.relative_to(Path(scratch).resolve())
+        brief = subprocess.check_output([sys.executable, str(kept / "os/taos"), "capsule", "PEN-2"],
+                                        cwd=kept / "pendulum", env=env, text=True, encoding="utf-8")
+        # Publication preserves the actual lines and replaces the temporary machine-specific location.
+        workspace = only((line for line in brief.splitlines() if line.startswith("workspace:")), "task workspace")
+        require(Path(workspace.partition(":")[2].strip()).resolve() == kept / "pendulum", "unexpected capsule workspace")
+        brief = brief.replace(workspace, "workspace: <kept demo>/pendulum", 1)
+        record["kept"] = None
+        return record, brief
 
 
 def only(items, name):
@@ -91,14 +111,23 @@ def chapters(record, audit):
             "a command's stated expectation is missing from its output")
     keyed = {e["id"]: e for e in runs if e.get("id")}
     require(len(keyed) == sum(bool(e.get("id")) for e in runs), "duplicate decision id")
-    for key, answer, subject in (("baseline", "holds", "check fit"), ("style-only", "holds", "check fit"),
-                                 ("timing-edited", "stale", "check fit"), ("rerun", "ok", "fit"),
-                                 ("shared", "held", "fit"), ("edited-after", "stale", "acceptance"),
-                                 ("undeclared", "FAIL", "style"), ("declared", "ok", "style")):
+    # Both V1 terminal formats distinguish a newly executed check from a reused pass.
+    decisions = {
+        "baseline": ("holds check fit",), "style-only": ("holds check fit",),
+        "timing-edited": ("stale check fit",), "edited-after": ("stale acceptance",),
+        "rerun": ("ok fit exit 0", "holds fit ran now and passed (exit 0)"),
+        "shared": ("held fit not rerun: nothing it tested has changed",
+                   "holds fit not run again: nothing it tested has changed"),
+        "undeclared": ("FAIL style exit 2", "fails style ran now and failed (exit 2)"),
+        "declared": ("ok style exit 0", "holds style ran now and passed (exit 0)"),
+    }
+    for key, forms in decisions.items():
         step = keyed[key]
-        answers = [re.match(r"^(\S+)\s+" + subject + r"\b", line) for line in step["printed"]]
-        require(step.get("answer") == answer and any(match and match[1] == answer for match in answers),
-                f"{key} does not support its reader-facing decision")
+        rows = [" ".join(line.split()) for line in step["printed"]]
+        valid = any(step.get("answer") == form.split()[0] and
+                    any(row == form or row.startswith((form + " ", form + ":")) for row in rows)
+                    for form in forms)
+        require(valid, f"{key} does not support its reader-facing decision")
 
     standing = events["standing"]
     first = standing.index(keyed["baseline"]) + 1
@@ -168,7 +197,7 @@ def chapters(record, audit):
               (("Reviewed", "Fit and residuals"), ("Later edit", "analysis/fit.py"), ("Approval applies to", "Earlier version")),
               "taos_core/tasks.py", transcript(events["acceptance"])),
         Scene("run-reminder", "Reminder", "Find out whether a reminder helped",
-              "The next assistant saw a reminder about a disturbed swing. Nobody recorded what happened afterwards, so its effect is unknown.",
+              "The next agent saw a reminder about a disturbed swing. Nobody recorded what happened afterwards, so its effect is unknown.",
               (("Times shown", reminder[4]), ("Outcomes judged", str(int(reminder[1]) + int(reminder[2])))),
               "taos_core/lessons.py", transcript(events["reminder"])),
         Scene("run-7", "Missing file", "Find the file a check forgot to list",

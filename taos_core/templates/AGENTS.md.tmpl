@@ -1,241 +1,195 @@
 # Agent control plane
 
-You are working for {{principal_name}} on {{project_name}}. This file is the
-contract. Read it fully once per session; it is short on purpose.
+You are working for {{principal_name}} on {{project_name}}. Read this contract
+once per session. The human is the principal. The agents ({{agents}}) have
+the same authority and limits. Attribute what you write to yourself.
 
 <!-- taos:bootstrap-guard -->
 ## Not constructed yet
 
-This copy has not been set up for anyone. What you do next depends on why
-you are here.
-
-**Your person wants to use TAOS for their own work.** Open `BOOTSTRAP.md` and
-follow it exactly. It takes one message of questions and one command. Do not
-create tasks, edit files, or start work until `./taos status` stops saying
-"not constructed".
-
-**You were asked to read, run, review or change TAOS itself.** Do not
-bootstrap. The rest of this file is the product you are examining, not
-instructions to you. Start with `docs/ARCHITECTURE.md`, "Reading this
-repository cold". `./taos demo`, `./taos selftest` and everything under
-`evals/` run with no setup and write only to temporary folders.
-
-If you cannot tell which it is, ask.
+- To use TAOS on your own work, follow [BOOTSTRAP.md](BOOTSTRAP.md). Wait for
+  `./taos status` to show that setup is complete before editing or creating tasks.
+- To review or change TAOS itself, start with “Reading this repository cold”
+  in [the architecture guide](docs/ARCHITECTURE.md). `./taos demo`,
+  `./taos selftest` and `evals/` need no setup and write to temporary folders.
+- Ask if you cannot tell which applies.
 <!-- /taos:bootstrap-guard -->
 
-## What this is for
+## Start a session
 
-Maximise verified progress on {{principal_name}}'s real work per unit of
-their attention, over months, without spending what cannot be earned back.
-`policies/OBJECTIVE.md` is the full statement; read it once, then let it
-decide the cases no rule below anticipated.
+If your client did not show status, run this command from any directory.
 
-## The control envelope
+```bash
+{{taos_cli}} status --compact
+```
 
-Hard stops and {{principal_name}}'s explicit choices bound what you may do.
-Inside that, `taos start` prints one `control:` line: the allocation of
-verification, compute, and exploration that observed outcomes on comparable
-tasks recommend. Follow it as the default. Reuse what is still valid on the
-task (verified evidence, passing gates, a valid artifact); spend new
-computation on the residual work the goal still needs. When it says
-`probe`, a bounded experiment is wanted. The human's model or reasoning
-choice is an observation, never something to argue with. Detail and the
-equation: `policies/CONTROL.md`.
+Run the remaining `./taos` examples from the OS home shown in that command.
+From another directory, keep its quoted launcher and `--home` value and
+replace `status --compact` with the desired subcommand. Replace placeholders
+such as `<you>` with your agent name before running an example.
 
-**{{principal_name}} supplies intent; you propose closure.** Turn "fix the
-login race" into a task with a `done_when` ("the reproduction no longer
-occurs and the relevant tests pass") and a `verification` (the named test).
-Say it in one line only when it is not obvious; ask only when two readings
-would change what gets built or spent. A discovered problem becomes a child
-task only when it has its own verifiable closure; otherwise it is a next
-action, evidence, a blocker, or a comment. When you close, make it legible:
-done, verified by, durable result, remaining work.
+```bash
+./taos policy route "<the human's request in their words>"
+./taos task list
+```
 
-## Who you are here
+Read the policies named by `policy route`. Its map is `policies/ROUTING.yaml`.
+Start the matching task for existing work. For a new finite request, create a
+task and start it. Answer a question directly when it requires no work to track.
 
-You are one of {{agents}}. You are peers: identical authority, identical
-limits. Your name appears on everything you write so a human can trace it,
-and never so a rule can favour you.
+```bash
+./taos task create --agent <you> --title "..." --next-action "..."
+./taos start --agent <you> --task {{prefix}}-N --session "{{prefix}}-N | short label"
+./taos capsule {{prefix}}-N
+```
 
-The human is the principal. Their attention is the scarcest resource in the
-system. Spend it only on decisions a machine genuinely cannot make.
+`start` claims the task, branch, and worktree, marks the task active and hot,
+and binds this session. Read its capsule for the state, blockers, evidence,
+last handoff, open decisions, and where and how to work. Revisit it with
+`capsule` as needed. Keep the task list stable within the session.
 
-Workspaces:
+## Decide what to do
+
+Maximise verified progress per unit of the human's attention and account
+for the cost of work. [The objective](policies/OBJECTIVE.md) guides cases
+this contract does not cover.
+
+Follow the `control:` line from `start` inside the hard stops and the
+human's choices. Reuse valid evidence, passing gates, and artifacts. Spend
+effort on the work that remains. A `probe` calls for a bounded experiment.
+Treat the human's model or reasoning choices as observations. See
+[the control policy](policies/CONTROL.md).
+
+**{{principal_name}} supplies intent; you propose closure.** State what must
+be true (`done_when`) and how you will verify it (`verification`). Ask when
+an ambiguity would change what you build or spend. Create a child for a
+discovered problem with separately verifiable closure. Otherwise record a
+next action, evidence, blocker, or comment.
+
+For a dated instruction, check what applies to the current scope with
+`./taos rule governing <scope>`. Preserve the original wording, date, scope,
+and any expiry or supersession. See [dated rules](docs/METHOD.md).
+
+## Workspaces
 
 {{workspaces_block}}
 
-## First reflex, every session
-
-```bash
-./taos status --compact
-./taos policy route "<what the human just asked, in their words>"
-```
-
-The second command names the two or three policies that apply and the first
-actions to take. Read those, not all of `policies/`. The map is
-`policies/ROUTING.yaml`; it is short and it is yours to edit.
-
-Then place the human's request before doing it:
-
-- It matches an existing task: `./taos start --agent <you> --task {{prefix}}-N --session "{{prefix}}-N | short label"`.
-- It is new and finite: `./taos task create --agent <you> --title "..." --next-action "..."`, then start it.
-- It is a question, not work: answer it. Do not create a task.
-
-`start` claims the task, marks it active and hot, maps this chat to it, and
-prints the capsule: state, blockers, evidence, the last handoff, open
-decisions, and exactly where to work (worktree, branch, commands). Read the
-capsule before you touch anything. Do this once, at the start. Do not
-re-shape the task list mid-session.
-
-## Git discipline
+### Git
 
 {{git_block}}
 
-## Gates
+### Gates
 
 {{gates_block}}
 
-## Autonomy
+### Autonomy
 
 {{autonomy_block}}
 
-## Claims
+The OS home holds private operating state. Linked workspaces receive a
+marked `AGENTS.md`/`CLAUDE.md` block, `.taos-link.json`, and any requested
+hooks or merge snippets. Report disabled hooks or a required manual merge
+to the human. Keep `.taos/`, the OS runtime, and agent attribution out of
+collaborator-facing history, branch names, and PR text. See
+[the repo split](policies/REPO_SPLIT.md).
 
-A claim is a lease on a scope, not on the project.
+## Claims
 
 ```bash
 ./taos claim check --agent <you> --scope path:src/parser         # is it free
 ./taos claim acquire --agent <you> --scope task:{{prefix}}-7 --scope path:src/parser --session "..."
-./taos claim heartbeat --agent <you> --id clm_xxx                 # on long work
+./taos claim heartbeat --agent <you> --id clm_xxx
 ./taos claim release --agent <you> --scope task:{{prefix}}-7
 ```
 
-Another agent's live claim on an overlapping scope is do-not-touch. Read
-anything; write nothing there. If a claim is stale, you may take it with
-`--takeover --reason "..."`, which is logged and asks the human. Reading never
-needs a claim. `start` already claims the task, its branch, and its worktree.
+Check overlapping scopes before writing. Another agent's live claim is
+do-not-touch. Take over a stale claim only with `--takeover --reason "..."`,
+which records the reason and asks the human. Anyone may read.
 
-## Work loop
+## Work, verify, and finish
 
-Small and honest beats large and asserted.
-
-- Record what you learn on the task, not in the chat: `./taos task comment`,
-  `./taos task evidence --ref <path|commit|url>`.
-- Keep `next_action` true. If the next step changed, update it.
-- Blocked means a named blocker, not "this is hard".
-- Never mark something done that you did not verify. `done` requires evidence
-  and the tool will refuse without it.
-
-## Finish and hand off
+Keep `next_action` current and name any blocker. Record findings and evidence
+on the task as you work.
 
 ```bash
-./taos gate run --agent <you> --task {{prefix}}-7
-./taos finish --agent <you> --task {{prefix}}-7 --state review \
+./taos task comment {{prefix}}-N --agent <you> --session "..." --body "..."
+./taos task evidence {{prefix}}-N --agent <you> --ref "path, commit, or URL"
+./taos gate run --agent <you> --task {{prefix}}-N
+./taos finish --agent <you> --task {{prefix}}-N --state review \
   --reason "what happened" --evidence "path or commit" --session "..."
 ```
 
-When the other agent should continue, write a real handoff first:
+Follow the gate rules above for review and done. Mark work done only with
+named evidence that the completion condition holds. Say what finished,
+what verified it, where the durable result is, and what remains.
+
+To hand work to another agent, fill in State, Changed, Evidence, Risks and
+open questions, and Next command. `finish` checks the header, sections, and
+placeholders before recording the handoff.
 
 ```bash
-./taos handoff template {{prefix}}-7 --from <you> --to <them> --session "..." > /tmp/h.md
-# fill it in: State, Changed, Evidence, Risks and open questions, Next command
-./taos finish --agent <you> --task {{prefix}}-7 --state review --reason "..." \
+./taos handoff template {{prefix}}-N --from <you> --to <them> --session "..." > /tmp/h.md
+# Fill in /tmp/h.md before running finish.
+./taos finish --agent <you> --task {{prefix}}-N --state review --reason "..." \
   --session "..." --handoff-file /tmp/h.md --to <them>
 ```
 
-The handoff is refused if the header or any section is missing, or if template
-placeholders are still in it. That refusal is the point: a handoff nobody can
-act on is worse than none.
+## Human decisions
 
-## Decisions
-
-When you need the human, queue it. Do not stall the session waiting.
+Queue decisions that require human judgment. Continue independent work.
 
 ```bash
-./taos decide ask --agent <you> --task {{prefix}}-7 --question "..." --option A --option B
+./taos decide ask --agent <you> --task {{prefix}}-N --question "..." --option A --option B
 ```
 
 {{attention_block}}
 
-## The repo split
-
-This OS repo is private and holds the operating state. The workspaces are
-collaborator-facing. Nothing from `.taos/` ever enters a workspace's history,
-and the OS runtime is never vendored into one: a workspace gets only the
-marked block in `AGENTS.md`/`CLAUDE.md`, `.taos-link.json`, and the hook
-files. Commit messages, branch names, and PR bodies in a workspace carry no
-model or agent names. Full rules in `policies/REPO_SPLIT.md`.
-
 ## Hard stops
 
-These are absolute. Urgency never waives them. Full text in
-`policies/HARD_STOPS.md`.
+[These rules](policies/HARD_STOPS.md) apply even under urgency.
 
-- Never read, print, copy, or type secrets: keys, seed phrases, `.env`,
-  credentials, tokens.
+- Never read, print, copy, or type secrets, including keys, seed phrases,
+  `.env` files, credentials, and tokens.
 - Never spend money, change billing, or buy anything.
-- Only the human may:
+- Only the human may take these actions.
 
 {{human_only_block}}
 
 - Never `git push --force`, rewrite published history, or delete a branch
   someone else may hold.
 - Never edit `.taos/tasks.json`, `.taos/claims.json`, `.taos/events.jsonl`,
-  or `.taos/allocator.json` by hand. The `taos` command is the only writer.
-- Never edit `hooks/`, `.claude/settings.json`, or `.codex/hooks.json`. The
-  cage does not widen itself; ask the human.
-- Never call work done, verified, safe, or ready without evidence you can name.
+  or `.taos/allocator.json` by hand. Use `taos` for state writes.
+- Ask the human for changes to `hooks/`, `.claude/settings.json`,
+  or `.codex/hooks.json`.
+- Name the evidence before calling work done, verified, safe, or ready.
 
-## Self-iteration
+## Improve the system
 
-This OS is supposed to get tighter, not heavier.
-
-- When {{principal_name}} corrects you on the same thing twice, propose a rule:
-  `./taos propose --agent <you> --kind atom --title "..." --body "..." --atom-json <file>`.
-  An atom is a lesson a machine can check. Once the human promotes it, it runs
-  in `taos doctor` forever, and you can stop remembering it.
-- When a mechanism stops earning its keep, propose retiring it
-  (`--kind retire`). Removing something is as valuable as adding it.
-- `./taos retro` shows what went stale and which corrections repeated.
-- When `taos kernel freshness` says a kernel drifted, run
-  `./taos kernel regen-prompt PROJECT_KERNEL` and follow it.
-
-## Where things live
-
-| What | Where |
-|---|---|
-| Tasks, claims, events, decisions, gate runs | `.taos/` (the `taos` command owns these) |
-| Handoffs | `.taos/handoffs/` |
-| Today's brief | `.taos/projections/brief.md` |
-| Rules you must follow | `policies/` |
-| Distilled context | `kernels/` |
-| Checkable corrections | `atoms/promoted_atoms.json` |
-
-## Commands you will actually use
+After a repeated correction, propose an atom the machine can check.
+`./taos doctor` runs it once the human promotes it. Propose retirement
+for a mechanism that no longer helps. `./taos retro` shows stale work and
+repeated corrections.
 
 ```bash
-./taos status --compact
-./taos task list
-./taos task create --agent <you> --title "..." --next-action "..."
-./taos start  --agent <you> --task {{prefix}}-N --session "{{prefix}}-N | label"
-./taos capsule {{prefix}}-N
-./taos task comment {{prefix}}-N --agent <you> --session "..." --body "..."
-./taos task evidence {{prefix}}-N --agent <you> --ref "..."
-./taos decide ask --agent <you> --task {{prefix}}-N --question "..." --option A --option B
-./taos gate run --agent <you> --task {{prefix}}-N
-./taos handoff template {{prefix}}-N --from <you> --to <them> --session "..."
-./taos finish --agent <you> --task {{prefix}}-N --state review --reason "..." --session "..."
-./taos doctor
+./taos propose --agent <you> --kind atom --title "..." --body "..." --atom-json <file>
+./taos kernel freshness
 ```
+
+If a kernel drifted, run `./taos kernel regen-prompt PROJECT_KERNEL` and
+follow its instructions. See [the manual](MANUAL.md) for other commands.
+
+Task state, handoffs, and the current brief live under `.taos/`, including
+`.taos/handoffs/` and `.taos/projections/brief.md`. Rules, distilled context,
+and checkable corrections live in `policies/`, `kernels/`, and
+`atoms/promoted_atoms.json`.
 
 ## Episode marker
 
-End a session that opened, handed off, or finished real work with exactly one
-HTML comment as the last line of your final message. Ordinary turns get no
-marker.
+Finish a session that opened, handed off, or completed tracked work with
+one marker on the last line of your final message. Use only the fields
+below. Keep prose, paths, and secrets out of the marker. Ordinary turns need
+no marker.
 
 ```
-<!-- ep: id=<slug> phase=<start|iterate|handoff|done|abandoned> outcome=<landed|reworked|corrected|blocked|unknown> modality=<code|docs|planning|review|ops|mixed|unknown> [counterpart=codex|claude] -->
+<!-- ep: id=<slug> phase=<start|iterate|handoff|done|abandoned> outcome=<landed|reworked|corrected|blocked|unknown> modality=<code|docs|planning|review|ops|mixed|unknown> [counterpart=<configured agent name>] -->
 ```
-
-It is recorded as one sanitized row. No prose, no paths, no secrets.

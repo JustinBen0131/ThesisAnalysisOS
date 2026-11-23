@@ -1,5 +1,7 @@
 # The public page
 
+The two-session service report at `workflows/transit/` renders a fictional timetable and an actual TAOS command history. The film introduces the scenario. The walkthrough, Markdown reading and downloadable JSON share the record in `examples/transit/workflow.json`. Run `python3 evals/transit_workflow.py --verify` to replay it.
+
 The public site lets a reader follow an edit to a pendulum measurement, inspect
 the fit before and after the edit, and find the files behind each result.
 The build captures the output of `./taos demo`, reads the saved experiments
@@ -7,7 +9,7 @@ from `evals/results/`, and verifies the software claim register. It stops if a
 required measurement is stale, a checked claim fails to hold, an expected demo
 line disappears, or a link to a local page or download has no target.
 
-From the repository root, build and serve a local copy.
+Build from a Git checkout. The source browser uses the repository's tracked files and revision history. Run these commands from its root.
 
 ```bash
 python3 site/build.py                # writes ./_site
@@ -35,7 +37,7 @@ the files still match.
 
 In the interactive graph, files sit at the back and claims at the front. Larger circles represent recorded measurements. An edit in the preview affects only that browser session. A measured claim follows its recorded run. The preview flags a tested claim when one of its named files changes. The repository reruns its test on each change.
 
-**For AI agents** opens `llms.txt`. Each of the six original studies has a human page, a short Markdown reading, the original data, and the exact fields behind its comparisons. Each page advertises its Markdown and raw data in its HTML head. The catalog at `research-catalog.json` uses Schema.org Dataset metadata. A clean source ZIP includes the recorded bytes. On the main repository deployment the catalog also links to the precise Git revision. [llms.txt](https://llmstxt.org/) · [Dataset metadata](https://developers.google.com/search/docs/appearance/structured-data/dataset)
+**Agent guide** opens `llms.txt`. Each study has a human page, a short Markdown reading, the original data, and the exact fields behind its comparisons. Each page advertises its Markdown and raw data in its HTML head. The catalog at `research-catalog.json` uses Schema.org Dataset metadata. A clean source ZIP includes the recorded bytes. On the main repository deployment the catalog also links to the precise Git revision. [llms.txt](https://llmstxt.org/) · [Dataset metadata](https://developers.google.com/search/docs/appearance/structured-data/dataset)
 
 Save the hashes in `research-versions.json` to distinguish changes to the raw observations, the written reading and the rendered page. The build checks the comparisons and their source fields before writing `research-audit.json`. To repeat this verification against a downloaded site, run `python3 site/verify_research_guide.py _site --json`. The source manifest at `source/index.json` lists checksums and plain-text downloads for the files readers need.
 
@@ -52,15 +54,7 @@ relative to the graph and a SHA-256 digest of the downloaded bytes.
 experiments. Its JSON Pointers locate the fits before and after the correction
 and the handoff observations from the task that made the edit and the next task.
 
-The homepage opens with a still diagram of the research operating system showing
-the project record that assistants share as they work on different parts of one
-question. **See the system at work** starts a five-step
-pendulum handoff using the published dependency graph. The reader can pause,
-move between steps or return to the architecture. Reduced motion uses manual
-steps, and the final result stays visible.
-It neither edits the files nor executes a check. The pendulum values beside it
-come from the saved audit. The page still shows the recorded demo and source links
-with JavaScript disabled. The site uses system fonts and static files.
+The homepage follows one saved result as a setting changes and other agents build on it. The bus film plays on request. The historical decision that follows lets the next agent choose whether to trust 19 days of finished work. The instrument reading illustrates the decision. Its original scientific details are withheld. The interactive dependency graph and pendulum experiment remain available through the evidence and source links.
 
 The recorded walkthrough invokes `./taos demo --json` once per build. The web
 page, Markdown page and downloadable `records/demo.json` share that run.
@@ -68,11 +62,10 @@ The CLI’s own renderer writes the short terminal view at `records/demo.txt` fr
 The builder checks both estimates and their standard errors from the six
 input rows using the independent calculation in the measurement audit.
 The timing chapter compares the small CLI correction with the larger one
-in the opening animation. Each row links to the run that produced it.
+in the interactive project record. Each row links to the run that produced it.
 
-**AI operating system demo** plays a 1 minute 40 second film about a transit operator
-preparing the morning bus report. The player opens on its poster just before **How
-to read a saved check**. A reader can start it from the opening link or press **Play
+**Watch it work on a morning bus report.** opens a 1 minute 40 second film about a transit operator
+preparing the morning bus report. The player opens on its poster before the next-agent exercise. A reader can start it from the opening link or press **Play
 with sound** on the poster. The browser selects the reduced-motion cut when that
 preference is enabled. The standard build serves both cuts and the poster from
 `site/media/morning-departures/`. It checks the homepage entry, player and exact

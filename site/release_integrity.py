@@ -11,6 +11,7 @@ import re
 from urllib.parse import urljoin, urlsplit
 
 from film_player import PUBLIC_DIGESTS, PUBLIC_MEDIA_DIR
+from reading_navigation import THEME_INTEGRITY
 
 
 BUILD_ORIGIN = "https://build.invalid"
@@ -18,7 +19,10 @@ BEACON_SCRIPT = "https://static.cloudflareinsights.com/beacon.min.js"
 GITHUB_TREE = "https://api.github.com/repos/JustinBen0131/ThesisAnalysisOS/git/trees/"
 READER_ENDPOINTS = ("https://whatstillholds-interactions.just0131.workers.dev/v1",
                     "https://cloudflareinsights.com/cdn-cgi/rum")
-LOCAL_SCRIPTS = {"assets/site.js", "assets/mind.js", "assets/reuse.js", "assets/interactions.js"}
+HPC_SCRIPTS = {"assets/hpc.js", "assets/hpc-planner.js", "assets/hpc-review.js"}
+LOCAL_SCRIPTS = HPC_SCRIPTS | {"assets/site.js", "assets/mind.js", "assets/reuse.js", "assets/interactions.js",
+                 "assets/first-game.js", "assets/first-lesson.js", "assets/theme.js", "assets/review-practice.js",
+                 "assets/living-brain.js", "assets/real-decisions.js", "assets/report-story.js"}
 DATA_TYPES = {"application/json", "application/ld+json"}
 CHARSET = '<meta charset="utf-8">'
 MANIFEST = "release.json"
@@ -34,6 +38,7 @@ class PageScripts(HTMLParser):
         super().__init__()
         self.scripts = []
         self.attributes = []
+        self.resources = []
         self._script = None
         self.feed(markup)
         self.close()
@@ -41,6 +46,10 @@ class PageScripts(HTMLParser):
     def handle_starttag(self, tag, attrs):
         fields = dict(attrs)
         self.attributes.append((tag, fields))
+        if tag == "script" and fields.get("src"):
+            self.resources.append((fields["src"], self.get_starttag_text(), self.getpos()))
+        if tag == "link" and "stylesheet" in fields.get("rel", "").split():
+            self.resources.append((fields["href"], self.get_starttag_text(), self.getpos()))
         if tag == "script":
             self._script = []
             self.scripts.append((fields, self._script))
@@ -67,9 +76,13 @@ def trusted_film_scripts():
 
 
 def browser_policy(markup, relative, trusted, analytics):
-    page = PageScripts(markup)
+    return policy_for_page(PageScripts(markup), relative, trusted, analytics)
+
+
+def policy_for_page(page, relative, trusted, analytics):
     base = BUILD_ORIGIN + "/" + relative
-    sources, connections = set(), {"'self'"}
+    source_viewer = relative.startswith("source/")
+    sources, connections = set(), {"'none'" if source_viewer else "'self'"}
     for tag, fields in page.attributes:
         links = [fields.get(k) or "" for k in ("href", "src", "action", "formaction")]
         if (tag in {"base", "embed", "object", "iframe", "form"} or
@@ -95,17 +108,23 @@ def browser_policy(markup, relative, trusted, analytics):
                 raise ValueError(f"Unregistered inline script in {relative}")
             sources.add(permitted)
             continue
-        if analytics and source == BEACON_SCRIPT:
-            sources.add(BEACON_SCRIPT)
-            connections.update(READER_ENDPOINTS)
-            continue
         url = urlsplit(urljoin(base, source))
         path = url.path.lstrip("/")
         if (url.scheme != "https" or url.netloc != urlsplit(BUILD_ORIGIN).netloc or
                 path not in LOCAL_SCRIPTS or url.query or url.fragment or
+                (path in HPC_SCRIPTS and relative != "hpc/index.html") or
                 (path == "assets/interactions.js" and not analytics)):
             raise ValueError(f"Unregistered script in {relative}: {source}")
+        if source_viewer:
+            if (path != "assets/theme.js" or set(fields) != {"src", "integrity"}
+                    or fields["integrity"] != THEME_INTEGRITY or "".join(chunks).strip()):
+                raise ValueError(f"Unexpected script in source viewer: {relative}")
+            sources.add("'" + THEME_INTEGRITY + "'")
+            continue
         sources.add("'self'")
+        if analytics and path == "assets/interactions.js":
+            sources.add(BEACON_SCRIPT)
+            connections.update(READER_ENDPOINTS)
         if path == "assets/site.js":
             connections.add(GITHUB_TREE)
     allowed = " ".join(sorted(sources)) if sources else "'none'"
@@ -116,14 +135,41 @@ def browser_policy(markup, relative, trusted, analytics):
     return "; ".join(directives)
 
 
+def version_assets(markup, name, resources, versions):
+    """Pin a first-party script or stylesheet to its bytes, preserving the rest of the HTML."""
+    offsets = [0]
+    for line in markup.splitlines(keepends=True):
+        offsets.append(offsets[-1] + len(line))
+    for address, raw, position in reversed(resources):
+        target = urlsplit(urljoin(BUILD_ORIGIN + "/" + name, address))
+        if target.netloc != urlsplit(BUILD_ORIGIN).netloc:
+            continue
+        digest = versions.get(target.path.lstrip("/"))
+        if not digest:
+            raise ValueError(f"Missing local stylesheet or script in {name}: {address}")
+        line, column = position
+        start = offsets[line - 1] + column
+        match = re.search(r"""\b(?:src|href)=(["'])(.*?)\1""", raw, re.I)
+        if not match or html.unescape(match[2]) != address or target.query or target.fragment:
+            raise ValueError(f"Cannot version asset in {name}: {address}")
+        end = start + match.end(2)
+        markup = markup[:end] + "?v=" + digest + markup[end:]
+    return markup
+
+
 def protect_pages(root, *, analytics):
     trusted = trusted_film_scripts()
+    assets = [*(root / "assets").glob("*.js"), *(root / "assets").glob("*.css"), root / "exchange/exchange.css"]
+    versions = {path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()[:16]
+                for path in assets if path.is_file()}
     for path in sorted(root.rglob("*.html")):
         name = path.relative_to(root).as_posix()
         markup = path.read_text(encoding="utf-8")
         if markup.count(CHARSET) != 1 or not re.search(r"<head>\s*" + re.escape(CHARSET), markup, re.I):
             raise ValueError(f"Missing early charset in {name}")
-        policy = browser_policy(markup, name, trusted, analytics)
+        page = PageScripts(markup)
+        policy = policy_for_page(page, name, trusted, analytics)
+        markup = version_assets(markup, name, page.resources, versions)
         meta = '<meta http-equiv="Content-Security-Policy" content="' + html.escape(policy, quote=True) + '">'
         meta += '\n<meta name="referrer" content="same-origin">'
         path.write_text(markup.replace(CHARSET, CHARSET + "\n" + meta, 1), encoding="utf-8")
@@ -150,6 +196,9 @@ def verify_homepage_film(root):
     if sources != [("(prefers-reduced-motion: reduce)", f"{PUBLIC_MEDIA_DIR}/reduced-motion.mp4"),
                    (None, f"{PUBLIC_MEDIA_DIR}/film.mp4")]:
         raise ValueError("The homepage must serve the reduced-motion and standard films.")
+    captions = [a for tag, a in page.attributes if tag == "track" and a.get("kind") == "captions"]
+    if len(captions) != 1 or captions[0].get("srclang") != "en" or captions[0].get("src") != f"{PUBLIC_MEDIA_DIR}/captions.vtt":
+        raise ValueError("The homepage film must offer its reviewed English captions.")
     for name, expected in PUBLIC_DIGESTS.items():
         asset = root / PUBLIC_MEDIA_DIR / name
         if not asset.is_file() or asset.is_symlink() or hashlib.sha256(asset.read_bytes()).hexdigest() != expected:

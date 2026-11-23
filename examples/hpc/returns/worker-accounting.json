@@ -1,0 +1,21 @@
+{
+  "format": "taos.hpc.accounting.v1",
+  "source": "Fictional scheduler export for the sensor example",
+  "attempts": [
+    {
+      "id": "A.1",
+      "output": "A",
+      "worker_seconds": 90
+    },
+    {
+      "id": "B.1",
+      "output": "B",
+      "worker_seconds": 110
+    },
+    {
+      "id": "C.1",
+      "output": "C",
+      "worker_seconds": 20
+    }
+  ]
+}

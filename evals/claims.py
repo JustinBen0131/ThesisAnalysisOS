@@ -35,12 +35,13 @@ for entry in (str(REPO), str(REPO / "evals")):
         sys.path.insert(0, entry)
 
 import measured  # noqa: E402
+import session_footprint  # noqa: E402
 from taos_core import basis  # noqa: E402
 
 CLAIMS = REPO / "docs" / "CLAIMS.md"
 README = REPO / "README.md"
 RESULTS = REPO / "evals" / "results"
-RUNS = ("at_revision", "mutations", "reuse_frontier")
+RUNS = ("at_revision", "mutations", "reuse_frontier", "session_footprint")
 TICKED = re.compile(r"`([^`]+)`")
 
 
@@ -93,17 +94,42 @@ def frontier(run: Dict[str, Any]) -> List[Any]:
             rows["TAOS, checks isolated, each hides one folder"]]
 
 
-def quoted(name: str, run: Dict[str, Any]) -> List[str]:
-    """What a document may quote from a recorded run, rendered from the run and from nothing else."""
-    if name == "at_revision":
-        here = run["here"]
-        parts = ["{0} of {1} fail at `{2}`".format(there["did_not_pass"], there["ran"], revision)
-                 for revision, there in sorted(run["revisions"].items())]
-        return ["; ".join(parts + ["{0} of {1} pass here".format(here["ran"] - here["did_not_pass"], here["ran"])])]
-    if name == "mutations":
-        return ["{0} of {1} seeded faults caught".format(run["caught"], run["faults"])]
+UPKEEP_LABEL = "Cost of consulting six unchanged checks at three tree sizes"
+ISOLATION_LABEL = "Added cost of isolating one check after an edit"
+
+
+def _interval_text(summary: Dict[str, float]) -> str:
+    return "{median:.2g}× ({low:.2g} to {high:.2g})".format(**summary)
+
+
+def timing_claims(run: Dict[str, Any]) -> Dict[str, str]:
+    """Two ordered, Markdown-safe rows. Older runs retain the units they actually measured."""
+    timing = run.get("timing")
+    if timing is None:
+        return {}
+    sizes = timing["upkeep"]
+    if "schema" in timing:
+        from reuse_frontier import verify_timing
+        verify_timing(run)
+        by_size = ", ".join("{:,} files {}".format(size["files"], _interval_text(size["reference_ratio"])) for size in sizes)
+        delta = timing["isolating_one_execution"]
+        return {UPKEEP_LABEL: by_size + " the uncached check time (paired medians and 95% intervals)",
+                ISOLATION_LABEL: _interval_text(delta["added_reference_ratio"]) +
+                " the uncached check time (isolated minus open, {} paired edits, 95% interval)".format(delta["pairs"])}
+    # Historical records contain absolute-time summaries only. Never infer paired ratios from them.
+    by_size = ", ".join("{:,} files {:.1f} ms".format(size["files"], 1000 * size["seconds"]) for size in sizes)
+    rows = {UPKEEP_LABEL: by_size + " (historical medians on one machine)"}
+    if "isolating_one_execution" in timing:
+        added = timing["isolating_one_execution"]
+        rows[ISOLATION_LABEL] = ("{:.1f} ms added across {} pairs on one machine "
+                                 "(historical median and reported interval {:.1f} to {:.1f} ms)").format(
+            1000 * added["median_seconds"], added["pairs"], 1000 * added["low_seconds"], 1000 * added["high_seconds"])
+    return rows
+
+
+def effectiveness_claims(run: Dict[str, Any]) -> List[str]:
     finest, aged, hidden, alone, refused = frontier(run)
-    said = [
+    return [
         "{0} executions, {1} wrong, in {2} results relied on".format(finest["executions"], finest["wrong"], run["relied_on"]),
         "{0} executions with {1} wrong".format(", ".join(str(row["executions"]) for row in aged),
                                                ", ".join(str(row["wrong"]) for row in aged)),
@@ -111,15 +137,20 @@ def quoted(name: str, run: Dict[str, Any]) -> List[str]:
         "{0} of {1} runs passed when every check hid one folder and ran isolated; {2} executions, {3} wrong with everything declared".format(
             refused["passed"], refused["executions"], alone["executions"], alone["wrong"]),
     ]
-    timing = run.get("timing")
-    if timing:
-        said.append("{0} ms for {1} files".format(", ".join("{0:.1f}".format(1000 * size["seconds"]) for size in timing["upkeep"]),
-                                                  ", ".join("{0:,}".format(size["files"]) for size in timing["upkeep"])))
-        added = timing.get("isolating_one_execution")
-        if added:
-            said.append("{0:.1f} ms added, the median of {1} paired runs (95% interval {2:.1f} to {3:.1f} ms)".format(
-                1000 * added["median_seconds"], added["pairs"], 1000 * added["low_seconds"], 1000 * added["high_seconds"]))
-    return said
+
+
+def quoted(name: str, run: Dict[str, Any]) -> List[str]:
+    """What a document may quote from a recorded run, rendered from the run and from nothing else."""
+    if name == "session_footprint":
+        return [session_footprint.quote(run)]
+    if name == "at_revision":
+        here = run["here"]
+        parts = ["{0} of {1} fail at `{2}`".format(there["did_not_pass"], there["ran"], revision)
+                 for revision, there in sorted(run["revisions"].items())]
+        return ["; ".join(parts + ["{0} of {1} pass here".format(here["ran"] - here["did_not_pass"], here["ran"])])]
+    if name == "mutations":
+        return ["{0} of {1} seeded faults caught".format(run["caught"], run["faults"])]
+    return effectiveness_claims(run) + list(timing_claims(run).values())
 
 
 def quotable(name: str, run: Optional[Dict[str, Any]]) -> Optional[List[str]]:
@@ -133,7 +164,13 @@ def quotable(name: str, run: Optional[Dict[str, Any]]) -> Optional[List[str]]:
 def front_page(runs: Dict[str, Any], tests: int) -> List[str]:
     """The numbers README.md repeats. Each has to be there in these words, or the front page has drifted from the runs."""
     said = ["{0} tests".format(tests)]
-    at, faults, reuse = [runs.get(name) if quotable(name, runs.get(name)) is not None else None for name in RUNS]
+    at, faults = [runs.get(name) if quotable(name, runs.get(name)) is not None else None for name in RUNS[:2]]
+    reuse = runs.get("reuse_frontier")
+    try:
+        if reuse:
+            effectiveness_claims(reuse)
+    except (KeyError, TypeError, ValueError, IndexError):
+        reuse = None
     if at:
         said.append(quoted("at_revision", at)[0].replace("; ", ", "))
     if faults:
@@ -146,11 +183,19 @@ def front_page(runs: Dict[str, Any], tests: int) -> List[str]:
     return said
 
 
+def collected_tests() -> int:
+    loader = unittest.TestLoader()
+    suite = loader.discover(str(REPO / "tests"))
+    if loader.errors:
+        raise ValueError("Could not collect the complete test suite: " + "\n".join(loader.errors))
+    return suite.countTestCases()
+
+
 def check() -> List[Dict[str, Any]]:
     """One verdict per row of docs/CLAIMS.md that says tested or measured, then one per number README.md repeats."""
     code, tests = sources("taos_core"), sources("tests")
     runs = {name: recorded(name) for name in RUNS}
-    size = unittest.TestLoader().discover(str(REPO / "tests")).countTestCases()
+    size = collected_tests()
     out: List[Dict[str, Any]] = []
     run_name = RUNS[0]
     for line in CLAIMS.read_text(encoding="utf-8").splitlines():
@@ -164,8 +209,26 @@ def check() -> List[Dict[str, Any]]:
         elif status.startswith("measured"):
             run_name = next((name for name in RUNS if "evals/{0}.py".format(name) in how), run_name)
             run = runs.get(run_name)
-            said = quotable(run_name, run)
-            if said is None:
+            error = None
+            if run_name == "session_footprint" and run is not None:
+                try:
+                    said = [session_footprint.quote(run)]
+                except (KeyError, TypeError, ValueError) as exc:
+                    said, error = None, str(exc)
+            elif run_name == "reuse_frontier" and run is not None:
+                try:
+                    if claim in (UPKEEP_LABEL, ISOLATION_LABEL):
+                        rows = timing_claims(run)
+                        said = [rows[claim]] if claim in rows else None
+                    else:
+                        said = effectiveness_claims(run)
+                except (KeyError, TypeError, ValueError, IndexError) as exc:
+                    said, error = None, str(exc)
+            else:
+                said = quotable(run_name, run)
+            if error is not None:
+                verdict = basis.verdict(basis.FAILS, "cannot read the recorded evidence: " + error)
+            elif said is None:
                 verdict = basis.verdict(basis.UNKNOWN, "evals/results/{0}.json holds no run of this script as it is; "
                                         "run it with --write".format(run_name))
             elif what not in said:
