@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import re
 import shlex
 import shutil
@@ -15,7 +16,7 @@ from unittest import mock
 
 from helpers import REPO
 
-from taos_core import demo, page
+from taos_core import demo, opener, page
 from taos_core.util import TaosError
 
 EXAMPLE = REPO / "examples" / "measurement"
@@ -27,6 +28,34 @@ def played(**how) -> str:
     with mock.patch.object(demo, "launcher", return_value="./taos"):   # as a reader who typed ./taos sees it
         assert demo.run(out=out, **how) == 0
     return out.getvalue()
+
+
+class Terminal(io.StringIO):
+    """A stream with a person at it."""
+
+    def isatty(self) -> bool:
+        return True
+
+
+def screen(written: str) -> str:
+    """What a terminal is left showing after this was written to it: the words in their places, without shades."""
+    written = re.sub(r"\x1b\]8;;[^\x1b]*\x1b\\|\x1b\[\?\d+[hl]|\x1b\[[\d;]*m", "", written)   # links, modes and shades move nothing
+    rows, down, along = [[]], 0, 0                                              # type: ignore[var-annotated]
+    for piece in re.findall(r"\x1b\[\d*[AK]|[\s\S]", written):
+        if piece == "\n":
+            down, along = down + 1, 0
+            if down == len(rows):
+                rows.append([])
+        elif piece == "\r":
+            along = 0
+        elif len(piece) > 1 and piece.endswith("A"):                            # up this many rows
+            down -= int(piece[2:-1] or 1)
+        elif len(piece) > 1:                                                    # clear from here to the end of the row
+            del rows[down][along:]
+        else:
+            rows[down][along:along + 1] = [piece]
+            along += 1
+    return "\n".join("".join(row) for row in rows)
 
 
 class TestDemo(unittest.TestCase):
@@ -81,6 +110,39 @@ class TestDemo(unittest.TestCase):
         self.assertEqual(demo.run(out=plain, full=False), 0)
         plain.flush()
         self.assertIn("|  TAOS ", plain.buffer.getvalue().decode("ascii"))
+
+    def test_at_a_terminal_the_page_arrives_and_what_is_left_is_the_page_a_pipe_gets(self) -> None:
+        timed, out = re.compile(r"\d+\.\d s"), Terminal()
+        quiet = {name: value for name, value in os.environ.items() if name not in ("NO_COLOR", "FORCE_COLOR", "CI", "TAOS_MOTION")}
+        with mock.patch.dict(os.environ, dict(quiet, TERM="xterm-256color"), clear=True), \
+                mock.patch.object(page, "moves", return_value=True), mock.patch.object(page, "MOTION_S", 0.2), \
+                mock.patch.object(demo, "launcher", return_value="./taos"):
+            self.assertEqual(demo.run(out=out, full=False, width=80), 0)
+        written = out.getvalue()
+        self.assertEqual(timed.sub("", screen(written)), timed.sub("", played(full=False, width=80, color=False)))
+        self.assertGreater(written.count("\x1b[5A"), 2)                         # the box was redrawn in place
+        self.assertIn("$ python3 analysis/fit.py", written)                     # a command was shown while it ran
+        self.assertNotIn("$ python3", screen(written))                          # and taken away when it had answered
+        self.assertLess(written.rfind("\x1b[?25l"), written.rfind("\x1b[?25h"))  # the cursor was put away and given back
+        self.assertIn("\x1b]8;;https://" + page.HOME, written)                  # at a terminal the address is a link
+
+    def test_terminal_replay_shows_the_changed_reading_and_the_recheck_in_five_rows(self) -> None:
+        plain = lambda style, word: word
+        saved, stale, checked = [opener.frame(at, plain) for at in (0.1, 0.5, 0.85)]
+        for frame, state, timing, gravity in ((saved, "holds", "2.19 s", "9.82"), (stale, "stale", "2.19 → 2.21 s", "9.82"),
+                                               (checked, "holds", "2.21 s", "9.75")):
+            self.assertIn("Pendulum replay", frame[0])
+            self.assertIn(timing, frame[2])
+            self.assertIn(gravity + " ± 0.02 m/s²", frame[2])
+            self.assertIn(state, frame[3])
+        for i in range(100):
+            self.assertEqual([len(row) for row in opener.frame(i / 100, plain)], [80] * 5)
+        self.assertNotEqual(saved[2][1:18], opener.frame(0.2, plain)[2][1:18])
+        piped = played(full=False, color=True)
+        self.assertNotIn("Pendulum replay", piped)
+        self.assertEqual((piped.count("\\x1b[?"), piped.count("\\x1b]8")), (0, 0))
+        with mock.patch.dict(os.environ, {"TAOS_MOTION": "0"}):
+            self.assertFalse(page.moves(Terminal()))
 
     def test_the_same_run_is_a_record_a_program_can_read(self) -> None:
         record = json.loads(played(as_json=True))

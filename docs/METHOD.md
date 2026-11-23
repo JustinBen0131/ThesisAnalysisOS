@@ -1,5 +1,7 @@
 # The method: running agents the way you run an experiment
 
+<sub><b>Understand or change the system · 2 of 4</b> &nbsp;·&nbsp; [← Architecture](ARCHITECTURE.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Build specification →](SPEC.md)</sub>
+
 The first version of this system answered one question: how do two coding
 agents share one body of work without colliding or losing it? Tasks, claims,
 handoffs and gates are that answer.

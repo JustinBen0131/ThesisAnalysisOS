@@ -1,5 +1,7 @@
 # Read a TAOS project from an MCP client
 
+<sub><b>Work with AI agents · 3 of 4</b> &nbsp;·&nbsp; [← Outside assistants](AGENT_INTERFACES.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Interface rules →](INTERFACE.md)</sub>
+
 A local Model Context Protocol client can pick up a project brief and inspect its evidence over standard input and output. The server exits when the client closes its pipe. It runs with Python 3.9 or later and the standard library.
 
 | Tool | Arguments | Answer |

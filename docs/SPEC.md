@@ -1,5 +1,7 @@
 # ThesisAnalysisOS — Build Specification (v1)
 
+<sub><b>Understand or change the system · 3 of 4</b> &nbsp;·&nbsp; [← The method](METHOD.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Lineage →](LINEAGE.md)</sub>
+
 This is the binding contract for every file in this repository. Builders,
 reviewers, and future agents modifying the OS read this first. Where prose
 elsewhere disagrees with this file, this file wins until it is amended.

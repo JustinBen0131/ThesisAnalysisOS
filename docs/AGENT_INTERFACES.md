@@ -1,5 +1,7 @@
 # Bring another assistant into a research task
 
+<sub><b>Work with AI agents · 2 of 4</b> &nbsp;·&nbsp; [← Agent roles](AGENT_ROLES.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [MCP client →](MCP.md)</sub>
+
 Start with one task ID, one question and the evidence the reviewer needs.
 Use the terminal for local inspection, opt into MCP for a client's read-only
 tools, or share a plain-text context packet when the reviewer has no tools.

@@ -1,5 +1,7 @@
 # Lineage
 
+<sub><b>Understand or change the system · 4 of 4</b> &nbsp;·&nbsp; [← Build specification](SPEC.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Contributing →](../CONTRIBUTING.md)</sub>
+
 The original physics project used Codex and Claude over a
 year of daily work. One researcher coordinated several hundred tasks and
 recorded the conflicting edits and lost handoffs that shaped this design.

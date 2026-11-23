@@ -6,13 +6,16 @@ The check uses a temporary browser profile and the local site's actual controls.
 
 import argparse
 import json
+import queue
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from fractions import Fraction
-from html import escape, unescape
+from functools import partial
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 SITE = Path(__file__).resolve().parent
@@ -114,10 +117,14 @@ async function readReview(record) {
   field.files = transfer.files;
   const status = document.querySelector("[data-report-status]");
   const value = document.querySelector("[data-imported]");
-  const done = new Promise(resolve => {
+  const done = new Promise((resolve, reject) => {
     const observer = new MutationObserver(() => {
-      if (status.textContent) { observer.disconnect(); resolve(); }
+      if (status.textContent) { clearTimeout(timer); observer.disconnect(); resolve(); }
     });
+    const timer = setTimeout(() => {
+      observer.disconnect();
+      reject(new Error("The file import did not report a result within 10 seconds."));
+    }, 10000);
     observer.observe(status, {childList: true, subtree: true});
   });
   field.dispatchEvent(new Event("change", {bubbles: true}));
@@ -143,44 +150,118 @@ async function checkAccounting() {
   } catch (error) {
     check("Imported review error: " + error.message, false);
   }
-  const output = document.createElement("pre");
-  output.id = "worksheet-verdict";
-  output.textContent = JSON.stringify(readings);
-  document.body.replaceChildren(output);
+  await fetch("/verdict", {method: "POST", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(readings)});
 }
 checkAccounting();
 """
+
+
+def installed_browser(requested):
+    names = [requested] if requested else [
+        "google-chrome", "google-chrome-stable",
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "chromium", "chromium-browser"]
+    rejected = []
+    for name in names:
+        executable = shutil.which(name)
+        if not executable:
+            continue
+        try:
+            probe = subprocess.run([executable, "--version"], capture_output=True, text=True, timeout=5)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            rejected.append(f"{executable}: {error}")
+            continue
+        output = (probe.stdout + "\n" + probe.stderr).strip()
+        version = re.search(r"^(?:Google Chrome(?: for Testing)?|Chromium) [0-9][^\n]*", output, re.M)
+        if probe.returncode == 0 and version:
+            return executable, version.group()
+        rejected.append(f"{executable}: {output[:150] or 'no version reported'}")
+    detail = " Tried " + " / ".join(rejected) if rejected else ""
+    raise ValueError("Pass --browser with the path to an installed Chromium or Chrome executable." + detail)
+
+
+class WorksheetHandler(SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass
+
+    def do_GET(self):
+        self.server.last_path = self.path
+        super().do_GET()
+
+    def do_POST(self):
+        size = int(self.headers.get("Content-Length", "0"))
+        if self.path != "/verdict" or self.headers.get_content_type() != "application/json" or not 0 < size <= 131072:
+            self.send_error(400)
+            return
+        report = self.rfile.read(size)
+        self.send_response(204)
+        self.end_headers()
+        self.server.verdict.put(report)
+
+
+def run_browser(browser, version, root, pages):
+    handler = partial(WorksheetHandler, directory=str(pages))
+    with ThreadingHTTPServer(("127.0.0.1", 0), handler) as server, tempfile.TemporaryFile() as errors:
+        server.verdict = queue.Queue()
+        server.last_path = "(no page requested)"
+        server.timeout = 0.2
+        url = f"http://127.0.0.1:{server.server_port}/worksheet.html"
+        process = subprocess.Popen([browser, "--headless", "--disable-background-networking", "--no-first-run",
+                                    "--user-data-dir=" + str(root / "profile"), url],
+                                   stdout=subprocess.DEVNULL, stderr=errors)
+        try:
+            deadline = time.monotonic() + 45
+            while time.monotonic() < deadline and process.poll() is None:
+                server.handle_request()
+                try:
+                    return json.loads(server.verdict.get_nowait())
+                except queue.Empty:
+                    continue
+            errors.seek(0)
+            detail = errors.read().decode(errors="replace").strip().splitlines()
+            reason = f"exit {process.returncode}" if process.returncode is not None else "45-second timeout"
+            raise RuntimeError(f"{version} ({browser}): {reason}, last request {server.last_path}. "
+                               + " ".join(detail[-4:])[-650:])
+        finally:
+            if process.poll() is None:
+                process.terminate()
+                try:
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait()
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--browser", help="Path to an installed Chromium or Chrome executable")
     args = parser.parse_args()
-    browser = (args.browser or shutil.which("chromium") or shutil.which("chromium-browser")
-               or shutil.which("google-chrome") or shutil.which("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
-    if not browser:
-        parser.exit(2, "Pass --browser with the path to an installed Chromium browser.\n")
+    try:
+        browser, version = installed_browser(args.browser)
+    except ValueError as error:
+        parser.exit(2, str(error) + "\n")
     with tempfile.TemporaryDirectory(prefix="hpc-worksheet-") as directory:
         root = Path(directory)
-        page = root / "worksheet.html"
-        script = escape((SITE / "assets/hpc-planner.js").as_uri(), quote=True)
-        review_script = escape((SITE / "assets/hpc-review.js").as_uri(), quote=True)
+        pages = root / "site"
+        pages.mkdir()
+        for asset in ("hpc-planner.js", "hpc-review.js"):
+            shutil.copyfile(SITE / "assets" / asset, pages / asset)
         cases = resource_cases()
-        page.write_text(f'<!doctype html><meta charset="utf-8">{render_planner()}'
+        (pages / "worksheet.html").write_text(f'<!doctype html><meta charset="utf-8">{render_planner()}'
                         f'<script id="cases" type="application/json">{json.dumps(cases)}</script>'
                         f'<script id="review-fixture" type="application/json">{json.dumps(sample_review())}</script>'
-                        f'<script src="{script}"></script><script src="{review_script}"></script><script>{DRIVE}</script>', encoding="utf-8")
-        result = subprocess.run([browser, "--headless", "--disable-background-networking", "--no-first-run",
-                                 "--user-data-dir=" + str(root / "profile"), "--virtual-time-budget=5000", "--dump-dom", page.as_uri()],
-                                capture_output=True, text=True, timeout=45)
-        match = re.search(r'<pre id="worksheet-verdict">(.*?)</pre>', result.stdout, re.S)
-        if result.returncode or not match:
-            parser.exit(1, "The browser did not return a worksheet result. Check the executable and headless support.\n")
-        checks = json.loads(unescape(match.group(1)))
+                        f'<script src="hpc-planner.js"></script><script src="hpc-review.js"></script><script>{DRIVE}</script>', encoding="utf-8")
+        try:
+            checks = run_browser(browser, version, root, pages)
+        except (OSError, RuntimeError, ValueError) as error:
+            parser.exit(1, f"Worksheet browser check failed: {error}\n")
     failures = [entry["case"] for entry in checks if not entry["passed"]]
     if sum(entry["case"].startswith("Resource case ") for entry in checks) != len(cases):
         failures.append("The browser did not exercise every prepared resource combination.")
-    print(json.dumps({"browser_checks": len(checks), "resource_combinations": len(cases), "failures": failures}, indent=2))
+    if not any(entry["case"] == "A valid review can be opened after an invalid report" for entry in checks):
+        failures.append("The browser did not complete the file-import round trip.")
+    print(json.dumps({"browser": version, "browser_checks": len(checks), "resource_combinations": len(cases),
+                      "failures": failures}, indent=2))
     return int(bool(failures))
 
 

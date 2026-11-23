@@ -1,5 +1,7 @@
 # The interface, in six rules
 
+<sub><b>Work with AI agents · 4 of 4</b> &nbsp;·&nbsp; [← MCP client](MCP.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Claims →](CLAIMS.md)</sub>
+
 Everything a person sees from this system follows the same six rules: the
 command line, the demo, the pictures and the website. They are short on
 purpose. A rule that needs a paragraph to defend it is not one of these.
@@ -35,6 +37,18 @@ letters of the mark carry the same four shades, so the mark is the legend.
 Nothing else is colored. Every screen reads the same with color off: a pipe
 gets plain text, and `NO_COLOR` is honored.
 
+At a wide interactive terminal, the welcome replays the pendulum example
+in four seconds. Watch the period change from 2.19 to 2.21 seconds. The old
+fit becomes stale, then the recheck passes and its estimate of gravity updates.
+The small moving pendulum illustrates the timing. The numbers and verdicts
+come from the recorded example in `taos demo --json`.
+
+In `taos demo`, each idea appears as the real commands finish. The final
+welcome and output read the same through a pipe. Set `TAOS_MOTION=0` to
+see the finished welcome immediately. Narrow windows, plain output, and CI
+logs use the static layout. The website address is clickable in terminals
+that support links.
+
 ## 4. One screen first, everything on request
 
 What a command prints by default fits one screen. The full account is one
@@ -62,6 +76,7 @@ one. Asked nothing, `taos` says who it is and where to start.
 |---|---|
 | The answer comes first; four words | `taos_core/page.py` (`ANSWERS`, `SHADE`), `tests/test_demo.py` |
 | Shades | `page.Shaded`, `page.shades`, `tests/test_first_minute.py` |
+| Motion ends as the plain page | `page.Page.arrive`, `page.Arriving`, `page.moves`, `tests/test_demo.py` |
 | One screen | `tests/test_demo.py` (the short page fits one screen and matches `README.md`), `tests/test_first_minute.py` (`taos status` fits one screen and one width) |
 | One run, three readers | `taos_core/demo.py` (`play` makes the record; `page.write` and `--json` read it) |
 | Plain words, a way forward | `taos_core/cli.py` (`START`, `FRESH`, `GROUPS`, `LAYERS`, the answer to a mistyped command), `taos_core/page.py` (`launcher`, `commands`), `tests/test_first_minute.py` |

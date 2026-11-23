@@ -1,5 +1,7 @@
 # Can an unchanged pooled score hide an instrument-specific failure?
 
+<sub><b>Check the evidence · 4 of 6</b> &nbsp;·&nbsp; [← Handoff audit](HANDOFF_AUDIT.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Exchange simulation →](EXCHANGE_SIMULATION.md)</sub>
+
 The fixture represents two fictional instruments with eight quality-control readings each. It supplies hand-set scores and reference labels for four faults and four nonfaults per instrument. The program flags readings whose supplied score is at least 60. A check passes when it flags at least three quarters of the known faults. The study checks each instrument on its own and also checks their readings pooled together.
 
 ## What happened

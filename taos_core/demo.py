@@ -14,6 +14,10 @@ One run, three readers. Left to itself it prints one screen, to a terminal
 and to a pipe alike: a line for each thing that happened, led by the answer
 the record gave. `--full` gets every command and what it printed. `--json`
 gets the same run as a record a program can read. How a page is drawn is `taos_core/page.py`.
+
+A person at a terminal watches the one-screen page happen: each idea is
+written when its commands have answered, under the command now running. The
+words on the screen at the end are the words a pipe gets.
 """
 
 from __future__ import annotations
@@ -39,7 +43,7 @@ from . import kernels as kernels_mod
 from . import lessons as lessons_mod
 from . import rules as rules_mod
 from . import use as use_mod
-from .page import PROMISE, SHADE, launcher, write
+from .page import PROMISE, SHADE, Arriving, launcher, write
 from .paths import Paths
 from .util import TaosError
 
@@ -264,16 +268,22 @@ def _plain(word: str) -> bool:
     return word.replace("-", "").replace("_", "").replace("/", "").replace(".", "").isalnum()
 
 
+def _typed(step: Step) -> str:
+    """The command of a step as a person would type it."""
+    command = " ".join(word if _plain(word) else json.dumps(word) for word in step.argv)
+    return command if step.argv[0] == "python3" else "taos " + command
+
+
 def _run(paths: Paths, work: Path, step: Step) -> Dict[str, Any]:
     """Run one real command, keep the lines the step shows, and stop if they lack the words it expects."""
-    command = " ".join(word if _plain(word) else json.dumps(word) for word in step.argv)
+    command = _typed(step)
     if step.argv[0] == "python3":
         done = subprocess.run([sys.executable] + list(step.argv[1:]), cwd=str(work), capture_output=True, text=True)
         code, text = done.returncode, done.stdout
     else:
         from .cli import main
 
-        command, printed = "taos " + command, io.StringIO()
+        printed = io.StringIO()
         with contextlib.redirect_stdout(printed):
             code = main(["--home", str(paths.home)] + list(step.argv))
         text = printed.getvalue()
@@ -298,8 +308,9 @@ def _run(paths: Paths, work: Path, step: Step) -> Dict[str, Any]:
     return ran
 
 
-def play(paths: Paths) -> Dict[str, Any]:
-    """Run the script against a built home. The run comes back as a record: what was said, run, printed and expected."""
+def play(paths: Paths, watched: Optional[Arriving] = None) -> Dict[str, Any]:
+    """Run the script against a built home. The run comes back as a record: what was said, run, printed and expected.
+    A person watching is shown each command as it starts and each idea as soon as its commands have answered."""
     work = Path(json.loads(paths.config_file.read_text(encoding="utf-8"))["workspaces"][0]["path"])
     moments = []
     for number, moment in enumerate(script(paths, work), 1):
@@ -310,8 +321,12 @@ def play(paths: Paths) -> Dict[str, Any]:
             if step.say:
                 steps.append({"kind": "say", "text": step.say})
             if step.argv:
+                if watched:
+                    watched.running(_typed(step))
                 steps.append(_run(paths, work, step))
         moments.append({"number": number, "id": moment.id, "idea": moment.idea, "answered": moment.answered, "steps": steps})
+        if watched:
+            watched.idea(moments[-1])
     runs = [step for moment in moments for step in moment["steps"] if step["kind"] == "run"]
     return {"schema": SCHEMA, "example": EXAMPLE, "promise": " ".join(PROMISE), "moments": moments,
             "commands": len(runs), "checked": sum(len(step["expected"]) for step in runs)}
@@ -323,10 +338,11 @@ def run(out: Any = None, keep: bool = False, as_json: bool = False, full: Option
     out = out or sys.stdout
     full, me = bool(full), launcher()
     tmp = Path(tempfile.mkdtemp(prefix="taos-demo-"))
+    watched = None if as_json or full else Arriving.at(out, EXAMPLE, width, color)
     try:
         paths = build(tmp)
         began = time.perf_counter()
-        record = play(paths)
+        record = play(paths, watched)
         seconds = time.perf_counter() - began
         if as_json:
             out.write(json.dumps(dict(record, kept=str(tmp) if keep else None), indent=2) + "\n")
@@ -341,9 +357,14 @@ def run(out: Any = None, keep: bool = False, as_json: bool = False, full: Option
             closing += tuple("  " + command for command, _ in BY_HAND)
         else:
             closing += ("Nothing of yours was touched. `{0} demo --keep` leaves the folder in place.".format(me),)
-        write(record, out, full=full, width=width, color=color, closing=closing)
+        if watched:
+            watched.end(closing)
+        else:
+            write(record, out, full=full, width=width, color=color, closing=closing)
         return 0
     finally:
+        if watched:
+            watched.settle()
         if not keep:
             shutil.rmtree(str(tmp), ignore_errors=True)
 

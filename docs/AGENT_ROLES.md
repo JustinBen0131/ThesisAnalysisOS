@@ -1,5 +1,7 @@
 # Bring another agent into a project
 
+<sub><b>Work with AI agents · 1 of 4</b> &nbsp;·&nbsp; [← Front page](../README.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Outside assistants →](AGENT_INTERFACES.md)</sub>
+
 Choose a distinct project role name for each session that needs its own
 task ownership and handoffs. One person can coordinate many roles across
 Claude, Codex, ChatGPT or other tools. Local assistants can read the project

@@ -1,5 +1,7 @@
 # Architecture
 
+<sub><b>Understand or change the system · 1 of 4</b> &nbsp;·&nbsp; [← Transit workflow](TRANSIT_WORKFLOW.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [The method →](METHOD.md)</sub>
+
 ## Reading this repository cold
 
 For a person or an agent who has to understand, test or change TAOS itself.

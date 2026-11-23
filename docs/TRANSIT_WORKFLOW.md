@@ -1,5 +1,7 @@
 # Continuing a morning service report
 
+<sub><b>Check the evidence · 6 of 6</b> &nbsp;·&nbsp; [← Exchange simulation](EXCHANGE_SIMULATION.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Architecture →](ARCHITECTURE.md)</sub>
+
 A transit operator asks for the share of scheduled buses that left on time. Monday's departure log contains 18 departures and 16 left on time. Two other buses, M17 at 07:10 and M19 at 07:22, were scheduled and canceled. Monday's draft rounds 16/18 to 89%. Accounting for the full timetable gives 16/20, or 80%. On Tuesday, T04 and T11 lack dispatch records. The example leaves Tuesday's rate pending.
 
 The two cancellations, the missing trip identifiers and the Monday counts appear in the [film illustration](https://whatstillholds.com/#field-film). The machine-readable timetable, dispatch rows, dates, owners, operator dialogue and later M18 edit in this study are fictional. One local Python process scripts the actor choices and starts the public TAOS commands in fresh subprocesses. The study measures the behavior of that workflow. It contains no human-subject observations, agent inference, or service performance measurements.

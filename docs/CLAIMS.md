@@ -1,5 +1,7 @@
 # Claims
 
+<sub><b>Check the evidence · 1 of 6</b> &nbsp;·&nbsp; [← Interface rules](INTERFACE.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Measurement audit →](MEASUREMENT_AUDIT.md)</sub>
+
 Use this register to find the source of a public software claim. Each row names
 the code and a check, or the experiment that produced a number. A claim with
 no row here should not appear elsewhere.
