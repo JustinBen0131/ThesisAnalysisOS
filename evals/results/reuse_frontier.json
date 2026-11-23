@@ -2,13 +2,13 @@
   "checks": 6,
   "edits": 60,
   "environment": {
-    "platform": "macOS-27.2.1-arm64-arm-64bit",
-    "python": "3.10.18"
+    "platform": "macOS-27.2.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.5"
   },
   "folders": 12,
   "measured_on": {
     "files": {
-      "count": 45,
+      "count": 46,
       "files": {
         "evals/reuse_frontier.py": "6f0375b076aab95018f3dc98b341c410ee05dea4586495ccc5509b443779fa8c",
         "taos_core/__init__.py": "66629c3555bb4a5eb5d6ab16af575f0adf6b656cfd82f59dea5b15e19a40326c",
@@ -26,7 +26,7 @@
         "taos_core/config.py": "1dae50f3cd2d0eb0460e9cdf3a0a9620deece1415ddb4238311423b3ff050bb1",
         "taos_core/control.py": "8d414cfa65735319ce182daa80e09a31e45dbf4d5d142dfa1a25ba416fce8167",
         "taos_core/decisions.py": "ea76401780a93b7bedca1df132617e859abe9598c50805ae576d51fd049c6022",
-        "taos_core/demo.py": "e7fe8cf969b450ed624640c6a0a0f3977d7e3c3b66107af8a810fc21123a23ac",
+        "taos_core/demo.py": "324026ac5734231077acc1926fafb87732b5a5a23959054924ef41b3ede1a3a9",
         "taos_core/doctor.py": "243c505bd8b63568222ade179b4db3e3665b16a8d2e62eb3a0a62ed8300aa836",
         "taos_core/events.py": "688a9ab160a2342f34f0dbe93f8d2589180bd22eeab9de02f768fb8dbffae816",
         "taos_core/gates.py": "f6248c9c6f746ea0a7da8dc8bbcc06f1185f4b0e329eca4eb5d8db2d085f12cb",
@@ -36,7 +36,8 @@
         "taos_core/lessons.py": "5abcc2cafaa59ba67419dd919f69caff0b40ffa9eb5cc1e258f81d57f8f71a35",
         "taos_core/lifecycle.py": "152383dc772aef1453cfc5a157ca5f3cdbc714e3ca7c4f0da8eafffe7a4aa135",
         "taos_core/mcp_stdio.py": "aa51d77a24a3024a1ff15fe56e1a0de1abc3dc73cdf09c5aef8d5fd88772ace7",
-        "taos_core/page.py": "44a5d24e840ff9aff37570142823c55b705654c3436057a4eb0772f859851dd4",
+        "taos_core/opener.py": "22e6fe39c86902b23c0e36e647d9cfebac7912e4f8088a8825a8c88dadf4d09e",
+        "taos_core/page.py": "7716789ca13b31b94a66152bc7069256fc13ca5dd6a3f499b52028b84544b6a6",
         "taos_core/panel.py": "f214a7d0c42ee5c920baa22dc91cabcb74858f3b859583ad1b210e9f7d06f294",
         "taos_core/paths.py": "3e84e3bc70632fdac2d995a0b93e25bee83ef5ad8e7cf0b9a2d224f4ac829878",
         "taos_core/plain.py": "182be6352d35712a8bc836d1488f7dc00adc21962fc7fbc066b3d4c69bdc3a59",
@@ -56,7 +57,7 @@
         "taos_core/util.py": "e02eb73a86172fcf632efed3f27bf9d1d8253d54ba0f3bc788101672bae2dba0",
         "taos_core/welcome.py": "121776e21d3f8a9fe678d672c787e20d5656cd5b3e71a2821e0f9e2df314dd63"
       },
-      "sha256": "830cca0b36f2c66188e20ecd3238390a88ecba6aecf4658298ff8a613f38dbe3"
+      "sha256": "6339fcc55d4638e0a6f1daeed773da4842cde60c2f0a8058b88ca7f9435e224c"
     },
     "patterns": [
       "evals/reuse_frontier.py",
@@ -187,30 +188,30 @@
       "clock": "time.perf_counter",
       "concurrent_machine_load": "uncontrolled",
       "network_and_workspace_closed": true,
-      "python": "3.10.18",
+      "python": "3.13.5",
       "release": "27.2.0",
       "system": "Darwin"
     },
-    "dataset_sha256": "5fede2d09323187ee0f79919b9cbc34e184d5a2429bf741f10ad169e3a214536",
+    "dataset_sha256": "f8baadfa99add1c9abe8e9ee8e9a7d519c9ce2873a4a0ea3e664d30d6d2b4f3c",
     "isolating_one_execution": {
       "added_reference_ratio": {
         "coverage": 0.9711832803441212,
-        "high": 1.2224707514996775,
-        "low": 1.0993708395931399,
-        "median": 1.1505770228524221,
+        "high": 1.2450406379341226,
+        "low": 0.9904711762466769,
+        "median": 1.1156286001690452,
         "rank": 12
       },
-      "high_seconds": 0.012255125999217853,
-      "low_seconds": 0.010959374048979953,
-      "median_seconds": 0.011609395500272512,
+      "high_seconds": 0.014843207987723872,
+      "low_seconds": 0.011896500014699996,
+      "median_seconds": 0.013784687980660237,
       "network_and_workspace_closed": true,
       "pairs": 36
     },
     "large_to_small_time_ratio": {
       "coverage": 0.96142578125,
-      "high": 20.319846292977275,
-      "low": 16.180010545468743,
-      "median": 18.925283710633366,
+      "high": 23.692821621274916,
+      "low": 16.802238248200112,
+      "median": 18.66507151920403,
       "rank": 3
     },
     "observations": [
@@ -222,8 +223,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.37456454199855216,
-          "reference": 0.012970417010365054
+          "ask": 0.34213408301002346,
+          "reference": 0.010963792010443285
         },
         "study": "upkeep"
       },
@@ -235,8 +236,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.02314983299584128,
-          "reference": 0.015324708016123623
+          "ask": 0.020250041998224333,
+          "reference": 0.013968791987281293
         },
         "study": "upkeep"
       },
@@ -248,8 +249,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.05438124999636784,
-          "reference": 0.014233999972930178
+          "ask": 0.0499795830110088,
+          "reference": 0.013550125004258007
         },
         "study": "upkeep"
       },
@@ -261,8 +262,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.022907667007530108,
-          "reference": 0.015998832997865975
+          "ask": 0.019363458006409928,
+          "reference": 0.013445165997836739
         },
         "study": "upkeep"
       },
@@ -274,8 +275,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.059322499990230426,
-          "reference": 0.016760416998295113
+          "ask": 0.04634387500118464,
+          "reference": 0.012166083004558459
         },
         "study": "upkeep"
       },
@@ -287,8 +288,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.364908582996577,
-          "reference": 0.014222666999557987
+          "ask": 0.3432059170154389,
+          "reference": 0.013636666990350932
         },
         "study": "upkeep"
       },
@@ -300,8 +301,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.35505304200341925,
-          "reference": 0.011770624987548217
+          "ask": 0.3339721250231378,
+          "reference": 0.011644374986644834
         },
         "study": "upkeep"
       },
@@ -313,8 +314,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.053261083987308666,
-          "reference": 0.014551957981893793
+          "ask": 0.04808020801283419,
+          "reference": 0.011405665980419144
         },
         "study": "upkeep"
       },
@@ -326,8 +327,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.020527999993646517,
-          "reference": 0.015291042014723644
+          "ask": 0.0175224170088768,
+          "reference": 0.011255083023570478
         },
         "study": "upkeep"
       },
@@ -339,8 +340,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.04991025000344962,
-          "reference": 0.013803625013679266
+          "ask": 0.043807457986986265,
+          "reference": 0.010591416008537635
         },
         "study": "upkeep"
       },
@@ -352,8 +353,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.3897794999938924,
-          "reference": 0.015218957996694371
+          "ask": 0.40056466599344276,
+          "reference": 0.012901125010102987
         },
         "study": "upkeep"
       },
@@ -365,8 +366,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.01926041700062342,
-          "reference": 0.01303804200142622
+          "ask": 0.0188498749921564,
+          "reference": 0.012643207999644801
         },
         "study": "upkeep"
       },
@@ -378,8 +379,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.01824770899838768,
-          "reference": 0.012827500002458692
+          "ask": 0.018213082978036255,
+          "reference": 0.011971916974289343
         },
         "study": "upkeep"
       },
@@ -391,8 +392,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.33802170801209286,
-          "reference": 0.013583333988208324
+          "ask": 0.4909608330053743,
+          "reference": 0.013278375001391396
         },
         "study": "upkeep"
       },
@@ -404,8 +405,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.04477612499613315,
-          "reference": 0.01347183299367316
+          "ask": 0.051213833008660004,
+          "reference": 0.012153000017860904
         },
         "study": "upkeep"
       },
@@ -417,8 +418,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.04274545799125917,
-          "reference": 0.011276750010438263
+          "ask": 0.04790362500352785,
+          "reference": 0.01186954099102877
         },
         "study": "upkeep"
       },
@@ -430,8 +431,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.019144417019560933,
-          "reference": 0.01236770799732767
+          "ask": 0.02011204100563191,
+          "reference": 0.013271624979097396
         },
         "study": "upkeep"
       },
@@ -443,8 +444,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.37129466599435546,
-          "reference": 0.011458042019512504
+          "ask": 0.4765109999862034,
+          "reference": 0.013157624984160066
         },
         "study": "upkeep"
       },
@@ -456,8 +457,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.46227312498376705,
-          "reference": 0.01643604098353535
+          "ask": 0.5813757089781575,
+          "reference": 0.016854166984558105
         },
         "study": "upkeep"
       },
@@ -469,8 +470,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.05662745799054392,
-          "reference": 0.017584666988113895
+          "ask": 0.09135558400885202,
+          "reference": 0.04292479099240154
         },
         "study": "upkeep"
       },
@@ -482,8 +483,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.02260908400057815,
-          "reference": 0.028563415980897844
+          "ask": 0.025782457989407703,
+          "reference": 0.01662575002410449
         },
         "study": "upkeep"
       },
@@ -495,8 +496,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.056170083000324667,
-          "reference": 0.015473625011509284
+          "ask": 0.06836720800492913,
+          "reference": 0.019256540981587023
         },
         "study": "upkeep"
       },
@@ -508,8 +509,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.347874667000724,
-          "reference": 0.013275083008920774
+          "ask": 0.7349530420033261,
+          "reference": 0.014576874993508682
         },
         "study": "upkeep"
       },
@@ -521,8 +522,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.01799987500999123,
-          "reference": 0.011804957990534604
+          "ask": 0.02406629198230803,
+          "reference": 0.01626125001348555
         },
         "study": "upkeep"
       },
@@ -534,8 +535,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.01696833301684819,
-          "reference": 0.010972041985951364
+          "ask": 0.023313584009883925,
+          "reference": 0.016772583010606468
         },
         "study": "upkeep"
       },
@@ -547,8 +548,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.042404583015013486,
-          "reference": 0.011201290995813906
+          "ask": 0.05176075000781566,
+          "reference": 0.012712916999589652
         },
         "study": "upkeep"
       },
@@ -560,8 +561,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.3535032920190133,
-          "reference": 0.014347666990943253
+          "ask": 0.3450021249882411,
+          "reference": 0.013112165994243696
         },
         "study": "upkeep"
       },
@@ -573,8 +574,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.05453754198970273,
-          "reference": 0.0121127919992432
+          "ask": 0.048322832997655496,
+          "reference": 0.010704334010370076
         },
         "study": "upkeep"
       },
@@ -586,8 +587,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.02226620799046941,
-          "reference": 0.013303292013006285
+          "ask": 0.0209815829875879,
+          "reference": 0.012921874993480742
         },
         "study": "upkeep"
       },
@@ -599,8 +600,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.392263957997784,
-          "reference": 0.013285124994581565
+          "ask": 0.34231466698111035,
+          "reference": 0.011546082998393103
         },
         "study": "upkeep"
       },
@@ -612,8 +613,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.02046316600171849,
-          "reference": 0.012534416979178786
+          "ask": 0.019743875018320978,
+          "reference": 0.011346709012286738
         },
         "study": "upkeep"
       },
@@ -625,8 +626,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.3239408750087023,
-          "reference": 0.011204584006918594
+          "ask": 0.3317412920005154,
+          "reference": 0.010533207998378202
         },
         "study": "upkeep"
       },
@@ -638,8 +639,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.04742079199058935,
-          "reference": 0.013770583987934515
+          "ask": 0.04557225000462495,
+          "reference": 0.0121565000154078
         },
         "study": "upkeep"
       },
@@ -651,8 +652,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.33290004200534895,
-          "reference": 0.012587875011377037
+          "ask": 0.32418529101414606,
+          "reference": 0.011776750005083159
         },
         "study": "upkeep"
       },
@@ -664,8 +665,8 @@
           "ask"
         ],
         "seconds": {
-          "ask": 0.016383000009227544,
-          "reference": 0.01004562500747852
+          "ask": 0.017743707983754575,
+          "reference": 0.011403166019590572
         },
         "study": "upkeep"
       },
@@ -677,8 +678,8 @@
           "reference"
         ],
         "seconds": {
-          "ask": 0.04184504100703634,
-          "reference": 0.010307041986379772
+          "ask": 0.04256720800185576,
+          "reference": 0.01237741598743014
         },
         "study": "upkeep"
       },
@@ -694,9 +695,9 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.05085966698243283,
-          "open": 0.039639374997932464,
-          "reference": 0.009615000017220154
+          "isolated": 0.05611599999247119,
+          "open": 0.044563708011992276,
+          "reference": 0.011017416982213035
         },
         "study": "isolation"
       },
@@ -712,9 +713,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.054973791004158556,
-          "open": 0.04007558399462141,
-          "reference": 0.01054524999926798
+          "isolated": 0.061335040983976796,
+          "open": 0.04389187501510605,
+          "reference": 0.011887375003425404
         },
         "study": "isolation"
       },
@@ -730,9 +731,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.052404957998078316,
-          "open": 0.0406526250008028,
-          "reference": 0.010115833021700382
+          "isolated": 0.05729587498353794,
+          "open": 0.04396800001268275,
+          "reference": 0.010226832993794233
         },
         "study": "isolation"
       },
@@ -748,9 +749,9 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.05611666600452736,
-          "open": 0.04149708300246857,
-          "reference": 0.011012750008376315
+          "isolated": 0.05713395797647536,
+          "open": 0.043969749996904284,
+          "reference": 0.012273583008209243
         },
         "study": "isolation"
       },
@@ -766,9 +767,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.052425458998186514,
-          "open": 0.03999941601068713,
-          "reference": 0.010223708988633007
+          "isolated": 0.05811225000070408,
+          "open": 0.05617720799637027,
+          "reference": 0.01393579100840725
         },
         "study": "isolation"
       },
@@ -784,9 +785,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.050867000012658536,
-          "open": 0.04208995797671378,
-          "reference": 0.011854750016937032
+          "isolated": 0.06179991699173115,
+          "open": 0.04781133300275542,
+          "reference": 0.01107125001726672
         },
         "study": "isolation"
       },
@@ -802,9 +803,9 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.05176562498672865,
-          "open": 0.04162070801248774,
-          "reference": 0.010765999992145225
+          "isolated": 0.059495291992789134,
+          "open": 0.0449265000061132,
+          "reference": 0.011701459006872028
         },
         "study": "isolation"
       },
@@ -820,9 +821,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.05072550001204945,
-          "open": 0.03928316698875278,
-          "reference": 0.009998666995670646
+          "isolated": 0.06256154100992717,
+          "open": 0.04830512500484474,
+          "reference": 0.011982165975496173
         },
         "study": "isolation"
       },
@@ -838,9 +839,9 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.051612709008622915,
-          "open": 0.038881749991560355,
-          "reference": 0.00959737499943003
+          "isolated": 0.06026762499823235,
+          "open": 0.04505429099663161,
+          "reference": 0.011959208000916988
         },
         "study": "isolation"
       },
@@ -856,9 +857,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.050333958002738655,
-          "open": 0.039746583002852276,
-          "reference": 0.009818124992307276
+          "isolated": 0.05997324999771081,
+          "open": 0.048076749983010814,
+          "reference": 0.011971708008786663
         },
         "study": "isolation"
       },
@@ -874,9 +875,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.050791708985343575,
-          "open": 0.0389414579840377,
-          "reference": 0.009431917016627267
+          "isolated": 0.05646770799648948,
+          "open": 0.04667787501239218,
+          "reference": 0.009965083008864895
         },
         "study": "isolation"
       },
@@ -892,9 +893,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.0506537499895785,
-          "open": 0.03976337498170324,
-          "reference": 0.009837082994636148
+          "isolated": 0.06026220798958093,
+          "open": 0.04541900000185706,
+          "reference": 0.012062499998137355
         },
         "study": "isolation"
       },
@@ -910,9 +911,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.05026029099826701,
-          "open": 0.03962937497999519,
-          "reference": 0.009669999999459833
+          "isolated": 0.05938070800038986,
+          "open": 0.049720666982466355,
+          "reference": 0.014559208997525275
         },
         "study": "isolation"
       },
@@ -928,9 +929,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.05032083299010992,
-          "open": 0.03904945799149573,
-          "reference": 0.009849042020505294
+          "isolated": 0.08380829100497067,
+          "open": 0.053098666976438835,
+          "reference": 0.012301874987315387
         },
         "study": "isolation"
       },
@@ -946,9 +947,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.05051945897866972,
-          "open": 0.043095917004393414,
-          "reference": 0.009859666984993964
+          "isolated": 0.06600795799749903,
+          "open": 0.047777208004845306,
+          "reference": 0.012044417002471164
         },
         "study": "isolation"
       },
@@ -964,9 +965,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.05222220899304375,
-          "open": 0.0399670829938259,
-          "reference": 0.010923916997853667
+          "isolated": 0.07000591701944359,
+          "open": 0.05029929199372418,
+          "reference": 0.012874750012997538
         },
         "study": "isolation"
       },
@@ -982,9 +983,9 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.05104287501308136,
-          "open": 0.03957641700981185,
-          "reference": 0.010103499982506037
+          "isolated": 0.06689424999058247,
+          "open": 0.04924674998619594,
+          "reference": 0.012483500002417713
         },
         "study": "isolation"
       },
@@ -1000,9 +1001,9 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.05536658299388364,
-          "open": 0.04020329102058895,
-          "reference": 0.009867417014902458
+          "isolated": 0.06325700000161305,
+          "open": 0.04908079199958593,
+          "reference": 0.012893624982098117
         },
         "study": "isolation"
       },
@@ -1018,9 +1019,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.05110491602681577,
-          "open": 0.04014554197783582,
-          "reference": 0.00997237500268966
+          "isolated": 0.06273170898202807,
+          "open": 0.049150917009683326,
+          "reference": 0.011583957995753735
         },
         "study": "isolation"
       },
@@ -1036,9 +1037,9 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.051793958991765976,
-          "open": 0.03971699997782707,
-          "reference": 0.009604999999282882
+          "isolated": 0.06386912500602193,
+          "open": 0.0457924579968676,
+          "reference": 0.010983624990331009
         },
         "study": "isolation"
       },
@@ -1054,9 +1055,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.054200250015128404,
-          "open": 0.04822179098846391,
-          "reference": 0.011793249985203147
+          "isolated": 0.0633581250149291,
+          "open": 0.048822333017596975,
+          "reference": 0.012060832988936454
         },
         "study": "isolation"
       },
@@ -1072,9 +1073,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.05183029099134728,
-          "open": 0.04070916699129157,
-          "reference": 0.01129108399618417
+          "isolated": 0.06159820797620341,
+          "open": 0.04598850000184029,
+          "reference": 0.011107792000984773
         },
         "study": "isolation"
       },
@@ -1090,9 +1091,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.051622541999677196,
-          "open": 0.039541542006190866,
-          "reference": 0.010443999985000119
+          "isolated": 0.06496954199974425,
+          "open": 0.04889104200992733,
+          "reference": 0.014566000027116388
         },
         "study": "isolation"
       },
@@ -1108,9 +1109,9 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.05023758299648762,
-          "open": 0.04013475001556799,
-          "reference": 0.009983584022847936
+          "isolated": 0.06747966600232758,
+          "open": 0.05420425001648255,
+          "reference": 0.012394124991260469
         },
         "study": "isolation"
       },
@@ -1126,9 +1127,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.05110116599826142,
-          "open": 0.0397403750102967,
-          "reference": 0.010028584016254172
+          "isolated": 0.06760829201084562,
+          "open": 0.055440208001527935,
+          "reference": 0.015208708005957305
         },
         "study": "isolation"
       },
@@ -1144,9 +1145,9 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.051635083014843985,
-          "open": 0.039285791979637,
-          "reference": 0.009642165998229757
+          "isolated": 0.06398525001714006,
+          "open": 0.05759383301483467,
+          "reference": 0.015453125000931323
         },
         "study": "isolation"
       },
@@ -1162,9 +1163,9 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.05158158400445245,
-          "open": 0.04183912498410791,
-          "reference": 0.01060091599356383
+          "isolated": 0.06200254199211486,
+          "open": 0.04868416700628586,
+          "reference": 0.015085708990227431
         },
         "study": "isolation"
       },
@@ -1180,9 +1181,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.05112733400892466,
-          "open": 0.04421458300203085,
-          "reference": 0.010277834022417665
+          "isolated": 0.0569542910088785,
+          "open": 0.046323209011461586,
+          "reference": 0.011797874991316348
         },
         "study": "isolation"
       },
@@ -1198,9 +1199,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.05174883300787769,
-          "open": 0.03934108300018124,
-          "reference": 0.009811833006097004
+          "isolated": 0.058781291998457164,
+          "open": 0.04869324999162927,
+          "reference": 0.010672957985661924
         },
         "study": "isolation"
       },
@@ -1216,9 +1217,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.051477291010087356,
-          "open": 0.03949962498154491,
-          "reference": 0.00983049999922514
+          "isolated": 0.059836250002263114,
+          "open": 0.05399654101347551,
+          "reference": 0.014919250010279939
         },
         "study": "isolation"
       },
@@ -1234,9 +1235,9 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.051142207987140864,
-          "open": 0.039255208015674725,
-          "reference": 0.009723750001285225
+          "isolated": 0.07111554199946113,
+          "open": 0.060264832980465144,
+          "reference": 0.017941416008397937
         },
         "study": "isolation"
       },
@@ -1252,9 +1253,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.060827291978057474,
-          "open": 0.04114024998852983,
-          "reference": 0.012365165981464088
+          "isolated": 0.06443612498696893,
+          "open": 0.052551915985532105,
+          "reference": 0.01199854098376818
         },
         "study": "isolation"
       },
@@ -1270,9 +1271,9 @@
           "reference"
         ],
         "seconds": {
-          "isolated": 0.0656457919976674,
-          "open": 0.047687165992101654,
-          "reference": 0.012107582995668054
+          "isolated": 0.06506408299901523,
+          "open": 0.04907004098640755,
+          "reference": 0.01418641599593684
         },
         "study": "isolation"
       },
@@ -1288,9 +1289,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.06182145798811689,
-          "open": 0.04879441697266884,
-          "reference": 0.011002582992659882
+          "isolated": 0.06639733299380168,
+          "open": 0.04752308301976882,
+          "reference": 0.012737124983686954
         },
         "study": "isolation"
       },
@@ -1306,9 +1307,9 @@
           "open"
         ],
         "seconds": {
-          "isolated": 0.05782000001636334,
-          "open": 0.04084129101829603,
-          "reference": 0.01162062500952743
+          "isolated": 0.06260725000174716,
+          "open": 0.05139791700639762,
+          "reference": 0.013373374997172505
         },
         "study": "isolation"
       },
@@ -1324,54 +1325,54 @@
           "isolated"
         ],
         "seconds": {
-          "isolated": 0.05193204100942239,
-          "open": 0.04131724999751896,
-          "reference": 0.010368124989327043
+          "isolated": 0.0648301659966819,
+          "open": 0.05004475000896491,
+          "reference": 0.012588624987984076
         },
         "study": "isolation"
       }
     ],
     "schema": "paired-reference-v1",
-    "seconds_per_execution": 0.011283917003311217,
+    "seconds_per_execution": 0.012339645487372763,
     "upkeep": [
       {
-        "break_even_check_seconds": 0.003972358300234191,
+        "break_even_check_seconds": 0.003985591602395288,
         "files": 48,
         "input_bytes": 288,
         "reference_ratio": {
           "coverage": 0.96142578125,
-          "high": 1.6308592045822068,
-          "low": 1.4225460140237831,
-          "median": 1.517696973868673,
+          "high": 1.5568447582466718,
+          "low": 1.44966307871591,
+          "median": 1.5183668979743554,
           "rank": 3
         },
-        "seconds": 0.019861791501170956
+        "seconds": 0.019927958011976443
       },
       {
-        "break_even_check_seconds": 0.010317133399075829,
+        "break_even_check_seconds": 0.009640304101048968,
         "files": 480,
         "input_bytes": 2880,
         "reference_ratio": {
           "coverage": 0.96142578125,
-          "high": 3.820517781353701,
-          "low": 3.443629698794068,
-          "median": 3.6450581670583135,
+          "high": 4.214089766591997,
+          "low": 3.550336899565784,
+          "median": 3.9225565658705976,
           "rank": 3
         },
-        "seconds": 0.05158566699537914
+        "seconds": 0.048201520505244844
       },
       {
-        "break_even_check_seconds": 0.07199616249999963,
+        "break_even_check_seconds": 0.068820804200368,
         "files": 4800,
         "input_bytes": 28800,
         "reference_ratio": {
           "coverage": 0.96142578125,
-          "high": 29.52655380794473,
-          "low": 25.611444625746014,
-          "median": 27.285831828210416,
+          "high": 36.215578461907505,
+          "low": 27.527568376183503,
+          "median": 31.127316676124792,
           "rank": 3
         },
-        "seconds": 0.35998081249999814
+        "seconds": 0.34410402100184
       }
     ],
     "workload": {

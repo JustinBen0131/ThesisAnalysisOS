@@ -211,8 +211,7 @@ def _copy_markdown_images(out, repo, tracked, referenced):
         shutil.copyfile(asset, target)
 
 
-def _write_viewer(out, name, text, note, raw):
-    location = _file_target(name)
+def _write_viewer(out, name, text, note, raw, location):
     lines = []
     for number, line in enumerate(text.splitlines(), 1):
         lines.append(f'<li id="L{number}"><a href="#L{number}" aria-label="Line {number}">{number}</a>'
@@ -387,7 +386,10 @@ def write_source_snapshot(out, repo, github, ref, revision, evidence_files=()):
             destination = out / raw
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(data)
-        _write_viewer(out, name, text, note, raw)
+        _write_viewer(out, name, text, note, raw, _file_target(name))
+        if name == "CITATION.cff":
+            # Raw Markdown links to this directory. Keep its published source.txt address too.
+            _write_viewer(out, name, text, note, raw, raw.parent / "index.html")
         files.append({"path": name, "raw_url": _href(MANIFEST, raw) if raw else None,
                       "viewer_url": _href(MANIFEST, _file_target(name)),
                       "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})

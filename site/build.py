@@ -1400,6 +1400,18 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     protect_pages(out, analytics=ctx["public_analytics"])
     if preview_film_dir is None:
         verify_homepage_film(out)
+    # These guides also live outside docs/ on the website. Keep their reading
+    # paths inside this build while preserving the original files in the ZIP.
+    for route in ("exchange/simulation.md", "records/handoff-method.md",
+                  MODEL_DOWNLOADS["docs/MODEL_EVALUATION.md"]):
+        guide = out / route
+        lines = guide.read_text(encoding="utf-8").splitlines(keepends=True)
+        prefix = os.path.relpath(out / "source/raw/docs", guide.parent).replace(os.sep, "/")
+        for i, line in enumerate(lines[:5]):
+            if line.startswith("<sub><b>") and "[All documents]" in line:
+                lines[i] = re.sub(r"\]\(([A-Z_]+\.md)\)", lambda m: f"]({prefix}/{m[1]})", line)
+                break
+        write(route, "".join(lines))
     agent_guide.study_versions(out, datasets, ctx["revision"])
     write("research-audit.json", json.dumps(verify_research_guide(out, writing_report=True), indent=2) + "\n")
     problems = broken(out, url, ctx["revision"])

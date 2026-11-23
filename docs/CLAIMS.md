@@ -74,10 +74,10 @@ find a compatible recorded run, it returns `unknown`.
 | Age limits trade reruns against stale reuse | 180, 90, 48 executions with 30, 83, 161 wrong | same | measured, one workload |
 | In the open, under-declared inputs are reused wrongly | 150 wrong in 360 when every check hid one folder | same | measured, one workload |
 | Isolated, a check that reads what it did not declare never passes, and correct declarations cost no extra executions. Predicted before the code was written | 0 of 366 runs passed when every check hid one folder and ran isolated; 60 executions, 0 wrong with everything declared | same | measured, one workload |
-| Cost of consulting six unchanged checks at three tree sizes | 48 files 1.5× (1.4 to 1.6), 480 files 3.6× (3.4 to 3.8), 4,800 files 27× (26 to 30) the uncached check time (paired medians and 95% intervals) | same | measured, one workload and machine |
-| Added cost of isolating one check after an edit | 1.2× (1.1 to 1.2) the uncached check time (isolated minus open, 36 paired edits, 95% interval) | same | measured, one workload and machine |
+| Cost of consulting six unchanged checks at three tree sizes | 48 files 1.5× (1.4 to 1.6), 480 files 3.9× (3.6 to 4.2), 4,800 files 31× (28 to 36) the uncached check time (paired medians and 95% intervals) | same | measured, one workload and machine |
+| Added cost of isolating one check after an edit | 1.1× (0.99 to 1.2) the uncached check time (isolated minus open, 36 paired edits, 95% interval) | same | measured, one workload and machine |
 | Reading one demo session | compact status 458 bytes / 8 lines, PEN-1 capsule 185 bytes / 4 lines, root AGENTS.md 7,944 bytes / 194 lines | `python3 evals/session_footprint.py` | measured, fresh pendulum demo, normalized UTF-8 |
-| Cases collected by the self-test suite | 328 tests | `./taos selftest`, with Python 3.9 and 3.12 in CI | tested |
+| Cases collected by the self-test suite | 330 tests | `./taos selftest`, with Python 3.9 and 3.12 in CI | tested |
 
 ## Reported, not reproducible here
 
