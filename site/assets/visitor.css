@@ -408,3 +408,12 @@ border-bottom:1px solid var(--line)}
 #try .steps button:disabled{opacity:.38;cursor:default}
 #stage:not([data-live]) .steps{display:none}
 @media (max-width:560px){#try .steps{position:static;margin:10px 0 0}}
+
+.visitor-page .top.reading-header .rail a.gh{display:inline-flex;align-items:center;gap:6px;min-height:0;margin-left:16px;padding:6px 12px 6px 9px;border:1px solid var(--line);border-radius:99px;color:var(--ink);font-weight:600;line-height:1;white-space:nowrap;box-shadow:none}
+.visitor-page .top.reading-header .rail a.gh:hover{border-color:var(--ink)}
+.visitor-page .top.reading-header .rail a.gh:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.visitor-page .top.reading-header .rail a.gh svg{width:15px;height:15px;fill:currentColor;flex:none}
+.visitor-page .top.reading-header .rail a.gh .go{font-weight:500;color:var(--mute)}
+.visitor-page .top.reading-header .rail a.gh .gs{color:var(--mute)}
+@media (max-width:900px){.visitor-page .top.reading-header .rail a.gh .go,.visitor-page .top.reading-header .rail a.gh .gs{display:none}}
+@media (max-width:560px){.visitor-page .top.reading-header .rail a.gh{margin-left:8px;padding:6px;border-color:transparent}.visitor-page .top.reading-header .rail a.gh .gn{display:none}}
