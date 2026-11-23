@@ -417,9 +417,9 @@ border-bottom:1px solid var(--line)}
 .visitor-page .top.reading-header .rail a.gh .gs{color:var(--mute)}
 @media (max-width:900px){.visitor-page .top.reading-header .rail a.gh .go,.visitor-page .top.reading-header .rail a.gh .gs{display:none}}
 @media (max-width:560px){.visitor-page .top.reading-header .rail a.gh{margin-left:8px;padding:6px;border-color:transparent}.visitor-page .top.reading-header .rail a.gh .gn{display:none}}
-@media(max-width:345px) {
+@media(max-width:366px) {
   .visitor-page .top.reading-header .rail i { display:none; }
   .visitor-page .top.reading-header .rail { gap:3px; }
-  .visitor-page .top.reading-header .rail a.gh { margin-left:1px; padding:2px; border:0; }
+  .visitor-page .top.reading-header .rail a.gh { margin-left:1px; padding:7px 2px; border:0; }
   .visitor-page .top.reading-header .bn { font-size:12px; }
 }

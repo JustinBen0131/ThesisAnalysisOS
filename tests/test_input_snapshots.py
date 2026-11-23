@@ -52,4 +52,3 @@ class InputSnapshots(unittest.TestCase):
                 self.assertEqual(code, 125)
                 self.assertIn("reading.csv", reason)
                 run.assert_called_once()
-
