@@ -7,8 +7,7 @@ from unittest.mock import patch
 from concurrent.futures import ThreadPoolExecutor
 
 from helpers import cleanup, example_answers, make_home
-from taos_core import bootstrap, control, tasks, usage
-from taos_core.store import utc_now
+from taos_core import bootstrap, control, events, tasks, usage
 
 
 class ProjectActors(unittest.TestCase):
@@ -109,17 +108,22 @@ class ProjectActors(unittest.TestCase):
 
     def test_concurrent_native_usage_does_not_belong_to_a_named_role(self):
         task = tasks.TaskStore(self.paths).get("CMP-2")
-        stamp = utc_now()
+        gate = events.emit(self.paths, "gate_run", "field-notes", task_id=task["id"], ok=True)
+        stamp = gate["ts"]
         concurrent = {"agents": {"codex": {"totals": dict(usage.ZERO, input_tokens=100),
                                           "models": {"example-model": 1}}}}
         with patch.object(usage, "window", return_value=concurrent) as observed:
             named = control.outcome_vector(self.paths, task, stamp, stamp, agent="field-notes")
             observed.assert_not_called()
             native = control.outcome_vector(self.paths, task, stamp, stamp, agent="codex")
-        self.assertEqual(native["input_tokens"], 100)
-        for key in ("model", "cost", "input_tokens", "output_tokens", "cached_tokens", "reasoning_tokens"):
-            self.assertIsNone(named[key], key)
-            self.assertEqual(named["provenance"][key], "unavailable", key)
+        observed.assert_called_once_with(self.paths, since=stamp, until=stamp, scoped=True)
+        self.assertEqual(native["provider_window"]["agents"]["codex"]["totals"]["input_tokens"], 100)
+        self.assertNotIn("provider_window", named)
+        for vector in (native, named):
+            self.assertEqual(vector["gate_pass"], 1)
+            for key in ("model", "cost", "input_tokens", "output_tokens", "cached_tokens", "reasoning_tokens"):
+                self.assertIsNone(vector[key], key)
+                self.assertEqual(vector["provenance"][key], "unavailable", key)
 
     def test_workspace_assignment_and_invalid_setup(self):
         spaces = [{"path": str(self.tmp / "ws"), "agent": "field-notes"}]

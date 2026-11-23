@@ -1,11 +1,14 @@
 # Contributing
 
-Research notes, exchange entries, questions and reports of mistakes are welcome
-from anyone. GitHub issues are public. For a workflow problem, keep the original
-receipt local and describe a small example with invented names and data.
-Include what you tried, what happened and how you checked it. You can also follow
-the research-notes and exchange pages. For a suspected security vulnerability,
-use the private reporting route. [Security policy](SECURITY.md)
+Start with the question you want another person to answer.
+
+| What happened? | Where to take it |
+| --- | --- |
+| TAOS repeated a check, reused an old result, or made the right call. | Describe one decision in the [public workflow form](https://github.com/JustinBen0131/ThesisAnalysisOS/issues/new?template=workflow-feedback.yml). |
+| A research note needs a correction or another test. | Open the [research exchange](https://whatstillholds.com/exchange/) and follow the reply link on the question you read. |
+| The software or website may expose private data or give someone unintended access. | Send a [private security report](https://github.com/JustinBen0131/ThesisAnalysisOS/security/advisories/new). |
+
+For a public report, keep the original receipt in your workspace. A small example with invented data is enough. Tell us what changed, what TAOS said, and what you checked. For example, if changing a plot color makes a gravity fit go stale, name the file you edited and the inputs the fit actually reads.
 
 ## Code
 

@@ -1,8 +1,8 @@
 # Reporting a software security concern
 
-This policy covers the ThesisAnalysisOS software, its static website, its release process and its research record checkers.
+If you find a security problem in the CLI, website, release process or research record checkers, sign in to GitHub and send it directly to the maintainer. Include the component, version or commit, what you observed, and what someone else could access. Use invented file names and data. Keep credentials, personal data and unpublished research in your own workspace. [Report a vulnerability privately](https://github.com/JustinBen0131/ThesisAnalysisOS/security/advisories/new)
 
-Sign in to GitHub and send the maintainer a private vulnerability report. Describe the affected component and version. Keep credentials, personal data and unpublished research out of the report. [Report privately](https://github.com/JustinBen0131/ThesisAnalysisOS/security/advisories/new)
+If a scientific result looks wrong, use the reply link on its research question. If TAOS made a surprising workflow decision, describe that decision in the public form. [Research exchange](https://whatstillholds.com/exchange/) · [Workflow feedback](https://github.com/JustinBen0131/ThesisAnalysisOS/issues/new?template=workflow-feedback.yml)
 
 ## Working with a shared research record
 
@@ -33,4 +33,10 @@ Pages that show the comparison with public main ask GitHub’s API for the repos
 
 ## Sharing a compute review
 
-A full HPC review can contain your question, output names, source references and a diagnosis. Read it before sharing. Opening a review on the HPC page displays the file in your browser. Filing it with `--task` stores a compact local event with the task, campaign and actor labels, outcome counts and fingerprints. A project progress export also names its configured principal, project and tasks.
+An HPC review can contain the research question, output names, source references and the diagnosis of a failed attempt. Opening the file on the HPC page reads it in your browser. Before you attach a review to a public issue, make a small copy with invented labels and inspect it yourself.
+
+Filing the review with `--task` writes a compact event to the local project. It includes the task, campaign and actor labels, outcome counts and fingerprints. A project progress export also names its configured principal, project and tasks. To show someone how the report works with public data, run the bundled example from the repository root.
+
+```sh
+./taos usage progress --packet examples/hpc/campaign.json
+```
