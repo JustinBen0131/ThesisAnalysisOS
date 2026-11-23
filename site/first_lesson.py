@@ -30,7 +30,7 @@ INTRO = ("This example estimates gravity from a pendulum timed at six lengths. "
 GUIDE = ("These examples use a disposable copy of examples/measurement called toy, beside a fresh ThesisAnalysisOS folder "
          "called os. Run the setup in the last answer from inside toy first. Then the other commands work there.")
 AUDIENCE = ("If you return to an analysis, a report or a piece of software after the files change, "
-            "The system shows which earlier results you can keep and which checks need to run again.")
+            "the system shows which earlier results you can keep and which checks need to run again.")
 REQUIREMENTS = ("On macOS or Linux you need Git and Python 3.9 or newer. Type the commands yourself or ask an AI agent "
                 "that can run them. Reading the notebook locally needs no account, network connection or model call.")
 
