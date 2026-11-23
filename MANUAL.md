@@ -1,6 +1,13 @@
 # The manual
 
-For the human. The agents read `AGENTS.md`; you read this.
+Start here if you want to see what TAOS can tell you about a result or a compute campaign. From a downloaded or cloned copy, run either command with Python 3.9 or later. Both work offline before you set up a project.
+
+| What do you want to know? | Try it from the repository root |
+| --- | --- |
+| A measurement changed. Which earlier results still hold? | `python3 taos demo` |
+| Three sensor outputs came back from a compute run. Which can I use? | `python3 taos usage progress --packet examples/hpc/campaign.json` |
+
+The demo changes one pendulum reading and shows why the fit needs checking again. In the sensor example, two outputs pass their supplied checks and one has no readings. Its recorded worker time still counts. To use the same tools on your own project, continue to [Set up a private project](#2-set-up-a-private-project).
 
 ## 1. What you get
 
@@ -21,7 +28,9 @@ For the human. The agents read `AGENTS.md`; you read this.
 - Self-iteration: corrections become checkable atoms; kernels expire; a weekly
   retro says what went stale; burns archive-verify-delete old working files.
 
-## 2. Install (sixty seconds)
+<a name="2-install-sixty-seconds"></a>
+
+## 2. Set up a private project
 
 Make a private copy from the template. Change the example GitHub owner and
 repository name in the first two lines.
@@ -48,8 +57,8 @@ First message to the agent:
 Read BOOTSTRAP.md in this repo and follow it exactly. Ask me the ten bootstrap questions in one message, then construct the OS from my answers. Do not touch anything outside this directory until I have answered.
 ```
 
-You need macOS or Linux, Python 3.9+, Git, and Codex or Claude Code. The
-command above also uses the optional GitHub CLI (`gh`). Run the manual's
+For this assisted setup, use macOS or Linux, Python 3.9 or later, Git, and
+Codex or Claude Code. The command above also uses the GitHub CLI (`gh`). Run the manual's
 `./taos` commands from the root of your private OS clone. If the launcher
 isn't executable, run `python3 taos` there instead.
 
