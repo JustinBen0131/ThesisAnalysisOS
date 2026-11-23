@@ -234,10 +234,10 @@ def _cmd_refresh(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    kernel = subparsers.add_parser("kernel", help="distilled understanding and its expiry")
+    kernel = subparsers.add_parser("kernel", help="the short summaries agents read first, and whether they are current")
     sub = kernel.add_subparsers(dest="kernel_cmd", required=True)
 
-    fresh = sub.add_parser("freshness", help="which kernels have rotted")
+    fresh = sub.add_parser("freshness", help="which summaries are out of date, and why")
     fresh.add_argument("--json", action="store_true")
     fresh.set_defaults(func=_cmd_freshness)
 

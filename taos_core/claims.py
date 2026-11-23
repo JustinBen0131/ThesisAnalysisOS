@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from . import config as config_mod
 from . import events as events_mod
+from . import plain
 from .paths import Paths
 from .store import age_hours, atomic_write_json, locked, read_json, utc_now
 from .util import TaosError, short_id
@@ -34,9 +35,13 @@ def normalize_scopes(scopes: List[str]) -> List[str]:
             raise TaosError("a scope needs a kind, like task:AZ-7 or path:compiler/ssa")
         kind, value = scope.split(":", 1)
         if kind not in SCOPE_KINDS:
-            raise TaosError("scope kind must be one of {0}".format(", ".join(SCOPE_KINDS)))
-        if not value or _FORBIDDEN.search(value):
-            raise TaosError("scope {0!r} must be exact: no globs, spaces, or shell characters".format(scope))
+            near = plain.nearest(kind, SCOPE_KINDS)
+            raise TaosError("a scope starts with {0}, not '{1}'.{2}".format(
+                ", ".join(known + ":" for known in SCOPE_KINDS), kind, " Did you mean '{0}:{1}'?".format(near, value) if near else ""))
+        exact = value.replace(" ", "") if kind == "path" else value   # a folder may have a space in its name; a path is still exact
+        if not value or _FORBIDDEN.search(exact):
+            raise TaosError("scope {0!r} must be exact: no globs, tabs, line breaks or shell characters{1}".format(
+                scope, "" if kind == "path" else ", and no spaces"))
         if kind == "path":
             value = value.strip("/")
         cleaned.append("{0}:{1}".format(kind, value))
@@ -76,7 +81,7 @@ class ClaimStore(object):
         for claim in self.all():
             if claim.get("id") == str(claim_id):
                 return claim
-        raise TaosError("no such claim: {0}".format(claim_id))
+        raise TaosError(plain.missing("claim", str(claim_id), [c.get("id") for c in self.all()], "taos claim status"))
 
     def _is_fresh(self, claim: Dict[str, Any], now: Optional[str]) -> bool:
         if claim.get("status") != "live":
@@ -113,6 +118,7 @@ class ClaimStore(object):
         reason: Optional[str] = None,
         now: Optional[str] = None,
     ) -> Dict[str, Any]:
+        config_mod.require_actor(self.paths, agent)
         wanted = normalize_scopes(scopes)
         hours = float(stale_after_hours or config_mod.claim_stale_hours(self.paths))
         with locked(self.paths):
@@ -230,7 +236,7 @@ class ClaimStore(object):
                 events_mod.emit(self.paths, "claim_heartbeat", agent, claim_id=claim["id"], scopes=claim.get("scopes"))
                 self._save(data)
                 return claim
-        raise TaosError("no such claim: {0}".format(claim_id))
+        raise TaosError(plain.missing("claim", str(claim_id), [c.get("id") for c in self.all()], "taos claim status"))
 
     def release(
         self,
@@ -255,7 +261,7 @@ class ClaimStore(object):
                 events_mod.emit(self.paths, "claim_release", agent, claim_id=claim["id"], scopes=claim.get("scopes"))
                 self._save(data)
                 return claim
-        raise TaosError("no such claim: {0}".format(claim_id))
+        raise TaosError(plain.missing("claim", str(claim_id), [c.get("id") for c in self.all()], "taos claim status"))
 
     def release_by_scope(self, scope: str, agent: str) -> List[Dict[str, Any]]:
         target = normalize_scopes([scope])[0]
@@ -349,7 +355,7 @@ def _cmd_check(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    claim = subparsers.add_parser("claim", help="hold or release a scope")
+    claim = subparsers.add_parser("claim", help="hold or free a task, file or branch so two agents do not collide")
     sub = claim.add_subparsers(dest="claim_cmd", required=True)
 
     status = sub.add_parser("status", help="show live and stale claims")
@@ -357,7 +363,7 @@ def register(subparsers: Any) -> None:
     status.set_defaults(func=_cmd_status)
 
     acquire = sub.add_parser("acquire", help="take a scope")
-    acquire.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    acquire.add_argument("--agent", required=True, choices=subparsers.actors)
     acquire.add_argument("--scope", action="append", required=True)
     acquire.add_argument("--session", required=True)
     acquire.add_argument("--stale-after-hours", dest="stale_after_hours", type=float)
@@ -366,12 +372,12 @@ def register(subparsers: Any) -> None:
     acquire.set_defaults(func=_cmd_acquire)
 
     heartbeat = sub.add_parser("heartbeat", help="keep a claim alive")
-    heartbeat.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    heartbeat.add_argument("--agent", required=True, choices=subparsers.actors)
     heartbeat.add_argument("--id", required=True)
     heartbeat.set_defaults(func=_cmd_heartbeat)
 
     release = sub.add_parser("release", help="give a scope back")
-    release.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    release.add_argument("--agent", required=True, choices=subparsers.actors)
     group = release.add_mutually_exclusive_group(required=True)
     group.add_argument("--id")
     group.add_argument("--scope")
@@ -379,6 +385,6 @@ def register(subparsers: Any) -> None:
     release.set_defaults(func=_cmd_release)
 
     check = sub.add_parser("check", help="is a scope free for me")
-    check.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    check.add_argument("--agent", required=True, choices=subparsers.actors)
     check.add_argument("--scope", action="append", required=True)
     check.set_defaults(func=_cmd_check)

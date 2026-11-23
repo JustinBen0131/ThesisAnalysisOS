@@ -339,6 +339,23 @@ class TestQueuesAndProjections(Base):
         names = {c["name"]: c["status"] for c in doctor_mod.run(self.paths)["checks"]}
         self.assertEqual(names["claims_stale"], "warn")
 
+    def test_a_torn_last_line_is_skipped_and_named_but_a_torn_middle_line_still_refuses(self) -> None:
+        events = self.paths.events_file
+        before = store_mod.read_jsonl(events)
+        self.assertTrue(before)
+        with events.open("a", encoding="utf-8") as handle:
+            handle.write('{"type": "cut off mid-wr')                        # a process died while appending
+        self.assertEqual(store_mod.read_jsonl(events), before, "the torn last line is skipped, the rest is read")
+        report = doctor_mod.run(self.paths)
+        torn = [c for c in report["checks"] if c["name"] == "log_last_line"]
+        self.assertEqual(len(torn), 1)
+        self.assertEqual(torn[0]["status"], "warn")
+        self.assertIn(".taos/events.jsonl: the last line was incomplete and is ignored", torn[0]["detail"])
+        with events.open("a", encoding="utf-8") as handle:
+            handle.write('\n{"type": "after"}\n')                          # now the bad line is not the last
+        with self.assertRaises(TaosError):
+            store_mod.read_jsonl(events)
+
 
 class TestCli(Base):
     def test_status_json_and_exit_codes(self) -> None:

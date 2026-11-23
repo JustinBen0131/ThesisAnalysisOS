@@ -1,5 +1,7 @@
 """Publish the recorded two-instrument evaluation and its directly inspectable evidence."""
+import csv
 import hashlib
+import io
 import json
 import runpy
 from html import escape
@@ -10,10 +12,12 @@ FIXTURE = "examples/model_evaluation/"
 CHECKER = "evals/review_model_evaluation.py"
 DOWNLOAD_NAMES = {
     RECORD: "Raw observations (JSON)",
+    "evals/results/followups/instrument-paths.json": "Both correction orders and their reversals (JSON)",
+    "evals/replay_instrument_paths.py": "Rerun the correction-order experiment",
     FIXTURE + "a.csv": "Instrument A readings (CSV)",
     FIXTURE + "b.csv": "Instrument B readings (CSV)",
     FIXTURE + "policy.json": "Flagging and acceptance rules",
-    FIXTURE + "predictions.json": "Predictions made before execution",
+    FIXTURE + "predictions.json": "Saved predictions for all four edits",
     FIXTURE + "model.py": "Classification code",
     "docs/MODEL_EVALUATION.md": "Full method and limits",
     "evals/model_evaluation.py": "Experiment runner",
@@ -32,6 +36,60 @@ CASE_NAMES = {
 TITLE = "Can overall sensitivity hide missed faults on one instrument?"
 LIMIT = ("These 16 invented instrument readings were chosen to test a specific failure mode. "
          "They establish that cancellation is possible. They give no estimate of its frequency in deployed models.")
+
+
+PATH_RECORD = "evals/results/followups/instrument-paths.json"
+PATH_RUNNER = "evals/replay_instrument_paths.py"
+PATH_HEADINGS = ("Order", "At the start", "After one edit", "After both", "Undo the second", "Undo both")
+PATH_TITLE = "Does the order of corrections matter?"
+
+
+def load_instrument_paths(repo):
+    record = json.loads((repo / PATH_RECORD).read_text(encoding="utf-8"))
+    if record["schema"] != "instrument-correction-paths/1":
+        raise ValueError("Unrecognized instrument replay")
+    for name in ("a.csv", "b.csv", "policy.json", "model.py", "predictions.json"):
+        raw = (repo / FIXTURE / name).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != record["source_sha256"][name]:
+            raise ValueError("Instrument replay source changed: " + name)
+    routes = record["routes"]
+    if ([r["order"] for r in routes] != [["A", "B"], ["B", "A"]]
+            or not all(r["restored_fixture_bytes"] for r in routes)):
+        raise ValueError("Expected both correction orders and byte-for-byte restoration")
+    return record
+
+
+def path_findings(record):
+    rows = []
+    for route in record["routes"]:
+        readings = [step["native_sensitivity"] for step in route["steps"]]
+        if len(readings) != 5 or readings[0] != readings[-1]:
+            raise ValueError("The five-step replay did not return to its initial readings")
+        rows.append([" then ".join(route["order"])] + [r["pooled"] for r in readings])
+    first, second = record["routes"]
+    both = first["steps"][2]["native_sensitivity"]
+    if both != second["steps"][2]["native_sensitivity"]:
+        raise ValueError("The two edit orders differ at the same data state")
+    finding = (f"Both routes end up with exactly the same corrected data. A catches {both['A']} known faults and "
+               f"B catches {both['B']}. Their combined {both['pooled']} hides A’s decline. Undoing the edits "
+               "restores the original files byte for byte and returns both instruments to their starting counts.")
+    effort = (f"TAOS started {first['native_executions']} checks when A changed first and "
+              f"{second['native_executions']} when B changed first. A check that failed runs again when asked. "
+              f"A previous pass can be reused when its inputs match. Freshly running all three checks at "
+              f"each step took {record['rerun_all_executions']} executions, and gave the same answers throughout.")
+    return rows, finding, effort
+
+
+def replay_html(record):
+    rows, finding, effort = path_findings(record)
+    return (f'<h2 id="replay-the-edits">{PATH_TITLE}</h2>'
+            '<p>Start with the same eight known faults. Correct one instrument, then the other. '
+            'Walk the edits back in reverse. The table counts how many faults the two instruments catch together.</p>'
+            + table_html("Known faults caught out of eight", PATH_HEADINGS, rows) +
+            f'<p>{escape(finding)}</p><details><summary>See which checks actually ran</summary><p>{escape(effort)}</p>'
+            '<p>A separate count from the raw CSV rows checked every step. Reproduce both routes with '
+            f'<code>python3 evals/replay_instrument_paths.py --verify</code>. '
+            f'<a href="../../{MODEL_DOWNLOADS[PATH_RECORD]}">Read all ten observations (JSON)</a>.</p></details>')
 
 
 def load_model_evaluation(repo):
@@ -73,12 +131,11 @@ def contents(record):
 
     scores = [f"{sample} went from {score(control, group, sample)} to {score(target, group, sample)}"
               for group, sample in (("a", "A03"), ("b", "B04"))]
-    question = ("We tested a classifier on quality-control readings from two fictional instruments. "
-                "Correcting two scores left its overall detection rate unchanged. Looking at each instrument "
-                "separately revealed a missed fault and a failed check.")
-    design = (f"Each instrument has eight readings, including four known faults. A score of {control['threshold']} or "
-              "higher raises a flag. The required sensitivity is 75%, meaning the classifier must detect at least three of "
-              "every four known faults in its assessment.")
+    question = ("A team corrects one score on each of two fictional instruments. One instrument now misses "
+                "a fault it had caught. The other catches one it had missed. Their combined detection rate stays the same.")
+    design = (f"Each instrument had eight scored readings, four of them known faults. "
+              f"The program flags a reading when its score is {control['threshold']} or higher. "
+              "An instrument passes its check when it flags at least three of its four known faults (75%).")
     finding = (f"{scores[0]} and {scores[1]}. Both readings were known faults. A missed one it had caught. "
                f"B caught one it had missed. The combined result stayed at {detected(after['pooled'])} faults detected.")
     matrix = [[display, detected(before[key]), *(str(after[key][cell]) for cell in CELLS), detected(after[key]),
@@ -110,7 +167,7 @@ def table_html(caption, headings, rows):
             f'<tbody>{body}</tbody></table></div>')
 
 
-def model_evaluation_html(record):
+def model_evaluation_html(record, replay=None):
     question, design, finding, matrix, runs = contents(record)
     links = "".join(f'<li><a href="../../{MODEL_DOWNLOADS[path]}">{escape(label)}</a></li>'
                     for path, label in DOWNLOAD_NAMES.items())
@@ -128,21 +185,58 @@ counts before the edit. Each detection fraction uses only the known faults as it
 {table_html("Observed check executions after each edit", RUN_COLUMNS, runs)}
 <p>Each of the four cases started from the same passing baseline in a fresh workspace. A separate log recorded
 which check processes actually started. The fresh executions below the 75% requirement are listed in the last column.</p>
+{replay_html(replay) if replay else ""}
 <h2>Inspect the evidence</h2><p>{escape(LIMIT)}</p>
+<p><a href="../../workflows/review/reviewer-prompt.txt">Give a second reviewer the results</a> ·
+<a href="../../workflows/review/reviewer-sources.md">Supply the source rows and acceptance rule</a></p>
 <p><a href="../../source/">Download the source for this build</a> and extract the ZIP. From its top-level folder, repeat the experiment with <code>python3 evals/model_evaluation.py --verify</code>.
 To check the saved counts and decisions independently from the original readings, run
 <code>python3 evals/review_model_evaluation.py</code>.</p><ul>{links}</ul></div></section>"""
+
+
+def reviewer_materials(record, repo):
+    """A short first review and the actual rows needed for an independent count."""
+    _, design, _, matrix, _ = contents(record)
+    table = "\n".join(f"{row[0]}: {row[1]} before, {row[-2]} after ({row[-1].lower()})" for row in matrix)
+    prompt = ("Review these fictional instrument results. Can the team rely on both instruments after the corrections?\n\n"
+              + design + "\n\nKnown faults detected\n" + table +
+              "\n\nExplain what the pooled rate hides. Name the source material you would need to verify the counts "
+              "independently and one observation that could change your conclusion.\n")
+    cases = {case["id"]: case for case in record["cases"]}
+    sources = ["# Source rows for the two-instrument review", "",
+               "These readings are fictional. A reference fault of 1 means a known fault. "
+               "Apply the flagging threshold to each score, then count hits, missed faults, false alarms and correct negatives "
+               "for A, B and both instruments together. Compare each instrument with the minimum sensitivity.", ""]
+    columns = ("id", "reference_fault", "score")
+    for phase, case in (("Before", cases["figure-caption"]), ("After", cases["offsetting-score-corrections"])):
+        for group in ("a", "b"):
+            output = io.StringIO()
+            writer = csv.DictWriter(output, fieldnames=columns, lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(case["samples"][group])
+            sources.extend((f"## {phase} · Instrument {group.upper()}", "", "```csv",
+                            output.getvalue().rstrip("\n"), "```", ""))
+    policy = (Path(repo) / FIXTURE / "policy.json").read_text(encoding="utf-8")
+    sources.extend(("## Acceptance policy", "", "```json", policy.rstrip(), "```", "",
+                    "[Recorded observations](../../records/model_evaluation.json) · "
+                    "[Calculation and method](../../evidence/model-evaluation/)", ""))
+    return prompt, "\n".join(sources)
 
 
 def markdown_table(headings, rows):
     return "\n".join("| " + " | ".join(row) + " |" for row in [headings, ["---"] * len(headings), *rows])
 
 
-def model_evaluation_markdown(record):
+def model_evaluation_markdown(record, replay=None):
     question, design, finding, matrix, runs = contents(record)
+    supplement = []
+    if replay:
+        rows, conclusion, effort = path_findings(replay)
+        supplement = ["## " + PATH_TITLE, markdown_table(PATH_HEADINGS, rows), conclusion, effort,
+                      "Repeat with `python3 evals/replay_instrument_paths.py --verify`."]
     return "\n\n".join(["# " + TITLE, question, design, "## Two corrections cancel in the pooled result", finding,
                        markdown_table(MATRIX_COLUMNS, matrix), "## Which earlier checks still applied?", WHY,
-                       markdown_table(RUN_COLUMNS, runs), "## Method, limits and raw evidence", LIMIT,
+                       markdown_table(RUN_COLUMNS, runs), *supplement, "## Method, limits and raw evidence", LIMIT,
                        "[Download this build’s source](../../source/), extract the ZIP and run `python3 evals/model_evaluation.py --verify` from its top-level folder. Independently check the saved observations "
                        "with `python3 evals/review_model_evaluation.py`.",
                        "\n".join(f"- [{name}](../../{MODEL_DOWNLOADS[path]})" for path, name in DOWNLOAD_NAMES.items())]) + "\n"

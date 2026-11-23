@@ -6,13 +6,26 @@ Work in this repository is tracked by an operating layer at:
 {{taos_home}}
 ```
 
-Before starting anything non-trivial here:
+Use the full command prefix below for all TAOS commands. Keep the quotes
+and `--home` argument as printed, including after entering a task worktree.
+If the client did not show TAOS status at startup, run:
 
 ```bash
-{{taos_home}}/taos status --compact
-{{taos_home}}/taos start --agent <codex|claude> --task {{prefix}}-N --session "{{prefix}}-N | short label"
+{{taos_cli}} status --compact
 ```
 
-Read `{{taos_home}}/AGENTS.md` for the full contract: claims, handoffs,
-decisions, and the hard stops. Two agents share this repo, so check
-`taos claim check` before writing in an area another agent may hold.
+Read `AGENTS.md` in the OS home above for the full contract. List tasks,
+then replace `{{prefix}}-N` with the task ID and `codex` with your registered
+agent name.
+
+```bash
+{{taos_cli}} task list
+{{taos_cli}} start --agent codex --task {{prefix}}-N --session "{{prefix}}-N | short label"
+```
+
+Read the capsule before following the printed branch or worktree commands.
+Use `claim check` with the same command prefix
+before writing in an area another agent may hold.
+
+If the project has no check yet, propose one to the person running it. From the
+configured project, `{{taos_cli}} use . --json` lists any `suggested_checks`.

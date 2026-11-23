@@ -3,13 +3,17 @@
 import hashlib
 import html
 import json
+import os
 import posixpath
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path, PurePosixPath
 from urllib.parse import quote, unquote, urlsplit
 from zipfile import ZipFile
+
+import reading_navigation
 
 
 HREF = re.compile(r"""(\bhref\s*=\s*["'])(https://[^"'<>]+)(["'])""", re.IGNORECASE)
@@ -33,28 +37,24 @@ LLMS = PurePosixPath("llms.txt")
 RAW_SUFFIXES = {".md", ".markdown", ".py", ".txt", ".json", ".csv", ".tsv", ".yml", ".yaml", ".toml"}
 PLAIN_MODES = {"100644", "100755"}
 LEGAL_TEXT = {"LICENSE", "NOTICE"}
+TERMINAL_IMAGE = "docs/opener.svg"
+# Only these reviewed illustrations are served as SVG alongside the raw README.
+README_ART_SHA256 = {
+    "docs/story-light.svg": "f4234530adb6fb4dc27fa51ac4abc86fd9a7640618cf22b17332877d37d794a3",
+    "docs/story-dark.svg": "de1c735a0259b12066d55d7d75031a4265a2ef5a4b564f70d64317b68500d486",
+}
 RAW_MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\[\]\r\n]*\]\(\s*(?:<([^>\r\n]+)>|([^\s)]+))")
 RAW_MARKDOWN_IMAGE = re.compile(r"!\[[^\]\r\n]*\]\(\s*(?:<([^>\r\n]+)>|([^\s)]+))")
 RAW_INDEX_DIRECTORIES = {"evals/results", "examples/model_evaluation"}
 RAW_LINK_DEPTH = 2
 RAW_LINK_BUDGET = 64
-CSS = """
-:root{color-scheme:dark}body{max-width:76rem;margin:0 auto;padding:1.25rem 1rem;
-background:#0b1510;color:#eaf4ee;font:1rem/1.55 system-ui,sans-serif}
-a{color:#9be2c3;text-underline-offset:.17em}h1{line-height:1.2;overflow-wrap:anywhere}
-nav{display:flex;gap:1.2rem;flex-wrap:wrap}code{font-family:ui-monospace,monospace}
-p code,li>a code{overflow-wrap:anywhere}
-ol{padding:0;list-style:none;margin:0}li{margin:.25rem 0}.listing{overflow:auto;
-border:1px solid #3e5749;background:#0f1b14;padding:.4rem .6rem}
-.listing li{display:grid;grid-template-columns:4ch 1fr;gap:.8rem;min-width:max-content;
-margin:0;white-space:pre;min-height:1.55em}.listing li:target{background:#294a38}
-.listing a{text-align:right;color:#a7c1b1}.checksum{overflow-wrap:anywhere}
-"""
+
 
 
 def _git(repo, *args):
     git = shutil.which("git") or "/usr/bin/git"
-    return subprocess.run([git, *args], cwd=repo, capture_output=True)
+    # Git encodes local clock time in ZIP headers. Build the same archive in every time zone.
+    return subprocess.run([git, *args], cwd=repo, capture_output=True, env={**os.environ, "TZ": "UTC"})
 
 
 def _tracked(repo):
@@ -72,11 +72,24 @@ def _tracked(repo):
     return files
 
 
-def _html(title, content):
+def _html(title, content, location):
+    root = "../" * len(location.parent.parts)
     safe = html.escape(title)
+    description = ("Download the source and verify the exact revision used to build this website."
+                   if location == INDEX else f"Read {safe} from the exact source used to build this website.")
     return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width,initial-scale=1">'
-            f'<title>{safe}</title><style>{CSS}</style></head><body><main>{content}</main></body></html>\n')
+            f'<title>{safe} · ThesisAnalysisOS</title><meta name="description" content="{description}">'
+            '<meta name="theme-color" content="#f5f2ea">'
+            f'<link rel="icon" href="{root}assets/favicon.svg" type="image/svg+xml">'
+            f'<link rel="stylesheet" href="{root}assets/style.css"><link rel="stylesheet" href="{root}assets/theme.css">'
+            f'<link rel="stylesheet" href="{root}assets/visitor.css">'
+            f'<script src="{root}assets/theme.js" integrity="{reading_navigation.THEME_INTEGRITY}"></script>'
+            f'</head><body class="document visitor-page source-browser"><a class="skip" href="#main">Skip to the content</a>'
+            + reading_navigation.header(root, str(location))
+            + f'<main id="main">{content}</main><footer class="foot"><div class="wrap">'
+            f'<p><a href="{root}">Back to the homepage</a> · <a href="{root}llms.txt">Guide for AI agents</a></p>'
+            f'{reading_navigation.APPEARANCE}</div></footer></body></html>\n')
 
 
 def _href(origin, target):
@@ -93,7 +106,7 @@ def _raw_target(name):
         return None
     # Keep active formats off executable routes. A tracked file cannot also
     # be a directory, so this mapping cannot collide with another tracked path.
-    return target if name in LEGAL_TEXT or target.suffix.lower() in RAW_SUFFIXES else target / "source.txt"
+    return target if name == TERMINAL_IMAGE or name in LEGAL_TEXT or target.suffix.lower() in RAW_SUFFIXES else target / "source.txt"
 
 
 def _read_text(repo, name):
@@ -163,13 +176,24 @@ def _write_raw_directory_indexes(out, directories, referenced):
         page = PurePosixPath("source/raw") / directory / "index.html"
         links = "".join(f'<li><a href="{_href(page, _raw_target(name))}">'
                         f'<code>{html.escape(PurePosixPath(name).name)}</code></a></li>' for name in names)
-        body = (f'<nav aria-label="Source navigation"><a href="{_href(page, INDEX)}">Source index</a></nav>'
+        body = (f'<nav class="source-links" aria-label="Source navigation"><a href="{_href(page, INDEX)}">Source index</a></nav>'
                 f'<h1>{html.escape(directory)}/</h1><p>Tracked files available in this snapshot.</p><ul>{links}</ul>')
-        (out / page).write_text(_html(directory, body), encoding="utf-8")
+        (out / page).write_text(_html(directory, body, page), encoding="utf-8")
 
 
-def _copy_markdown_images(out, tracked, referenced):
-    """Preserve relative image links in byte-identical Markdown using the site's published raster assets."""
+def _copy_markdown_images(out, repo, tracked, referenced):
+    """Preserve reviewed README illustrations and published raster assets beside the raw Markdown."""
+    readme = referenced.get("README.md")
+    if readme:
+        for name, expected_hash in README_ART_SHA256.items():
+            if name in readme[1]:
+                source = _read_text(repo, name) if tracked.get(name) in PLAIN_MODES else None
+                if not source or hashlib.sha256(source[0]).hexdigest() != expected_hash:
+                    raise ValueError(f"Review the changed README illustration and update its fingerprint: {name}")
+                target = out / "source/raw" / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(source[0])
+
     images = set()
     for name, (_, text) in referenced.items():
         if PurePosixPath(name).suffix.lower() in {".md", ".markdown"}:
@@ -187,26 +211,45 @@ def _copy_markdown_images(out, tracked, referenced):
         shutil.copyfile(asset, target)
 
 
-def _write_viewer(out, name, text, note, raw):
-    location = _file_target(name)
+def _write_viewer(out, name, text, note, raw, location):
     lines = []
     for number, line in enumerate(text.splitlines(), 1):
         lines.append(f'<li id="L{number}"><a href="#L{number}" aria-label="Line {number}">{number}</a>'
                      f'<code>{html.escape(line)}</code></li>')
     index = _href(location, INDEX)
-    raw_link = f'<a href="{_href(location, raw)}">Raw source</a>' if raw else ""
-    body = (f'<nav aria-label="Source navigation"><a href="{index}">Source index</a>'
+    raw_link = f'<a data-raw-source="true" href="{_href(location, raw)}">Raw source</a>' if raw else ""
+    body = (f'<nav class="source-links" aria-label="Source navigation"><a href="{index}">Source index</a>'
             f'{raw_link}</nav>'
             f'<h1>{html.escape(name)}</h1><p>{note}</p>'
             '<div class="listing" tabindex="0" role="region" aria-label="Source listing">'
             '<ol>' + "".join(lines) + '</ol></div>')
     target = out / location
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(_html(name, body), encoding="utf-8")
+    target.write_text(_html(name, body, location), encoding="utf-8")
 
 
 def _blob_id(data):
     return hashlib.sha1(f"blob {len(data)}\0".encode("ascii") + data).hexdigest()
+
+
+def _zip_commit(repo, revision, target):
+    prefix = f"ThesisAnalysisOS-{revision[:12]}/"
+    result = _git(repo, "archive", "--format=zip", f"--prefix={prefix}", f"--output={target}", revision)
+    if result.returncode:
+        raise ValueError(f"Missing Git source for {revision}. Fetch the commit before building the release.")
+    return prefix
+
+
+def retain_published_archives(out, repo):
+    """Keep bookmarked distributions at their original URLs and verify the exact bytes that readers received."""
+    for line in (repo / "site/published-archives.tsv").read_text(encoding="utf-8").splitlines():
+        revision, digest = line.split("\t")
+        if not re.fullmatch(r"[0-9a-f]{40}", revision) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise ValueError("Invalid published source archive fingerprint")
+        target = out / "source" / f"thesisanalysisos-{revision[:12]}.zip"
+        _zip_commit(repo, revision, target)
+        if hashlib.sha256(target.read_bytes()).hexdigest() != digest:
+            raise ValueError(f"The source archive for {revision} differs from the published download.")
 
 
 def _archive(out, repo, revision, tracked, referenced):
@@ -238,10 +281,7 @@ def _archive(out, repo, revision, tracked, referenced):
         return None, "Some files used by the build do not match the committed snapshot."
     short = revision[:12]
     target = out / "source" / f"thesisanalysisos-{short}.zip"
-    prefix = f"ThesisAnalysisOS-{short}/"
-    result = _git(repo, "archive", "--format=zip", f"--prefix={prefix}", f"--output={target}", revision)
-    if result.returncode:
-        raise RuntimeError("Git could not create the source archive.")
+    prefix = _zip_commit(repo, revision, target)
     with ZipFile(target) as zipped:
         files = {entry.filename[len(prefix):]: entry for entry in zipped.infolist() if not entry.is_dir()}
         exact = (zipped.comment.decode("ascii") == revision and files.keys() == tree.keys()
@@ -327,6 +367,13 @@ def write_source_snapshot(out, repo, github, ref, revision, evidence_files=()):
             path.write_text(rewritten, encoding="utf-8")
 
     directories = _extend_raw_navigation(repo, tracked, referenced)
+    if TERMINAL_IMAGE in referenced:
+        # The README embeds this exact relative image. Export only the image
+        # that the terminal's own renderer verifies; other SVG stays plain text.
+        check = subprocess.run([sys.executable, str(repo / "docs/opener.py"), "--verify"],
+                               cwd=repo, capture_output=True, text=True)
+        if check.returncode:
+            raise ValueError("Cannot publish the terminal image: " + check.stderr.strip())
     (out / "source").mkdir(parents=True, exist_ok=True)
     archive, archive_note = _archive(out, repo, revision, tracked, referenced)
     revision_text = html.escape(revision)
@@ -339,12 +386,15 @@ def write_source_snapshot(out, repo, github, ref, revision, evidence_files=()):
             destination = out / raw
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(data)
-        _write_viewer(out, name, text, note, raw)
+        _write_viewer(out, name, text, note, raw, _file_target(name))
+        if name == "CITATION.cff":
+            # Raw Markdown links to this directory. Keep its published source.txt address too.
+            _write_viewer(out, name, text, note, raw, raw.parent / "index.html")
         files.append({"path": name, "raw_url": _href(MANIFEST, raw) if raw else None,
                       "viewer_url": _href(MANIFEST, _file_target(name)),
                       "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})
     _write_raw_directory_indexes(out, directories, referenced)
-    _copy_markdown_images(out, tracked, referenced)
+    _copy_markdown_images(out, repo, tracked, referenced)
     manifest = {"schema": "source-snapshot/1", "revision": revision,
                 "provenance": "commit" if archive else "workspace", "files": files}
     (out / MANIFEST).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -355,13 +405,13 @@ def write_source_snapshot(out, repo, github, ref, revision, evidence_files=()):
         digest = hashlib.sha256(archive.read_bytes()).hexdigest()
         download = (f'<p><a href="{quote(archive.name)}" download>Download the source ZIP</a></p>'
                     f'<p class="checksum">ZIP SHA-256 <code>{digest}</code></p>')
-    body = ('<nav aria-label="Source navigation"><a href="../index.html">Home</a>'
-            '<a href="../evidence/index.html">Evidence</a></nav><h1>Source for this build</h1>'
+    body = ('<nav class="source-links" aria-label="Source navigation"><a href="../">Home</a>'
+            '<a href="../evidence/">Evidence</a></nav><h1>Source for this build</h1>'
             f'<p>{note} {html.escape(archive_note)}</p>{download}'
             '<h2>Reproduce the published checks</h2><p>The evidence pages list the commands and their saved observations. '
             'Run them from the extracted repository root. The historical revision comparison requires a Git checkout '
             'that retains the earlier commits listed in its method.</p>'
             f'<h2>Referenced source files</h2><p><a href="{_href(INDEX, MANIFEST)}">Source manifest (JSON)</a></p>'
             f'<ul>{links}</ul>')
-    (out / INDEX).write_text(_html("Source for this build", body), encoding="utf-8")
+    (out / INDEX).write_text(_html("Source for this build", body, INDEX), encoding="utf-8")
     return {"files": len(referenced), "archive": archive.name if archive else None}

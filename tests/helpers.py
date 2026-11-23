@@ -9,6 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, Tuple
+from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
@@ -16,6 +17,7 @@ if str(REPO) not in sys.path:
 
 from taos_core import bootstrap as bootstrap_mod  # noqa: E402
 from taos_core.paths import Paths  # noqa: E402
+from taos_core import usage as usage_mod  # noqa: E402
 
 COPY = (
     "taos",
@@ -73,7 +75,9 @@ def example_answers(tmp: Path, **overrides: Any) -> Dict[str, Any]:
 def construct_example(tmp: Path, paths: Paths, **overrides: Any) -> Dict[str, Any]:
     answers = example_answers(tmp, **overrides)
     (paths.bootstrap_dir / "answers.json").write_text(json.dumps(answers, indent=2), encoding="utf-8")
-    return bootstrap_mod.construct(paths, answers, actor="system")
+    with patch.object(usage_mod, "CLAUDE_ROOT", tmp / "account" / "projects"), \
+            patch.object(usage_mod, "CODEX_ROOT", tmp / "account" / "sessions"):
+        return bootstrap_mod.construct(paths, answers, actor="system")
 
 
 def cleanup(tmp: Path) -> None:

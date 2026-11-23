@@ -14,10 +14,12 @@ DISPATCH_CUTS = {
     "film.mp4": "e055a9a60378962e7dc96d902e8784ac2617a31b30ef001db29975e86830773d",
     "reduced-motion.mp4": "542c604121dfde71d392594b8cf0dd00b218dced823e633fba5d8c369ee68f0b",
 }
-PUBLIC_DIGESTS = {**DISPATCH_CUTS, "poster.jpg": "d204522f43886f41c24f18af8bb44eb1380bfdaad01b6c65ff45a041d8ffe55d"}
-FILM_INVITATION = "AI operating system demo"
+PUBLIC_DIGESTS = {**DISPATCH_CUTS,
+                  "poster.jpg": "d204522f43886f41c24f18af8bb44eb1380bfdaad01b6c65ff45a041d8ffe55d",
+                  "captions.vtt": "82c775539a80adfeb94082a7920b46b6be088b86d236fa986a212bb71142820f"}
+FILM_INVITATION = "Watch it work on a morning bus report."
 FILM_SUBTITLE = "A transit operator checks the morning bus schedule"
-FILM_CONTEXT = "Example of an agentic operating system"
+FILM_CONTEXT = "An everyday job, start to finish. 1 min 40, with sound."
 
 
 def film_files(directory: Optional[Path], out: Path, release: bool) -> Tuple[Path, ...]:
@@ -35,7 +37,7 @@ def film_files(directory: Optional[Path], out: Path, release: bool) -> Tuple[Pat
     if not folder.is_dir():
         raise SystemExit("The film directory does not exist.")
     if bundled:
-        return (folder / V6_PRIMARY, folder / "poster.jpg", folder / V6_REDUCED)
+        return (folder / V6_PRIMARY, folder / "poster.jpg", folder / V6_REDUCED, folder / "captions.vtt")
     names = {entry.name for entry in folder.iterdir()}
     primary = names.intersection({"film.mp4", V6_PRIMARY})
     posters = names.intersection({"poster.webp", "poster.jpg", "poster.png"})
@@ -78,11 +80,12 @@ def render_player(files: Tuple[Path, ...], out: Path, media_dir: str) -> str:
     track = (f'<track kind="captions" srclang="en" label="English" src="{media_dir}/captions.vtt">'
              if "captions.vtt" in names else "")
     transit_film = V6_PRIMARY in names
-    title = "A transit operator checks the morning bus report" if transit_film else "Film preview"
+    title = FILM_INVITATION if transit_film else "Film preview"
     context = f'<p class="film-context">{FILM_CONTEXT}</p>' if transit_film else ""
     caption = ('<figcaption>Dispatch is waiting for your report. Which buses would you count, '
                'and how would the next shift know why? '
-               '<a class="film-download" href="#start" hidden>Download ThesisAnalysisOS</a></figcaption>'
+               '<a class="film-workflow" href="workflows/transit/">Pick up the next shift’s report</a> '
+               '<a class="film-download" href="#run" hidden>Download ThesisAnalysisOS</a></figcaption>'
                if transit_film else "")
     record = ""
     if transit_film and all(hashlib.sha256((target / name).read_bytes()).hexdigest() == digest

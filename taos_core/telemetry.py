@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 from . import config as config_mod
 from .paths import Paths
@@ -17,7 +17,7 @@ FIELD_RE = re.compile(r"(?P<key>[a-z_]+)=(?P<value>[^\s<>\"']+)")
 PHASES = ("start", "iterate", "handoff", "done", "abandoned")
 OUTCOMES = ("landed", "reworked", "corrected", "blocked", "unknown")
 MODALITIES = ("code", "docs", "planning", "review", "ops", "mixed", "unknown")
-AGENTS = ("codex", "claude")
+AGENTS = config_mod.DEFAULT_AGENTS
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,60}$")
 
 ALLOWED_KEYS = {"id", "phase", "outcome", "modality", "counterpart", "task"}
@@ -41,7 +41,8 @@ def parse_marker(text: str) -> Optional[Dict[str, str]]:
     return fields
 
 
-def sanitize(row: Dict[str, Any], secret_patterns: Optional[List[str]] = None) -> Dict[str, Any]:
+def sanitize(row: Dict[str, Any], secret_patterns: Optional[List[str]] = None,
+             agents: Sequence[str] = AGENTS) -> Dict[str, Any]:
     task_id = str(row.get("task_id") or row.get("id") or "").strip().lower()
     if not SLUG_RE.match(task_id):
         raise TaosError("label task_id must be a slug like 'az7-fix-ssa'")
@@ -55,13 +56,13 @@ def sanitize(row: Dict[str, Any], secret_patterns: Optional[List[str]] = None) -
     if modality not in MODALITIES:
         raise TaosError("label modality must be one of {0}".format(", ".join(MODALITIES)))
     counterpart = row.get("counterpart")
-    if counterpart in ("", "null", "none"):
+    if counterpart in ("", "null", "none") and counterpart not in agents:
         counterpart = None
-    if counterpart is not None and counterpart not in AGENTS:
-        raise TaosError("label counterpart must be codex or claude")
+    if counterpart is not None and counterpart not in agents:
+        raise TaosError("label counterpart must be on the project roster")
     agent = str(row.get("agent") or "").strip()
-    if agent not in AGENTS:
-        raise TaosError("label agent must be codex or claude")
+    if agent not in agents:
+        raise TaosError("label agent must be on the project roster")
     descriptor = truncate(strip_secrets(str(row.get("task") or task_id), secret_patterns), 80)
     return {
         "ts": utc_now(),
@@ -77,7 +78,7 @@ def sanitize(row: Dict[str, Any], secret_patterns: Optional[List[str]] = None) -
 
 def label(paths: Paths, **fields: Any) -> Dict[str, Any]:
     paths.ensure_state()
-    row = sanitize(fields, config_mod.secret_patterns(paths))
+    row = sanitize(fields, config_mod.secret_patterns(paths), config_mod.project_agents(paths))
     append_jsonl(paths.labels_file, row)
     return row
 
@@ -104,12 +105,12 @@ def _cmd_label(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    parser = subparsers.add_parser("label", help="record one sanitized episode label")
-    parser.add_argument("--agent", required=True, choices=list(AGENTS))
+    parser = subparsers.add_parser("label", help="record what one stretch of agent work was, for the usage figures")
+    parser.add_argument("--agent", required=True, choices=subparsers.agents)
     parser.add_argument("--task-id", dest="task_id", required=True)
     parser.add_argument("--phase", required=True, choices=list(PHASES))
     parser.add_argument("--outcome", default="unknown", choices=list(OUTCOMES))
     parser.add_argument("--modality", default="unknown", choices=list(MODALITIES))
     parser.add_argument("--task", help="short sanitized descriptor")
-    parser.add_argument("--counterpart", choices=list(AGENTS))
+    parser.add_argument("--counterpart", choices=subparsers.agents)
     parser.set_defaults(func=_cmd_label)

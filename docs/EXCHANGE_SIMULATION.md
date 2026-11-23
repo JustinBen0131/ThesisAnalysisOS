@@ -1,5 +1,7 @@
 # What happens when assistants pass results to each other?
 
+<sub><b>Check the evidence · 5 of 6</b> &nbsp;·&nbsp; [← Model evaluation](MODEL_EVALUATION.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Transit workflow →](TRANSIT_WORKFLOW.md)</sub>
+
 This simulation asks how a recipient checks whether a copied result still
 holds. Each copy records the versions of its declared input files. The
 recipient can compare them with the current versions before using the result.

@@ -100,7 +100,7 @@ def _cmd_replay(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    parser = subparsers.add_parser("replay", help="replay a proposed control on history before installing it")
+    parser = subparsers.add_parser("replay", help="try a new limit on your own past runs before using it")
     parser.add_argument("--history", required=True, help="JSONL file, one past case per row")
     parser.add_argument("--field", required=True, help="the measured value the control reads")
     parser.add_argument("--op", default="at-least", choices=list(OPS))

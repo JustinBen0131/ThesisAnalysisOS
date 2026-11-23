@@ -13,7 +13,7 @@ Markdown for an agent, with `llms.txt`, `claims.json` and `standing.json`
 beside them. `standing.json` lists the files the page was built from, by
 hash, so the page can ask the repository whether it still holds. `graph.json`
 is the record itself as a graph: every claim, every recorded run and the page,
-tied to the files each stands on. The front page draws it.
+tied to the files each stands on. The record explorer draws those connections.
 
     python3 site/build.py                         writes ./_site, links to main
     python3 site/build.py --out DIR --ref REVISION --url https://example.org/
@@ -47,33 +47,47 @@ sys.path.insert(0, str(HERE))  # support loaders that import the builder by file
 import claims as read_back  # noqa: E402  (evals/claims.py)
 import measured  # noqa: E402
 import demo_walkthrough  # noqa: E402
+from copy_controls import copy_block  # noqa: E402
+from hpc_exhibit import DESCRIPTION as HPC_DESCRIPTION, PAGE_TITLE as HPC_TITLE, hpc_markdown, render_hpc, run_trace  # noqa: E402
+import hpc_review  # noqa: E402
+from hpc_planner import worksheet as pilot_worksheet  # noqa: E402
+from first_game import game_markdown, render_game  # noqa: E402
+from first_lesson import lesson_markdown, render_lesson  # noqa: E402
+from review_practice import practice_markdown, render_practice  # noqa: E402
 from taos_core.demo import write as write_terminal_demo  # noqa: E402
-from reuse_play import recorded_comparison, reuse_play  # noqa: E402
+from reuse_play import recorded_comparison, reuse_play, timing_observations  # noqa: E402
 from visitor_claims import visitor_claim_title  # noqa: E402
 from policy_evidence import attach_policy_evidence  # noqa: E402
 from research_catalog import research_catalog  # noqa: E402
 import agent_guide  # noqa: E402
 from study_briefs import study_briefs  # noqa: E402
+from transit_exhibit import render_transit_exhibit, render_transit_markdown, transit_transfer  # noqa: E402
+from transit_workflow import load_adaptation_record, load_record as load_transit_record  # noqa: E402
 from research_notes import write_research_notes  # noqa: E402
 from exchange import exchange_html, write_exchange  # noqa: E402
 from exchange_result import write_followup  # noqa: E402
 from research_feed import write_feed  # noqa: E402
-from source_snapshot import write_source_snapshot  # noqa: E402
-from release_integrity import BEACON_SCRIPT, protect_pages, verify_homepage_film, write_manifest  # noqa: E402
+import reading_navigation  # noqa: E402
+from source_snapshot import retain_published_archives, write_source_snapshot  # noqa: E402
+from release_integrity import protect_pages, verify_homepage_film, write_manifest  # noqa: E402
 from verify_research_guide import verify as verify_research_guide  # noqa: E402
 from film_player import PUBLIC_MEDIA_DIR, film_files, opening_link, render_player  # noqa: E402
 from handoff_exhibit import HANDOFF_METHOD, HANDOFF_RECORD, HANDOFF_RUNNER  # noqa: E402
 from handoff_exhibit import handoff_markdown, handoff_section, load_handoff  # noqa: E402
+from setting_change_exhibit import SETTING_DOWNLOAD, SETTING_FIXTURE_FILES, SETTING_RECORD, SETTING_SOURCES  # noqa: E402
+from setting_change_exhibit import load_setting_change, next_agent_fields  # noqa: E402
 from measurement_exhibit import audit_cases_page, audit_section, load_audit  # noqa: E402
 
 from model_evaluation_exhibit import (  # noqa: E402
-    MODEL_DOWNLOADS, load_model_evaluation, model_evaluation_html, model_evaluation_markdown,
+    MODEL_DOWNLOADS, load_instrument_paths, load_model_evaluation, model_evaluation_html, model_evaluation_markdown, reviewer_materials,
 )
 
 NAME = "JustinBen0131/ThesisAnalysisOS"
 GITHUB = "https://github.com/" + NAME
 STANDS_ON = ["evals/results/at_revision.json", "evals/results/mutations.json", "evals/results/reuse_frontier.json",
-             "docs/CLAIMS.md", "taos_core/demo.py", "taos_core/basis.py", "taos_core/gates.py"]
+             "evals/results/session_footprint.json", "examples/transit/workflow.json",
+             "examples/transit/adaptation/workflow.json", "docs/CLAIMS.md",
+             "taos_core/demo.py", "taos_core/basis.py", "taos_core/gates.py"]
 AUDIT_RECORD = "evals/results/measurement_audit.json"
 AUDIT_METHOD = "docs/MEASUREMENT_AUDIT.md"
 BOUNDARY_CHECK = "evals/check_measurement_boundaries.py"
@@ -84,11 +98,11 @@ AUDIT_DOWNLOADS = {AUDIT_RECORD: "measurement_audit.json", AUDIT_METHOD: "measur
 HANDOFF_DOWNLOADS = {HANDOFF_RECORD: "handoff_audit.json", HANDOFF_RUNNER: "handoff_audit.py",
                      "evals/review_handoff_audit.py": "review_handoff_audit.py"}
 TRACE_CLAIM = "Reuse by basis relied on no stale result and executed what an oracle would"
-AUTHOR_GITHUB = "https://github.com/JustinBen0131"
-AUTHOR_LINKEDIN = "https://www.linkedin.com/in/justin-maxwell-bennett/"
-DESCRIPTION = ("A research operating system for people working with AI assistants. It records the inputs to each check "
-               "so the next person or assistant can see which results need checking again after a change.")
-RUN_NAMES = {"at_revision": "known failures", "mutations": "seeded faults", "reuse_frontier": "reuse experiment"}
+SOFTWARE_CITATION = "source/files/CITATION.cff.html"
+DESCRIPTION = ("A research operating system for people working with multiple AI agents. The agents share task "
+               "ownership, saved checks and the decisions a person still needs to make.")
+RUN_NAMES = {"at_revision": "known failures", "mutations": "seeded faults", "reuse_frontier": "reuse experiment",
+             "session_footprint": "session reading"}
 
 
 USES = [
@@ -103,20 +117,20 @@ USES = [
 ]
 
 RESEARCH_QUESTIONS = [
-    ("Which version did the reviewer approve?",
+    ("approval", "Which version did the reviewer approve?",
      "A reviewer accepts an analysis. In the version-change test, a file is edited and its check passes again. "
      "The earlier approval stays with the version the reviewer saw.",
      "The edited task has a passing check and needs its own human approval. The test records the reviewer accepting the new version.",
-     "taos_core/tasks.py#L335", "Approval code", "tests/test_standing.py#L64", "Version-change test"),
-    ("Which instruction applied when the analysis ran?",
+     "taos_core/tasks.py", "Approval code", "tests/test_standing.py", "Version-change test"),
+    ("instruction", "Which instruction applied when the analysis ran?",
      "A calibration reference changes from A to B. The date test retrieves A for a January run and B for a February run.",
      "This reconstructs the instructions recorded for that task and date. The analysis log can show which reference was used.",
-     "taos_core/rules.py#L91", "Instruction lookup", "tests/test_counterexamples.py#L49", "Two-date test"),
-    ("Did a proposed change meet its prediction?",
+     "taos_core/rules.py", "Instruction lookup", "tests/test_counterexamples.py", "Two-date test"),
+    ("control", "Did a proposed change meet its prediction?",
      "Record a predicted range and a control before changing a procedure. In the grading test, a result in range "
      "with a shifted control receives the verdict CONTROL_MOVED.",
      "A grader can name the source of a measurement. Reproducing its value requires the original observations.",
-     "taos_core/changes.py#L107", "Scoring rules", "tests/test_science.py#L41", "Control-change test"),
+     "taos_core/changes.py", "Scoring rules", "tests/test_science.py", "Control-change test"),
 ]
 
 ANSWERS = [
@@ -335,7 +349,15 @@ def record_graph(ctx: Dict[str, Any]) -> Dict[str, Any]:
                  "site/research_notes.py", "site/exchange.py", "site/verify_research_guide.py",
                  "site/research_feed.py", "site/exchange_result.py", "site/policy_evidence.py", "evals/replay_instrument_imbalance.py",
                  "evals/results/followups/instrument-imbalance.json",
-                 "site/reuse_play.py", "site/assets/reuse.js", "site/assets/reuse.css", "site/demo_walkthrough.py"):
+                 "site/reuse_play.py", "site/assets/reuse.js", "site/assets/reuse.css", "site/demo_walkthrough.py",
+                 "docs/opener.py", "docs/opener.svg", "site/copy_controls.py", "site/first_game.py",
+                 "site/assets/first-game.js", "site/assets/first-game.css", "site/first_lesson.py",
+                 "site/assets/first-lesson.js", "site/assets/first-lesson.css", "site/assets/theme.css", "site/assets/theme.js",
+                 "site/review_practice.py", "site/assets/review-practice.css", "site/assets/review-practice.js",
+                 "site/home_reading.html", "site/visitor_header.html", "site/next_agent.html", "site/assets/visitor.css",
+                 "site/decision.html", "site/decision.md", "site/assets/living-brain.js",
+                 "site/assets/living-brain.css", "site/assets/real-decisions.js", "site/assets/real-decisions.css",
+                 "site/assets/journey.css", "site/assets/report-story.js", *SETTING_SOURCES):
         edges.append([page_at, len(nodes)])
         nodes.append({"k": "f", "l": path, "g": "other"})
     correction = next(row for row in ctx["model_evaluation"]["cases"] if row["id"] == "offsetting-score-corrections")["counts"]
@@ -354,6 +376,7 @@ def record_graph(ctx: Dict[str, Any]) -> Dict[str, Any]:
                           f'to {ctx["finest"]["executions"]} in this experiment.',
         "mutations": f'The tests caught {ctx["caught"]} of {ctx["faults"]} deliberately introduced errors.',
         "at_revision": f'{ctx["cases_pass"]} of {ctx["cases"]} checks passed on this version.',
+        "session_footprint": f'The task brief in this demo contained {ctx["runs"]["session_footprint"]["surfaces"]["task_capsule"]["bytes"]:,} UTF-8 bytes.',
     }
     for node in nodes:
         if node["k"] == "r":
@@ -433,10 +456,11 @@ def gather(ref: str) -> Dict[str, Any]:
     by_policy = {row["policy"]: row for row in reuse["rows"]}
     at = runs["at_revision"]
     first_release = sorted(at["revisions"].items(), key=lambda item: -item[1]["did_not_pass"])[0]
+    demo_record, capsule = demo_walkthrough.capture_review_session(REPO)
     ctx = {
         "ref": ref, "revision": git("rev-parse", "HEAD") or "unknown",
         "built": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"),
-        "runs": runs, "rows": rows, "demo_record": demo_walkthrough.capture(REPO), "sections": claims_file(),
+        "runs": runs, "rows": rows, "demo_record": demo_record, "successor_capsule": capsule, "sections": claims_file(),
         "reuse": reuse, "finest": finest, "aged": aged, "hidden": hidden, "alone": alone, "refused": refused,
         "everything": by_policy["rerun everything"],
         "oracle": next(row for row in reuse["rows"] if row["policy"].startswith("oracle")),
@@ -445,7 +469,10 @@ def gather(ref: str) -> Dict[str, Any]:
         "faults": runs["mutations"]["faults"], "caught": runs["mutations"]["caught"],
         "audit": load_audit(REPO),
         "handoff": load_handoff(REPO),
+        "setting_change": load_setting_change(REPO),
         "model_evaluation": load_model_evaluation(REPO),
+        "instrument_paths": load_instrument_paths(REPO),
+        "decisions": agent_guide.decision_readings(REPO, RESEARCH_QUESTIONS),
     }
     ctx["chapters"] = demo_walkthrough.chapters(ctx["demo_record"], ctx["audit"])
     graph = ctx["graph"] = record_graph(ctx)
@@ -468,6 +495,21 @@ def gather(ref: str) -> Dict[str, Any]:
 
 # ---------------------------------------------------------------- the page for a person
 
+PAGE_DESCRIPTIONS = {
+    "decision/": "Choose whether to build on a saved result, then trace the instrument setting that changed.",
+    "record.html": "Explore which files and checks support a project result and follow a rule back to its source.",
+    "hpc/": HPC_DESCRIPTION,
+    "evidence/": "Compare recorded experiments on stale results, independent checks and handoffs. Each study includes its data and method.",
+    "evidence/pendulum/": "Inspect the readings, fitted values and check output for each of 36 pendulum cases.",
+    "evidence/model-evaluation/": "Trace how two score corrections moved detection between instruments while leaving the combined score unchanged.",
+    "exchange/": "Follow research questions and replies to their data. Check each cited observation against a downloadable record.",
+    "workflows/transit/": "Follow two shifts as a transit operator corrects a bus report and passes the counting rule to the next shift.",
+    "workflows/review/": "Practise reviewing a pendulum result and prepare the evidence a second reader needs to check it.",
+    "workflows/everyday/": "A flight time changes. Decide which travel plans to check and which ones you can still use.",
+    "404.html": "Find the research homepage, its evidence and the guide for AI agents.",
+}
+
+
 SHELL = Template("""<!doctype html>
 <html lang="en">
 <head>
@@ -478,9 +520,12 @@ SHELL = Template("""<!doctype html>
 <meta property="og:title" content="$title">
 <meta property="og:description" content="$description">
 <meta property="og:type" content="website">
-$card<meta name="theme-color" content="#08110d">
+$card<meta name="theme-color" content="#f5f2ea">
 $canonical<link rel="stylesheet" href="${root}assets/style.css">
 $reuse_styles
+<link rel="stylesheet" href="${root}assets/theme.css">
+$visitor_styles
+<script src="${root}assets/theme.js"></script>
 <link rel="license" href="${root}license.txt">
 <link rel="icon" href="${root}assets/favicon.svg" type="image/svg+xml">
 $markdown_head
@@ -492,28 +537,18 @@ ${study_links}
 </head>
 <body class="$page_class">
 <a class="skip" href="#main">Skip to the content</a>
-<header class="top"><div class="wrap">
-<a class="mark" href="${root}">ThesisAnalysisOS</a>
-<nav aria-label="Main">
-<a href="${root}#run">Pendulum walkthrough</a>
-<a href="${root}evidence/">Evidence</a>
-<a href="${root}#agents">Data and code</a>
-<a class="repo" href="$github">GitHub<span aria-hidden="true"> &#8599;</span></a>
-</nav>
-</div></header>
+$header
 <main id="main">
 $body
 </main>
 <footer class="foot"><div class="wrap">
 <p><a href="${root}source/">Source for this build · <code>$short</code></a> · $built UTC</p>
+$footer_appearance
 <p id="standing" data-src="${root}standing.json"><span class="lead-in">Comparison with public main</span> $neutral
 <span class="nojs">Enable JavaScript to compare the source files.</span></p>
-<p class="small">Independent research by Justin Bennett, a physics Ph.D. candidate at the University of Illinois
-Urbana-Champaign working across experimental nuclear physics, machine learning, statistics, and scientific software.
-Bennett developed this prototype from the software he used to coordinate two AI assistants on his thesis analysis.
-It is not affiliated with any employer or product. The software is open source under the <a rel="license" href="${root}license.txt">Apache License 2.0</a>.</p>
-<p class="small links"><span>Author <a rel="me" href="$author_github">GitHub</a> &middot; <a rel="me" href="$author_linkedin">LinkedIn</a></span>
-<span>Project <a href="$github">Repository</a>$agent_footer$markdown_footer</span></p>
+<p class="small links"><a href="$github">Repository</a>$agent_footer$markdown_footer &middot;
+<a rel="license" href="${root}license.txt">Apache License 2.0</a></p>
+$measurement_note
 </div></footer>
 <script src="${root}assets/site.js" defer></script>
 ${scripts}${analytics}</body>
@@ -527,7 +562,7 @@ def shell(ctx: Dict[str, Any], root: str, title: str, body: str, url: str, path:
               "description": DESCRIPTION, "codeRepository": GITHUB, "programmingLanguage": "Python",
               "license": GITHUB + "/blob/main/LICENSE",
               "subjectOf": {"@type": "DataCatalog", "@id": root + "research-catalog.json"},
-              "author": {"@type": "Person", "name": "Justin Bennett", "sameAs": [AUTHOR_GITHUB, AUTHOR_LINKEDIN]}}
+              "citation": root + SOFTWARE_CITATION}
     study_links = ""
     if dataset:
         linked = {"@context": ["https://schema.org", {"@base": root}], **dataset}
@@ -537,23 +572,57 @@ def shell(ctx: Dict[str, Any], root: str, title: str, body: str, url: str, path:
     card = '<meta name="twitter:card" content="summary">\n' if not url else (
         '<meta property="og:image" content="{0}assets/social.png">\n<meta property="og:image:width" content="1200">\n'
         '<meta property="og:image:height" content="630">\n<meta name="twitter:card" content="summary_large_image">\n').format(esc(url))
+    styles = {"": ("journey", "reuse", "first-lesson"), "decision/": ("journey", "real-decisions"),
+              "record.html": ("journey",),
+              "workflows/transit/": ("transit",),
+              "workflows/review/": ("review-practice",), "workflows/everyday/": ("first-game",),
+              "hpc/": ("hpc", "hpc-planner", "hpc-review")}.get(path, ())
+    enhancements = [asset for asset in styles if asset not in ("transit", "reuse", "journey")]
+    markdown_name = "record.md" if path == "record.html" else "index.md"
+    count_visits = ctx.get("public_analytics") and path != "404.html"
+
+    if path in ("", "decision/"):
+        exercise = Template((HERE / "next_agent.html").read_text(encoding="utf-8"))
+        cases = "#decisions" if path else "decision/#decisions"
+        body = body.replace("<!--next-agent-->", exercise.substitute(
+            root=root, cases=cases, title_tag="h1" if path else "h2",
+            **next_agent_fields(ctx["setting_change"], root, lambda name: source(ctx, name))))
+
+    if path == "hpc/":
+        body = '<nav class="story-return" aria-label="Return to the homepage"><a href="../">← Back to the homepage</a></nav>' + body
+    page_class = "home" if path in ("", "record.html") else "document"
+    if path and path != "404.html":
+        body += (f'<nav class="reading-onward" aria-label="Continue exploring">'
+                 f'<a href="{root}">Home</a><a href="{root}#run">Try it on your own project</a></nav>')
+    if path:
+        title = title.removesuffix(" · ThesisAnalysisOS").removesuffix(": ThesisAnalysisOS") + " · ThesisAnalysisOS"
     return SHELL.substitute(
-        page_class="home" if path == "" else "document", card=card, title=esc(title),
-        description=esc(dataset["abstract"] if dataset else DESCRIPTION), root=root, github=GITHUB, body=body,
+        page_class=page_class + " visitor-page", card=card, title=esc(title), header=reading_navigation.header(root, path),
+        visitor_styles=f'<link rel="stylesheet" href="{root}assets/visitor.css">',
+        footer_appearance=reading_navigation.APPEARANCE,
+        measurement_note=('<details class="visit-counts"><summary>How visits are counted</summary>'
+                          '<p>We count actions such as starting an example or opening its evidence. Each page view '
+                          'gets a fresh random ID. The report records the type of page, how you arrived, a broad '
+                          'screen-size category, the UTC day, site version and which actions you took. The collector has no automatic '
+                          'deletion period. Your research questions and the contents '
+                          'of files you open stay in your browser. Global Privacy Control or Do Not Track turns these '
+                          'counts off.</p></details>' if count_visits else ""),
+        description=esc(dataset["abstract"] if dataset else PAGE_DESCRIPTIONS.get(path, DESCRIPTION)),
+        root=root, github=GITHUB, body=body,
         study_links=study_links,
-        markdown_head=('<link rel="alternate" type="text/markdown" href="index.md" title="This page as Markdown">'
+        markdown_head=(f'<link rel="alternate" type="text/markdown" href="{markdown_name}" title="This page as Markdown">'
                        if path != "404.html" else ""),
-        markdown_footer=(' &middot; <a href="index.md">This page as Markdown</a>' if path != "404.html" else ""),
-        reuse_styles='<link rel="stylesheet" href="assets/reuse.css">' if not path else "",
-        analytics=(f'<script type="module" src="{BEACON_SCRIPT}" '
+        markdown_footer=(f' &middot; <a href="{markdown_name}">This page as Markdown</a>' if path != "404.html" else ""),
+        reuse_styles="\n".join(
+            [f'<link rel="stylesheet" href="{esc(root)}assets/{asset}.css">' for asset in styles] +
+            [f'<script defer src="{esc(root)}assets/{asset}.js"></script>' for asset in enhancements]),
+        analytics=(f'<script defer src="{esc(root)}assets/interactions.js" data-release="{esc(ctx["revision"][:12])}" '
                    """data-cf-beacon='{"token":"4d73a9ec7d20404a82e7a8e2f480a27f"}'></script>\n"""
-                   + '<script defer src="{0}assets/interactions.js"></script>\n'.format(esc(root))
-                   if ctx.get("public_analytics") and path != "404.html" else ""),
+                   if count_visits else ""),
         canonical='<link rel="canonical" href="{0}">\n'.format(esc(url + path)) if url else "",
         linked=json.dumps(linked).replace("</", "<\\/"), revision=esc(ctx["revision"]), short=esc(ctx["revision"][:7]),
         built=esc(ctx["built"]), neutral=chip("unknown", "not asked yet"), scripts=scripts,
-        agent_footer=(f' &middot; <a class="agent-entrance" href="{esc(root)}llms.txt">For AI agents</a>' if path else ""),
-        author_github=AUTHOR_GITHUB, author_linkedin=AUTHOR_LINKEDIN)
+        agent_footer=f' &middot; <a class="agent-entrance" href="{esc(root)}llms.txt">Guide for AI agents</a>')
 
 
 def source(ctx: Dict[str, Any], path: str, label: Optional[str] = None) -> str:
@@ -601,7 +670,11 @@ def bars(ctx: Dict[str, Any]) -> str:
 
 def home(ctx: Dict[str, Any]) -> str:
     chapters = ctx["chapters"]
-    before, after = demo_walkthrough.fit_verdicts(chapters)
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
+    messages = [body.strip() for body in re.findall(r"^```[^\n]*\n(.*?)^```[ \t]*$", readme, re.M | re.S)
+                if body.lstrip().startswith("Read BOOTSTRAP.md")]
+    if len(messages) != 1:
+        raise ValueError("The setup example needs one first message from the README.")
     steps = []
     for position, scene in enumerate(chapters, 1):
         facts = "".join(f'<div><dt>{esc(label)}</dt> <dd>{esc(value)}</dd></div>' for label, value in scene.facts)
@@ -614,21 +687,27 @@ def home(ctx: Dict[str, Any]) -> str:
             '<details class="demo-proof"><summary>Show the commands and results</summary>'
             f'<div class="term" role="group" aria-label="Recorded commands and output"><pre>{terminal(scene.lines)}</pre></div>'
             f'<p class="small source-link">{source(ctx, scene.code, "Read the implementation")}</p></details></article>')
-    examples = "".join(
-        "<li><h3>{0}</h3><p>{1}</p><p>{2}</p><p>{3} · {4}</p></li>".format(
-            esc(question), esc(example), esc(limit), source(ctx, code, code_label), source(ctx, test, test_label))
-        for question, example, limit, code, code_label, test, test_label in RESEARCH_QUESTIONS)
-    uses = "".join('<li><h3>{0}</h3><p>{1}</p>{2}</li>'.format(esc(name), esc(text), source(ctx, path)) for name, text, path in USES)
-    answers = "".join("<li>{0}<span>{1}</span></li>".format(chip(state), esc(text)) for state, text in ANSWERS)
-    lineage = "".join("<li><strong>{0}.</strong> {1} <span class=\"cite\">{2}</span></li>".format(esc(a), esc(b), esc(c))
-                      for a, b, c in LINEAGE)
-    reuse, refused = ctx["reuse"], ctx["refused"]
-    upkeep = reuse["timing"]["upkeep"]
-    small, large = upkeep[0], upkeep[-1]
-    held = sum(1 for item in reuse["predictions"].values() if item["held"])
-    added = reuse["timing"].get("isolating_one_execution")
-    cost = ("" if not added else " Isolating one check added {0:.1f} ms, the median of {1} paired runs.".format(
-        1000 * added["median_seconds"], added["pairs"]))
+    reuse = ctx["reuse"]
+    service = ctx["service_report"]
+    source_readings = "".join(
+        f'<li><h3>{esc(question)}</h3><p>{esc(example)}</p><p><a href="{esc(code)}">{esc(code_label)}</a> · '
+        f'<a href="{esc(test)}">{esc(test_label)}</a></p></li>'
+        for (question, example, _limit, code, code_label, test, test_label), _packet in ctx["decisions"])
+    return Template((HERE / "home_reading.html").read_text(encoding="utf-8")).substitute(
+        on_time=service["on_time"], logged=service["recorded"], scheduled=service["scheduled"], canceled=service["canceled"],
+        github=GITHUB, ref=esc(ctx["ref"]), film=ctx["film"], film_link=ctx["film_link"],
+        source_readings=source_readings, bootstrap_block=copy_block("setup-prompt", messages[0], "Copy setup message"),
+        first_lesson=render_lesson(ctx["demo_record"], ctx["audit"]), steps="".join(steps),
+        welcome_command=copy_block("welcome-command", "./taos welcome", "Copy setup command"),
+        own_command=copy_block("own-project-command", './taos use ../my-project --check "python3 -m unittest discover -s tests"', "Copy project setup example"),
+        checks=reuse["checks"], relied=reuse["relied_on"], trace_executions=ctx["finest"]["executions"],
+        trace_wrong=ctx["finest"]["wrong"], hidden_wrong=ctx["hidden"]["wrong"], bars=bars(ctx),
+        reuse_play=reuse_play(reuse, ctx["finest"], ctx["hidden"], ctx["everything"]),
+        reuse_recorded=esc(recorded_comparison(reuse, ctx["finest"], ctx["hidden"], ctx["everything"])))
+
+
+def record_explorer(ctx: Dict[str, Any]) -> str:
+    before, after = demo_walkthrough.fit_verdicts(ctx["chapters"])
     trial = next(row for row in ctx["audit"]["cases"] if row["id"] == "row-6-1.05")
     baseline = next(row for row in ctx["audit"]["cases"] if row["id"] == "baseline")
     original_rows, corrected_rows = baseline["rows"], trial["rows"]
@@ -643,48 +722,75 @@ def home(ctx: Dict[str, Any]) -> str:
     received = next(row for row in ctx["handoff"]["observations"] if row["id"] == "new-task-sees-failure")
     if not (baseline["fresh_exit"] == 0 and trial["retained"] == "stale" and trial["fresh_exit"] != 0
             and received["before"] == "fails" and received["actor_label"] == "codex"):
-        raise SystemExit("The saved checks no longer support the pendulum handoff shown on the homepage.")
+        raise SystemExit("The saved checks no longer support the pendulum handoff shown in the record explorer.")
     changed_input = "examples/measurement/data/swings.csv"
     if changed_input not in ctx["audit"]["sources"] or changed_input in ctx["model_evaluation"]["sources"]:
         raise SystemExit("The recorded inputs no longer support the two decisions in the handoff diagram.")
     graph = ctx["graph"]
-    kinds = [node["k"] for node in graph["nodes"]]
+    instrument_control = next(case for case in ctx["model_evaluation"]["cases"] if case["id"] == "figure-caption")
+    counts = instrument_control["counts"]["pooled"]
+    limits = re.fullmatch(r"g = [\d.]+ is outside ([\d.]+) to ([\d.]+)", trial["fresh_output"])
+    if not limits:
+        raise ValueError("Expected the corrected gravity check to report its accepted interval.")
+    fault_marks = []
+    for y, group in enumerate(("a", "b")):
+        known_faults = [row for row in instrument_control["samples"][group] if int(row["reference_fault"])]
+        for x, row in enumerate(known_faults):
+            caught = float(row["score"]) >= instrument_control["threshold"]
+            fill = "currentColor" if caught else "none"
+            fault_marks.append(f'<circle cx="{7 + 9*x}" cy="{8 + y*11}" r="3" fill="{fill}"/>')
+    if instrument_control["old_receipts"]["pooled"] != "holds":
+        raise ValueError("The illustrated fault count requires a passing baseline instrument check.")
     drawn = json.dumps(graph, separators=(",", ":"))
     claim_lines = (REPO / "docs/CLAIMS.md").read_text(encoding="utf-8").splitlines()
     trace_line = next(i for i, line in enumerate(claim_lines, 1) if line.startswith("| " + TRACE_CLAIM + " |"))
     return Template("""
-<section class="hero living"><div class="wrap">
-<div class="pitch-intro">
-<p class="kicker">Scientific research OS for AI agents</p>
-<h1>Something changed. <em>What still holds?</em></h1>
-<p class="rule"><span>The one rule</span>No result outlives what it stood on.</p>
-${film_link}</div>
+<h1 class="record-page-title">Explore the project record</h1>
+<section id="record" class="mind-page"><div class="wrap">
 <figure class="mind">
 <figcaption class="mind-head">Research operating system walkthrough</figcaption>
-<div id="architecture-cover">
-<h2 class="architecture-title">How do assistants work on the same problem?</h2>
-<div class="architecture-map">
-<div class="architecture-user"><svg width="21" height="23" viewBox="0 0 24 26" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-<circle cx="12" cy="7" r="4"/><path d="M3 23v-2a9 9 0 0 1 18 0v2"/></svg><b>You</b></div>
-<span class="architecture-connector" aria-hidden="true"></span>
-<div class="architecture-core" role="group" aria-label="Research operating system"><svg class="architecture-rim" viewBox="0 0 800 497" aria-hidden="true" focusable="false">
-<defs><path id="system-rim" d="M178 93 C235 48 294 29 359 28 C431 27 492 58 549 65 Q587 69 628 73"/></defs>
-<text text-anchor="middle"><textPath href="#system-rim" startOffset="50%">Research operating system</textPath></text>
-</svg><img src="assets/architecture-shell.webp" width="800" height="497" alt="" fetchpriority="high">
-<div class="architecture-layers">
-<span class="architecture-group">Example team</span>
-<p class="architecture-names"><span>Claude</span><span>Codex</span><span>ChatGPT</span><span>Claude Code</span><span>Gemini</span></p>
-<span class="architecture-spine" aria-hidden="true"></span>
-<strong class="architecture-record">Project record</strong>
-<p class="architecture-contents"><span>Tasks · Instructions</span><span class="record-separator"> · </span><span>Checks · Your approvals</span></p>
-</div></div></div>
-<p class="architecture-caption">The team shares a living record of which files each check used. Change a file and everyone can see which results need another look.</p>
-<p class="architecture-action"><button type="button" id="mind-start" data-reader="play" aria-controls="mind-demo" hidden><span aria-hidden="true">▶</span> See the system at work</button>
-<a id="mind-static" href="#run">Read an example <span aria-hidden="true">→</span></a></p>
+<div id="architecture-cover" class="evidence-guide" data-guide-step="0">
+<div class="guide-heading">
+<p class="guide-credit">Guided example · Simulated research records</p>
+<h2 id="guide-title" data-reader="headline" tabindex="-1">One reading changes. Which result needs a new check?</h2>
 </div>
-<div id="mind-demo" data-reader="example" hidden>
+<div class="guide-map" role="group" aria-label="Two independent paths from recorded input to result">
+<img class="guide-shell" src="assets/architecture-shell.webp" width="800" height="497" loading="lazy" alt="">
+<div class="guide-paths"><span class="guide-map-name">Two study records</span>
+<div class="guide-path guide-gravity">
+<a class="guide-input" id="guide-time" href="$original_readings" data-original="$original_readings" data-corrected="$corrected_readings">
+<svg class="guide-glyph guide-pendulum" viewBox="0 0 44 31" fill="none" stroke="currentColor" stroke-width="1.35" aria-hidden="true">
+<path d="M10 3h22M20 4l-8 19m8-19 8 19" /><path d="M10 23q8 7 20 0" stroke-dasharray="2 2"/><circle cx="12" cy="23" r="3.2" fill="currentColor"/><circle cx="28" cy="23" r="2.8"/></svg><b>Swing time</b>
+<span>$old_period s</span></a><span class="guide-edge" aria-hidden="true"></span>
+<a class="guide-result" id="guide-gravity" href="$original_case" data-original="$original_case" data-corrected="$corrected_case"><b>Gravity estimate</b>
+<span id="guide-fit">$old_fit m/s²</span><em id="guide-verdict">✓ Passed</em></a>
+</div>
+<div class="guide-path guide-instrument">
+<a class="guide-input" href="workflows/review/reviewer-sources.md">
+<svg class="guide-glyph" viewBox="0 0 44 29" stroke="currentColor" stroke-width="1.35" role="img" aria-label="One row per instrument. Filled circles mark detected faults.">$fault_marks</svg>
+<b>Instrument study</b><span>Scores + fault labels</span></a><span class="guide-edge" aria-hidden="true"></span>
+<a class="guide-result" href="evidence/model-evaluation/"><b>Faults caught</b><span>$detected of $known</span><em id="guide-retain">Recorded</em></a>
+</div></div></div>
+<div class="guide-desk">
+<div class="guide-speaker"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="7" r="3.5"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg><span id="guide-role">You · Reviewer</span></div>
+<p class="guide-narration" id="guide-copy">The gravity estimate uses all $timing_count swing times. For the $swing_length m pendulum, replace $old_period s with $new_period s.</p>
+<div class="guide-actions">
+<button id="mind-start" type="button" class="guide-primary" data-reader="play" aria-controls="guide-check" hidden>Use the corrected time <span aria-hidden="true">→</span></button>
+<div id="guide-check" data-reader="example" hidden>
+<button id="guide-next" type="button" class="guide-primary" hidden></button>
+<button id="guide-compare" type="button" class="guide-back" aria-controls="guide-copy" hidden
+data-explanation="All $instrument_rows instrument readings and their fault labels stayed the same, so the count still holds at $detected of $known known faults.">What about the fault count?</button>
+<div id="guide-handoff" data-reader="conclusion" hidden><a class="guide-primary" href="evidence/#handoff-request-$received_step">Open Codex’s handoff <span aria-hidden="true">↗</span></a></div>
+</div>
+<button class="guide-back" id="guide-back" type="button" hidden>Back</button>
+<a id="mind-static" href="./#run">Read the recorded example <span aria-hidden="true">→</span></a>
+</div></div>
+<div class="guide-more"><button type="button" id="guide-explore" aria-controls="mind-demo" hidden>Explore all records</button>
+<button type="button" id="mind-change-start" aria-controls="mind-demo" hidden>Try a file change</button></div>
+</div>
+<div id="mind-demo" hidden>
 <div class="mind-story">
-<h2 class="mind-title" id="mind-title" data-reader="headline" tabindex="-1" aria-live="polite">You have two results to review.</h2>
+<h2 class="mind-title" id="mind-title" tabindex="-1" aria-live="polite">You have two results to review.</h2>
 <div id="mind-say" class="mind-say">
 <p id="mind-copy" aria-live="polite">One study estimated gravity from swing times. Another tested two instruments on known faults.</p>
 <fieldset id="timing-comparison" class="timing-comparison" hidden>
@@ -700,7 +806,7 @@ ${film_link}</div>
 <div class="mind-stage"><span class="mind-person" aria-hidden="true">
 <svg width="21" height="23" viewBox="0 0 24 26" fill="none" stroke="currentColor" stroke-width="1.8">
 <circle cx="12" cy="7" r="4"/><path d="M3 23v-2a9 9 0 0 1 18 0v2"/></svg><b>You</b></span>
-<img class="mind-poster" src="assets/architecture-shell.webp" width="800" height="497" alt=""><canvas id="mind" role="img" aria-label="You are at the center. Choose a result or file in Explore the record to inspect its evidence."></canvas>
+<img class="mind-poster" src="assets/architecture-shell.webp" width="800" height="497" alt=""><canvas id="mind" role="img" aria-label="Map of linked measurements, files and claims. Choose a record from the list to inspect its evidence."></canvas>
 <div id="story-labels" class="story-labels" role="group" aria-label="Follow the reading and the two results" hidden>
 <span class="swing-label">Swing time</span>
 <a class="gravity-label" href="$original_case"><b>Gravity estimate</b><small></small></a>
@@ -716,19 +822,19 @@ ${film_link}</div>
 <button type="button" id="policy-inline-more">Full example</button>
 <button type="button" id="policy-inline-dismiss" aria-label="Dismiss selected point">Dismiss</button></span></div>
 <p id="mind-tip" class="mind-tip" hidden></p>
-<p id="mind-tally" class="mind-tally"></p></div>
+<div class="mind-file-action"><button type="button" id="mind-file-action" data-mind="illustrate" data-file="evals/reuse_frontier.py">Edit the experiment script</button>
+<p id="mind-tally" class="mind-tally" aria-live="polite"></p></div></div>
 <p class="mind-ctl story-controls"><button type="button" data-mind="previous" disabled>Previous step</button>
 <button type="button" data-mind-pause aria-pressed="false" hidden>Pause</button>
 <button type="button" data-mind="next" data-case="swing">Next step</button>
-<button type="button" data-mind="again">Back to architecture</button>
+<button type="button" data-mind="again">Back to guided example</button>
 </p>
-<div id="swing-reading" data-reader="conclusion" class="swing-reading" hidden data-length="$swing_length" data-old-period="$old_period"
-data-new-period="$new_period" data-old-g="$old_g" data-new-g="$new_g" data-low="9.6" data-high="10.0" data-faults="$caught">
+<div id="swing-reading" class="swing-reading" hidden data-length="$swing_length" data-old-period="$old_period"
+data-new-period="$new_period" data-old-g="$old_g" data-new-g="$new_g" data-low="$check_low" data-high="$check_high" data-faults="$caught">
 <p><a href="evidence/#handoff-request-$received_step">See the check Codex received</a> ·
 <a href="$corrected_case">Inspect the six readings</a></p>
 <button type="button" class="compare-readings" id="compare-swing-times">Compare the swing times</button></div>
 <details class="mind-note mind-trace"><summary>See the sources for the reuse experiment</summary>
-<p class="mind-ctl"><button type="button" data-mind="change" data-file="evals/reuse_frontier.py">Change the reuse experiment</button></p>
 <ol><li>The <a href="$github/blob/$revision/evals/reuse_frontier.py">experiment script</a> was an input to the
 <a href="records/reuse_frontier.json">recorded reuse experiment</a>.</li>
 <li>The experiment supports the claim “<a href="$github/blob/$revision/docs/CLAIMS.md#L$trace_line">$trace_claim</a>.”
@@ -749,178 +855,26 @@ used different inputs and still supports its $caught-of-$faults result.</li></ol
 </section>
 <span class="policy-reader-notice" id="policy-reader-notice" aria-live="polite"></span>
 <div class="record-key" role="group" aria-label="Map legend">
-<span><i class="assistant-mark" aria-hidden="true"></i>Assistant</span>
+<span><i class="assistant-mark" aria-hidden="true"></i>AI agent</span>
 <span><i class="evidence-mark" aria-hidden="true"></i>Evidence</span>
 <a href="graph.json">Graph data <span class="policy-reader-notice">(JSON)</span></a></div></details>
-</div></figure>
-<div class="pitch-details">
-<p class="lead">One assistant can run an analysis while another checks the data.
-When the team changes, the project record shows who did what, which checks passed, and which version you approved.</p>
-<p class="actions"><a class="plain" href="evidence/">Inspect the evidence<span aria-hidden="true"> &rarr;</span></a></p>
-<div class="author-credit"><p class="byline">Research software &middot; <a rel="me" href="$linkedin">Justin Bennett</a></p>
-<a class="agent-entrance" href="llms.txt">For AI agents</a></div>
-</div>
-
-</div>
+</div></figure></div>
 <script type="application/json" id="record-graph">$graph</script>
 </section>
-
-<section class="plain"><div class="wrap"><ul class="three">
-<li><b>The question</b><p>A new measurement replaces an entry in a dataset. Can a researcher still use yesterday’s check of the analysis?</p></li>
-<li><b>What TAOS records</b><p>An AI agent is an assistant that can run analysis commands. When it runs a check, TAOS saves the outcome and the files the check declared as inputs.</p></li>
-<li><b>What a researcher sees</b><p>If one of those files changes, the old check becomes <em>stale</em>. TAOS names the changed file so the researcher knows which result to check again.</p></li>
-</ul></div></section>
-
-<section id="run"><div class="wrap">
-<p class="kicker">01 / A recorded run</p>
-<h2>Which changes require a new gravity estimate?</h2>
-<p class="intro">A researcher estimates gravity from six pendulum timings. See which results a colleague
-can still use after the plot style changes or one timing is corrected.</p>
-<p class="runplay"><button type="button" class="button ghost" data-play hidden aria-pressed="false">&#9654; Play the steps</button>
-<a href="#run-3">Go to the timing correction</a> <a href="records/demo.json">Download the run (JSON)</a></p>
-<div class="stepper">$steps</div>
-</div></section>
-
-${film}<section id="idea"><div class="wrap">
-<p class="kicker">02 / Reading a result</p>
-<h2>How to read a saved check</h2>
-<div class="two">
-<div><p class="ask">Does the earlier result apply to the current work?</p>
-<p>Each record names who produced it and what it relied on. TAOS calls those inputs or instructions its
-<em>basis</em>. Comparing the recorded basis with the current one produces one of four answers.</p>
-<ul class="answers">$answers</ul></div>
-<div><p>Three details matter when you interpret a record.</p>
-<ol class="rules">
-<li><strong>Check the inputs.</strong> An old pass can still apply if the inputs match, even when a more recent pass refers to different data.</li>
-<li><strong>Read the dated instruction.</strong> TAOS preserves the wording the researcher used and the tasks it applied to.</li>
-<li><strong>Identify who did what.</strong> A passing check records the program’s outcome. A separate entry records a person’s approval of the version they reviewed.</li>
-</ol></div>
-</div>
-<h2 id="research-uses">Where would I use this?</h2>
-<ul class="three research-questions">$examples</ul>
-<p>For a numerical example, <a href="evidence/#model-evaluation">compare the two groups with their pooled result</a>
-after correcting scores in a synthetic instrument evaluation.</p>
-<details><summary>What each record preserves</summary><ul class="uses">$uses</ul></details>
-</div></section>
-
-<section id="evidence"><div class="wrap">
-<p class="kicker">03 / Evidence</p>
-<h2>What the software tests found</h2>
-<p class="audit-link"><a href="evidence/#measurement-audit">Inspect the measurement audit</a></p>
-<ul class="stats">
-<li><b>$cases_pass of $cases</b><span>regression tests pass on this revision. $first_failed fail when run against the first release tested, <code>$first_release</code>.</span></li>
-<li><b>$caught of $faults</b><span>deliberately removed protections caused their associated tests to fail.</span></li>
-<li><b>$holding of $claims</b><span>published claims passed the repository’s checks. A failed check stops the page build.</span></li>
-</ul>
-<figure class="experiment reuse-example" aria-labelledby="reuse-question">
-<figcaption><h3 id="reuse-question">Which checks need to run after one file changes?</h3></figcaption>
-$reuse_play
-<details class="reuse-details"><summary>See the recorded comparison</summary>
-<p>$reuse_recorded</p>
-$bars
-<p class="note">TAOS compared the files each check listed. When isolated checks tried to read a folder they left off their list,
-all $refused_runs attempts failed and no result was reused.$cost
-The experiment recorded $predictions predictions before execution, and $held held.</p>
-<p class="reuse-source"><a href="evidence/#reuse-full">Full results and method</a> ·
-<a href="records/reuse_frontier.json">Recorded data</a> · <a href="$github/blob/$ref/evals/reuse_frontier.py">Experiment code</a></p>
-</details>
-</figure>
-<div class="two">
-<div><h3 class="sub">What this does not show</h3><ul class="limits">$limits</ul></div>
-<div><h3 class="sub">Time spent checking the inputs</h3>
-<p>Before reusing a pass, TAOS fingerprints the input files to detect changes. This took $small_ms ms for $small_files files.
-On this workload, a check had to take more than $small_even ms for reuse to save time. With $large_files files,
-the comparison took $large_ms ms and the break-even time rose to $large_even ms.</p>
-<p><a class="more" href="evidence/">Inspect the source or measurement behind each claim</a></p></div>
-</div>
-</div></section>
-
-<section id="lineage"><div class="wrap">
-<p class="kicker">04 / Where it comes from</p>
-<h2>How scientific software tracks a result back to its inputs</h2>
-<div class="two">
-<div><p>Five established techniques informed the design.</p><ul class="lineage">$lineage</ul>
-<p>TAOS also tracks which instruction applied on a given date and which version a researcher approved.</p></div>
-<div><p>A comparison from physics suggested a test. In a transport network, adding structure can reduce the work of
-carrying a flow, but the structure costs something to maintain. Here the two costs are rerunning a check and
-verifying that its inputs still match. On the measured workload, splitting the inputs into 12 groups saved the same
-number of executions as splitting them into 6.</p>
-<p>Justin Bennett developed the prototype during a year of experimental physics thesis analysis with two AI assistants.
-<a href="$github/blob/$ref/docs/METHOD.md">Read the study design, predictions, and references</a>.</p></div>
-</div>
-</div></section>
-
-<section id="agents"><div class="wrap">
-<p class="kicker">05 / Data and code</p>
-<h2>Inspect the evidence behind this page</h2>
-<div class="two">
-<div><p>The build publishes the same results as Markdown and JSON for researchers, scripts, and AI assistants.
-Start with the claim list to find the code or measurement behind a statement.</p>
-<p>The repository’s <code>AGENTS.md</code> explains how to examine the project without setting it up.
-Run this command to check the claim list against the current checkout.</p>
-<pre class="shell">python3 evals/claims.py --json</pre></div>
-<ul class="files">
-<li><a href="llms.txt"><code>/llms.txt</code></a><span>Project overview and links to the source data.</span></li>
-<li><a href="exchange/">Research exchange</a><span>Read the questions, follow the replies, and inspect the evidence they cite.</span></li>
-<li><a href="index.md"><code>/index.md</code></a><span>This page as Markdown, with the run as text.</span></li>
-<li><a href="claims.json"><code>/claims.json</code></a><span>Each claim, its current verdict, and its supporting code or measurement.</span></li>
-<li><a href="standing.json"><code>/standing.json</code></a><span>The source files and their content fingerprints for this build.</span></li>
-<li><a href="graph.json"><code>/graph.json</code></a><span>The files, measurements, claims, and links drawn in the Living Record.</span></li>
-<li><a href="records/reuse_frontier.json"><code>/records/</code></a><span>The reuse experiment’s recorded settings and outcomes.</span></li>
-</ul>
-</div>
-</div></section>
-
-<section id="start"><div class="wrap">
-<p class="kicker">06 / Start</p>
-<h2>Run the pendulum example locally</h2>
-<div class="two">
-<div><p><!--demo-setup--></p><div class="command-block">
-<pre class="shell"><code id="demo-commands"><!--demo-commands--></code></pre>
-<button type="button" class="copy-commands" aria-label="Copy commands" title="Copy commands" hidden>
-<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
-<g class="copy-squares"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M15.5 5V4.8A1.8 1.8 0 0 0 13.7 3H5a2 2 0 0 0-2 2v8.7a1.8 1.8 0 0 0 1.8 1.8H5"/></g>
-<path class="copy-check" d="m5 12 4.4 4.4L19 7"/></svg></button>
-<span class="copy-status" role="status" aria-live="polite"></span>
-</div>
-<p class="small"><a href="records/demo.txt">Preview the terminal output</a>. The demo runs offline in a temporary folder.
-Add <code>--keep</code> to explore the files afterwards,
-or <code>--json</code> to read the run in a program.</p>
-<details class="demo-own"><summary>Try your own pendulum readings</summary>
-<p>Start with a CSV containing <code>length_m</code> and <code>period_s</code>.
-The audit tests how the estimate changes when a reading changes.
-<a href="$github/blob/$ref/docs/MEASUREMENT_AUDIT.md">See the required readings and command</a>.</p></details></div>
-<div><p>For your own project, choose <strong>Use this template</strong> on GitHub. The manual guides an AI assistant through
-asking about your project and configuring the new copy from your answers.</p>
-<p class="actions"><a class="button" href="$github">Open the repository<span aria-hidden="true"> &#8599;</span></a>
-<a class="plain" href="$github/blob/$ref/MANUAL.md">Read the manual</a>
-<a class="plain" href="source/">Browse this build’s source</a></p></div>
-</div>
-</div></section>
 """).substitute(
-        github=GITHUB, ref=esc(ctx["ref"]), revision=esc(ctx["revision"]), trace_line=trace_line, trace_claim=esc(TRACE_CLAIM),
-        film=ctx["film"], film_link=ctx["film_link"],
+        github=GITHUB, revision=esc(ctx["revision"]), trace_line=trace_line, trace_claim=esc(TRACE_CLAIM),
         received_step=received["sequence"], swing_length=esc(original[0]), old_period=esc(original[1]), new_period=esc(corrected[1]),
         old_g="{:.4f}".format(baseline["g"]), new_g="{:.4f}".format(trial["g"]),
         old_fit=f"{baseline['g']:.2f}", new_fit=f"{trial['g']:.2f}",
+        timing_count=len(original_rows), instrument_rows=sum(map(len, instrument_control["samples"].values())),
+        detected=counts["tp"], known=counts["tp"] + counts["fn"], fault_marks="".join(fault_marks),
+        check_low=esc(limits[1]), check_high=esc(limits[2]),
         original_case="evidence/pendulum/#case-" + esc(baseline["id"]),
         corrected_case="evidence/pendulum/#case-" + esc(trial["id"]),
         original_readings="evidence/pendulum/#readings-" + esc(baseline["id"]),
         corrected_readings="evidence/pendulum/#readings-" + esc(trial["id"]),
-        trace_executions=ctx["finest"]["executions"], trace_wrong=ctx["finest"]["wrong"], specimen=terminal([before, after]), steps="".join(steps), answers=answers, uses=uses, examples=examples,
-        linkedin=AUTHOR_LINKEDIN, graph=drawn.replace("</", "<\\/"), files=kinds.count("f"), runs=kinds.count("r"),
-        cases=ctx["cases"], cases_pass=ctx["cases_pass"], first_failed=ctx["first_release_failed"],
-        first_release=esc(ctx["first_release"]), caught=ctx["caught"], faults=ctx["faults"],
-        holding=sum(1 for row in ctx["rows"] if row["state"] == "holds"), claims=len(ctx["rows"]),
-        edits=reuse["edits"], checks=reuse["checks"], relied=reuse["relied_on"], bars=bars(ctx),
-        reuse_play=reuse_play(reuse, ctx["finest"], ctx["hidden"], ctx["everything"]),
-        reuse_recorded=esc(recorded_comparison(reuse, ctx["finest"], ctx["hidden"], ctx["everything"])),
-        refused_runs=refused["executions"], cost=esc(cost), held=held, predictions=len(reuse["predictions"]),
-        limits="".join("<li>{0}</li>".format(esc(text)) for text in LIMITS), lineage=lineage,
-        small_files="{0:,}".format(small["files"]), small_ms="{0:.0f}".format(1000 * small["seconds"]),
-        small_even="{0:.0f}".format(1000 * small["break_even_check_seconds"]),
-        large_files="{0:,}".format(large["files"]), large_ms="{0:.0f}".format(1000 * large["seconds"]),
-        large_even="{0:.0f}".format(1000 * large["break_even_check_seconds"]))
+        trace_executions=ctx["finest"]["executions"], trace_wrong=ctx["finest"]["wrong"], specimen=terminal([before, after]),
+        graph=drawn.replace("</", "<\\/"), caught=ctx["caught"], faults=ctx["faults"], relied=ctx["reuse"]["relied_on"])
 
 
 def evidence(ctx: Dict[str, Any]) -> str:
@@ -940,8 +894,9 @@ def evidence(ctx: Dict[str, Any]) -> str:
                 body.append(('<tr{0}><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}'
                              '<span class="kind">{5}</span></td></tr>').format(
                     row_id, inline(claim), inline(what), inline(how), state, esc(status) if found else ""))
-            parts.append('<div class="scroll"><table class="claims"><thead><tr>{0}</tr></thead><tbody>{1}</tbody></table></div>'.format(
-                head, "".join(body)))
+            parts.append(('<div class="scroll" role="region" tabindex="0" aria-label="{2}">'
+                          '<table class="claims"><thead><tr>{0}</tr></thead><tbody>{1}</tbody></table></div>').format(
+                head, "".join(body), esc(section["title"])))
         if section["bullets"]:
             parts.append("<ul class=\"limits\">{0}</ul>".format("".join("<li>{0}</li>".format(inline(text)) for text in section["bullets"])))
     reuse = ctx["reuse"]
@@ -954,6 +909,10 @@ def evidence(ctx: Dict[str, Any]) -> str:
     model = ctx["model_evaluation"]
     corrected = next(row for row in model["cases"] if row["id"] == "offsetting-score-corrections")
     model_rows = []
+    reading_rows = []
+    for key, label in (("compact_status", "Project status"), ("task_capsule", "One task brief"), ("agents_md", "Project instructions")):
+        row = ctx["runs"]["session_footprint"]["surfaces"][key]
+        reading_rows.append(f'<tr><th scope="row">{label}</th><td>{row["lines"]}</td><td>{row["bytes"]:,}</td><td>{esc(row["delivery"])}</td></tr>')
     for key, name in (("A", "Instrument A"), ("B", "Instrument B"), ("pooled", "Both combined")):
         old = dict(zip(model["cell_order"], model["baseline_counts"][key]))
         new = corrected["counts"][key]
@@ -972,9 +931,9 @@ One instrument now fails its check. Follow the sample IDs, then see what the nex
 </div></section>
 <section id="model-evaluation"><div class="wrap prose">
 <p class="kicker">Model evaluation</p><h2>Can the classifier pass overall while one instrument fails its check?</h2>
-<p>Two instruments each measured eight fictional specimens. Four in each group had known faults.
-The classifier had to find at least three of the four. A researcher corrected one score per instrument,
-then repeated both checks and the pooled calculation.</p>
+<p>Each instrument had eight fictional readings with assigned scores, including four known faults.
+The program flags a reading when its score reaches the cutoff. A passing check must flag at least three of
+the four faults. The experiment corrected one score on each instrument and repeated all three checks.</p>
 <div class="scroll" role="region" aria-labelledby="faults-caption" tabindex="0"><table class="model-result"><caption id="faults-caption">Known faults detected</caption><thead><tr>
 <th scope="col">Readings</th><th scope="col">Before correction</th><th scope="col">After correction</th></tr></thead>
 <tbody>$model_rows</tbody></table></div>
@@ -984,7 +943,16 @@ because the files used to calculate it had changed.</p>
 </div></section>
 $audit
 $handoff
-<section id="study-records"><div class="wrap prose"><h2>Six studies you can check</h2>
+<section id="session-reading"><div class="wrap prose">
+<h2>What does the next AI agent read?</h2>
+<p>A new session can start with a short project status. Opening one task brings up a separate brief with its next action.
+Here is how much text the pendulum demo supplied for each kind of reading.</p>
+<div class="scroll"><table class="claims"><thead><tr><th scope="col">Reading</th><th scope="col">Lines</th><th scope="col">UTF-8 bytes</th><th scope="col">When it appears</th></tr></thead>
+<tbody>$reading_rows</tbody></table></div>
+<p class="small">The recorder replaces machine paths and dates with fixed labels before counting. Each row measures a separate text.
+<a href="../studies/session-footprint/">See the actual readings and method</a> · <a href="../records/session_footprint.json">Download the record</a></p>
+</div></section>
+<section id="study-records"><div class="wrap prose"><h2>Studies you can check</h2>
 <p>Choose a question for its recorded comparisons, method, limits and source data.</p>
 <ul>$study_list</ul>
 <p><a href="../research-audit.json">See which source values this build verified</a> ·
@@ -996,7 +964,7 @@ the readback confirms that the named code and test exist. The test suite runs se
 it checks the quoted number against the saved run and compares the input fingerprints with the files now present.
 The count also includes numbers repeated in the README.</p>
 <p><a href="$github/blob/$ref/docs/CLAIMS.md">Claim definitions and limits</a> ·
-<a href="../source/">Download the source for this build</a> ·
+<!--evidence-source-download--> ·
 <a href="../claims.json">Readback results (JSON)</a> · Run locally with <code>python3 evals/claims.py --strict</code>.</p>
 $parts</div></section>
 <section><div class="wrap prose">
@@ -1004,9 +972,11 @@ $parts</div></section>
 <p>Each of $checks checksum checks reads a pair of folders in a synthetic workspace with $folders folders.
 The experiment changes one file at a time. After each of $edits edits, it asks for all $checks results, giving $relied uses.
 “Wrong reuse” counts each use of an earlier result after a file the check reads changed. One outdated result can count
-more than once. An execution is one check run after the initial checks. Random seed $seed, Python $python on $platform.</p>
+more than once. Execution counts start after the six initial checks. The isolated failure row also includes those first six attempts.
+Random seed $seed, Python $python on $platform.</p>
 <div class="scroll"><table class="claims"><thead><tr><th scope="col">Policy, as recorded</th><th scope="col">Executions</th>
 <th scope="col">Wrong reuses</th></tr></thead><tbody>$rows</tbody></table></div>
+$timing_observations
 <h3 class="sub">Predictions, written before the runs</h3>
 <ul class="predictions">$predictions</ul>
 <p><a class="more" href="../records/reuse_frontier.json">Download the recorded comparisons (JSON)</a> &middot;
@@ -1014,10 +984,11 @@ more than once. An execution is one check run after the initial checks. Random s
 </div></section>
 """).substitute(github=GITHUB, ref=esc(ctx["ref"]), holding=holding, claims=len(ctx["rows"]), parts="".join(parts), audit=audit_section(ctx["audit"], ctx["boundary_controls"]),
                 study_list="".join(f'<li><a href="../{agent_guide.landing(stem)}">{esc(question)}</a></li>' for stem, question in agent_guide.STUDIES),
-                handoff=handoff_section(ctx["handoff"]), model_rows="".join(model_rows),
+                handoff=handoff_section(ctx["handoff"]), model_rows="".join(model_rows), reading_rows="".join(reading_rows),
                 edits=reuse["edits"], checks=reuse["checks"], folders=reuse["folders"], seed=reuse["seed"],
                 relied=reuse["relied_on"], python=esc(reuse["environment"]["python"]),
-                platform=esc(reuse["environment"]["platform"]), rows=rows, predictions=predictions)
+                platform=esc(reuse["environment"]["platform"]), rows=rows, predictions=predictions,
+                timing_observations=timing_observations(reuse))
 
 
 # ---------------------------------------------------------------- the same page for an agent
@@ -1027,11 +998,16 @@ def home_markdown(ctx: Dict[str, Any], url: str) -> str:
     kinds = [node["k"] for node in ctx["graph"]["nodes"]]
     out = ["# ThesisAnalysisOS: what still holds?", "",
            "> " + DESCRIPTION, "",
-           "A team can share the same project directory. When an assistant runs a check, TAOS saves its result with "
-           "the files the check listed. After an edit, it names the changed input. A person’s approval stays with the "
-           "version they reviewed.", "",
-           "The browser example follows a corrected pendulum timing into the gravity estimate. The instrument comparison "
-           "used separate readings, so that correction leaves its result available.", "",
+           "A different agent picks up a report after its data changes. In the [optional bus film](./#field-film), "
+           "see why canceled trips change Monday’s answer. The [saved handoff](workflows/transit/handoff.txt) names "
+           "the Tuesday records that still need a person’s attention.", "",
+           "In [a real research decision](decision/index.md), turning off a correction made a simulation look more accurate. "
+           "Open the earlier measurement and choose what you would carry forward.", "",
+           "When a new chat starts, the next agent can read your instructions, see who owns the work and find the "
+           "decisions that still need you. In the [two-session transit walkthrough](workflows/transit/index.md), "
+           "open the actual brief another agent receives before it prepares the next day’s report.", "",
+           "The [pendulum audit](evidence/pendulum/) traces a corrected timing into the gravity estimate. "
+           "The separate [instrument study](evidence/model-evaluation/) uses its own readings.", "",
            "A check can miss a change if its input list is incomplete. The [measurement audit](evidence/#measurement-audit) "
            "includes two cases where an old pass survived a change and the fresh measurement failed.", "",
            "- [Independent measurement audit](evidence/#measurement-audit) · [Protocol](records/measurement-method.md) · "
@@ -1039,16 +1015,14 @@ def home_markdown(ctx: Dict[str, Any], url: str) -> str:
            "- [Pendulum handoff](evidence/#handoff-audit) · [Method](records/handoff-method.md) · "
            "[Raw observations](records/handoff_audit.json) · [Reproduction script](records/handoff_audit.py)",
            "- Repository: " + GITHUB,
-           "- Author: Justin Bennett, a physics Ph.D. candidate at the University of Illinois Urbana-Champaign "
-           "([GitHub]({0}), [LinkedIn]({1})). Independent research, not affiliated with any employer or product.".format(
-               AUTHOR_GITHUB, AUTHOR_LINKEDIN),
+           "- [Software citation](" + SOFTWARE_CITATION + ") · [License](license.txt)",
            "- Built from revision `{0}` on {1}. Whether that still holds: compare `standing.json` with the repository.".format(
                ctx["revision"], ctx["built"]),
            "- Python standard library only. No network and no model calls.",
            "The [evidence graph](graph.json) links {0} files, {1} recorded runs and {2} claims to this page. "
            "The interactive view simulates an edit in the browser.".format(
                kinds.count("f"), kinds.count("r"), kinds.count("c")), "",
-           "## A recorded run", "",
+           lesson_markdown(ctx["demo_record"], ctx["audit"]), "", "## Every step in the recorded run", "",
            "The demo fits six pendulum timings, edits the plot style, then corrects one timing. The website runs "
            "`./taos demo --json` at build time. [Download the complete run](records/demo.json).", ""]
     for number, scene in enumerate(ctx["chapters"], 1):
@@ -1057,7 +1031,7 @@ def home_markdown(ctx: Dict[str, Any], url: str) -> str:
         if scene.comparisons:
             out += ["", demo_walkthrough.comparison_markdown(scene.comparisons)]
         out += ["", "```text"] + scene.lines + ["```", "", f"Implementation in `{scene.code}`", ""]
-    out += ["## How to read a saved check", "",
+    out += ["## How to read a saved check", "", "No result outlives what it stood on.", "",
             "Each record names who produced it and the inputs or instructions it relied on. TAOS calls those its basis. "
             "Comparing the recorded basis with the current one yields one of four answers.", ""]
     out += ["- **{0}** — {1}".format(state, text) for state, text in ANSWERS]
@@ -1065,10 +1039,9 @@ def home_markdown(ctx: Dict[str, Any], url: str) -> str:
             "2. The original dated instruction identifies what the researcher requested and where it applied.",
             "3. The program records whether its check passed. A separate record identifies which version a person approved.",
             "", "## Where would I use this?", ""]
-    ref_url = GITHUB + "/blob/" + ctx["ref"] + "/"
-    for question, example, limit, code, code_label, test, test_label in RESEARCH_QUESTIONS:
+    for (question, example, limit, code, code_label, test, test_label), _ in ctx["decisions"]:
         out += ["### " + question, "", example + " " + limit, "",
-                "[{0}]({1}{2}) · [{3}]({1}{4})".format(code_label, ref_url, code, test_label, test), ""]
+                f"[{code_label}]({code}) · [{test_label}]({test})", ""]
     out += ["For a numerical example, [compare the two groups with their pooled result](evidence/#model-evaluation) "
             "after correcting scores in a synthetic instrument evaluation.", "", "### What each record preserves", ""]
     out += ["- {0}: {1} (`{2}`)".format(name, text, path) for name, text, path in USES]
@@ -1083,8 +1056,8 @@ def home_markdown(ctx: Dict[str, Any], url: str) -> str:
             "[Full results and method](evidence/#reuse-full) · [Recorded data](records/reuse_frontier.json)"]
     out += ["", "What this does not show:", ""] + ["- " + text for text in LIMITS]
     out += ["", "## How scientific software tracks a result back to its inputs", ""] + ["- {0}. {1} ({2})".format(a, b, c) for a, b, c in LINEAGE]
-    out += ["", "The prototype grew out of a year of experimental physics thesis analysis with two AI assistants. "
-            "It records dated research instructions and the version a human reviewer approved. In the reuse experiment, "
+    out += ["", "Multiple agents can share a project, take responsibility for different tasks and hand work to the next reviewer. "
+            "The record includes dated instructions and the version a person approved. In the reuse experiment, "
             "grouping the inputs into 6 or 12 domains saved the same number of check executions. "
             "[Study design, predictions, and references](" + GITHUB + "/blob/" + ctx["ref"] + "/docs/METHOD.md)."]
     out += ["", "## Data, code, and local setup", "",
@@ -1108,6 +1081,9 @@ def evidence_markdown(ctx: Dict[str, Any]) -> str:
     out += handoff_markdown(ctx["handoff"]) + [
            "A separate [reuse experiment](./#reuse-full) asks which checks need to run again after a file changes. "
            "[Download the recorded comparisons](../records/reuse_frontier.json).", "",
+           "A fresh agent can open a short status summary and a brief for one task. "
+           "[Read the actual session texts and their sizes](../studies/session-footprint/index.md). "
+           "[Follow a fictional transit report into a second session](../workflows/transit/index.md).", "",
            "## Software claims", "",
            "At revision `{0}`, `python3 evals/claims.py --json` checked code and test references, measured values, and "
            "the numbers repeated in the README. A tested row confirms the named code and test exist. "
@@ -1178,7 +1154,12 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     if out.exists():
         shutil.rmtree(str(out))
     (out / "evidence/pendulum").mkdir(parents=True)
+    (out / "decision").mkdir()
     (out / "evidence/model-evaluation").mkdir()
+    (out / "workflows/transit").mkdir(parents=True)
+    (out / "workflows/review").mkdir(parents=True)
+    (out / "workflows/everyday").mkdir(parents=True)
+    (out / "hpc").mkdir()
     (out / "records").mkdir()
     shutil.copytree(str(HERE / "assets"), str(out / "assets"))
     media_dir = PUBLIC_MEDIA_DIR if preview_film_dir is None else "private-film"
@@ -1191,9 +1172,39 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REPO / path, target)
     shutil.copy2(REPO / "evals/results/model_evaluation.json", out / "records/model_evaluation.json")
+    shutil.copy2(REPO / SETTING_RECORD, out / SETTING_DOWNLOAD)
     for name in read_back.RUNS:
         shutil.copy2(str(REPO / "evals" / "results" / (name + ".json")), str(out / "records" / (name + ".json")))
     write = lambda path, text: (out / path).write_text(text, encoding="utf-8")  # noqa: E731
+    transit_path = REPO / "examples/transit/workflow.json"
+    transit = load_transit_record(transit_path)
+    ctx["service_report"] = transit["observations"]["monday"]
+    adaptation_path = REPO / "examples/transit/adaptation/workflow.json"
+    adaptation = load_adaptation_record(adaptation_path)
+    shutil.copy2(transit_path, out / "records/transit-workflow.json")
+    shutil.copy2(adaptation_path, out / "records/transit-adaptation.json")
+    write("workflows/transit/index.html", shell(ctx, "../../", "The morning bus report · ThesisAnalysisOS",
+          render_transit_exhibit(transit, adaptation=adaptation), url, "workflows/transit/"))
+    write("workflows/transit/index.md", render_transit_markdown(transit, adaptation=adaptation))
+    write("workflows/transit/handoff.txt", transit["observations"]["handoff"])
+    write("workflows/transit/transfer.txt", transit_transfer(transit["observations"]["capsule"]) + "\n")
+    reviewer_prompt, reviewer_sources = reviewer_materials(ctx["model_evaluation"], REPO)
+    write("workflows/review/index.html", shell(ctx, "../../", "Practice reviewing an AI-assisted result · ThesisAnalysisOS",
+          render_practice(ctx["demo_record"], ctx["audit"], capsule_text=ctx["successor_capsule"]), url, "workflows/review/"))
+    write("workflows/review/index.md", practice_markdown(ctx["demo_record"], ctx["audit"], capsule_text=ctx["successor_capsule"]))
+    everyday = ('<section class="plain"><div class="wrap"><p class="kicker">A first example</p>'
+                '<h1>Which plans still work after a flight changes?</h1>'
+                + render_game("../../#run") + '<p><a href="../review/">Try a research decision</a></p></div></section>')
+    write("workflows/everyday/index.html", shell(ctx, "../../", "Try a change · ThesisAnalysisOS", everyday, url, "workflows/everyday/"))
+    write("workflows/everyday/index.md", game_markdown("../../#run"))
+    write("hpc/index.html", shell(ctx, "../", HPC_TITLE, render_hpc(), url, "hpc/"))
+    write("hpc/index.md", hpc_markdown())
+    write("hpc/pilot-worksheet.md", pilot_worksheet())
+    write("hpc/" + hpc_review.BRIEF_LINK, hpc_review.default_brief() + "\n")
+    write("hpc/" + hpc_review.REPORT_LINK, json.dumps(hpc_review.sample_review(), indent=2, ensure_ascii=False) + "\n")
+    write("hpc/example-run.json", json.dumps(run_trace(), ensure_ascii=False, indent=2) + "\n")
+    write("workflows/review/reviewer-prompt.txt", reviewer_prompt)
+    write("workflows/review/reviewer-sources.md", reviewer_sources)
     handoff_method = (REPO / HANDOFF_METHOD).read_text(encoding="utf-8")
     for path, destination in HANDOFF_DOWNLOADS.items():
         handoff_method = handoff_method.replace("../" + path, destination)
@@ -1203,15 +1214,26 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     ctx["boundary_controls"] = json.loads(boundary)
     write("records/pendulum-boundaries.json", boundary)
 
-    write("index.html", shell(ctx, "./", "ThesisAnalysisOS: what still holds?", home(ctx), url, "",
-                              '<script src="assets/mind.js" defer></script>\n'
-                              '<script src="assets/reuse.js" defer></script>\n'))
+    write("index.html", shell(ctx, "./", "ThesisAnalysisOS · What still holds?", home(ctx), url, "",
+                              '<script src="assets/report-story.js" defer></script>\n'
+                              '<script src="assets/reuse.js" defer></script>'))
+    decision = (HERE / "decision.html").read_text(encoding="utf-8")
+    write("decision/index.html", shell(ctx, "../", "Try a research decision · ThesisAnalysisOS",
+                                      decision, url, "decision/", '<script src="../assets/report-story.js" defer></script>'))
+    shutil.copy2(HERE / "decision.md", out / "decision/index.md")
+    write("record.html", shell(ctx, "./", "Explore the project record · ThesisAnalysisOS", record_explorer(ctx),
+                               url, "record.html", '<script src="assets/mind.js" defer></script>'))
+    write("record.md", "# Explore the project record\n\n"
+          "Follow a file, a saved check or a claim to its evidence in the [interactive record](record.html). "
+          "The [downloadable graph](graph.json) lists the same files and connections. "
+          "The pendulum example links a [corrected measurement](evidence/pendulum/) to "
+          "[the task that received it](evidence/#handoff-audit).\n")
     write("evidence/index.html", shell(ctx, "../", "Evidence: ThesisAnalysisOS", evidence(ctx), url, "evidence/"))
     write("evidence/pendulum/index.html", shell(ctx, "../../", "Pendulum audit observations", audit_cases_page(ctx["audit"]),
                                               url, "evidence/pendulum/"))
     write("evidence/model-evaluation/index.html", shell(ctx, "../../", "Model evaluation by instrument",
-          model_evaluation_html(ctx["model_evaluation"]), url, "evidence/model-evaluation/"))
-    write("evidence/model-evaluation/index.md", model_evaluation_markdown(ctx["model_evaluation"]))
+          model_evaluation_html(ctx["model_evaluation"], ctx["instrument_paths"]), url, "evidence/model-evaluation/"))
+    write("evidence/model-evaluation/index.md", model_evaluation_markdown(ctx["model_evaluation"], ctx["instrument_paths"]))
     md = ["# Pendulum audit observations", "",
           "The fit uses six swing timings and a straight line through zero. Each estimate and its standard error are in m/s². "
           "The standard error describes scatter around this model. The experiment assumes small swings and gives each squared "
@@ -1233,14 +1255,16 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     write("index.md", home_markdown(ctx, url))
     write("evidence/index.md", evidence_markdown(ctx))
     (out / "studies").mkdir()
-    agent_guide.write_decision_reading(out, REPO, RESEARCH_QUESTIONS, GITHUB, ctx["ref"])
+    agent_guide.write_decision_reading(out, ctx["decisions"])
     write("claims.json", json.dumps({"repository": NAME, "revision": ctx["revision"], "built": ctx["built"],
                                      "check": "python3 evals/claims.py --json", "rows": ctx["rows"]}, indent=2, sort_keys=True) + "\n")
     write("records/demo.json", json.dumps(ctx["demo_record"], ensure_ascii=False, indent=2) + "\n")
-    terminal_view = io.StringIO()
-    write_terminal_demo(ctx["demo_record"], terminal_view, full=False, width=80, color=False)
-    # Some static hosts serve text/plain without a charset. Mark UTF-8 so the terminal border survives a direct visit.
-    write("records/demo.txt", "\ufeff" + terminal_view.getvalue())
+    write("records/pendulum-capsule.txt", ctx["successor_capsule"])
+    # Both text views use the same run as the JSON. Mark UTF-8 for hosts that omit a charset.
+    for name, full in (("demo.txt", False), ("demo-transcript.txt", True)):
+        terminal_view = io.StringIO()
+        write_terminal_demo(ctx["demo_record"], terminal_view, full=full, width=None if full else 80, color=False)
+        write("records/" + name, "\ufeff" + terminal_view.getvalue())
     write("standing.json", json.dumps({"repository": NAME, "branch": "main", "revision": ctx["revision"], "built": ctx["built"],
                                        "stands_on": ctx["stands_on"]}, indent=2, sort_keys=True) + "\n")
     write("graph.json", json.dumps({
@@ -1251,7 +1275,7 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
         "worked_traversals": {"corrected_pendulum_reading": pendulum_traversal(ctx)}}, sort_keys=True) + "\n")
     write("robots.txt", "User-agent: *\nAllow: /\n" + ("Sitemap: {0}sitemap.xml\n".format(url) if url else ""))
     if url:
-        paths = ["", "evidence/", "evidence/pendulum/", "evidence/model-evaluation/", "exchange/"]
+        paths = ["", "decision/", "record.html", "hpc/", "workflows/review/", "workflows/transit/", "workflows/everyday/", "evidence/", "evidence/pendulum/", "evidence/model-evaluation/", "exchange/"]
         paths.extend(agent_guide.landing(stem) for stem, _ in agent_guide.STUDIES)
         write("sitemap.xml", '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
               + "".join(f"<url><loc>{esc(url + path)}</loc></url>\n" for path in paths)
@@ -1262,21 +1286,45 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     evidence_files = {link["path"] for node in ctx["graph"]["nodes"]
                       for link in node.get("evidence", {}).get("links", [])}
     evidence_files.update(agent_guide.GUIDE_SOURCES)
+    evidence_files.update(hpc_review.SOURCES)
+    # Keep source URLs cited by previously published research pages available to returning readers.
+    evidence_files.update(("site/build.py", "taos_core/standing.py", "taos_core/handoff.py", "taos_core/lifecycle.py"))
+    for _, packet in ctx["decisions"]:
+        evidence_files.update(entry["path"] for entry in [*packet["implementation"], packet["test"]])
+    evidence_files.update(("docs/opener.svg", "site/home_reading.html", "site/visitor_header.html", "site/next_agent.html", "site/assets/visitor.css",
+                 "site/decision.html", "site/decision.md",
+                           "evals/session_footprint.py", "evals/transit_workflow.py",
+                           "tests/test_transit_workflow.py", "docs/TRANSIT_WORKFLOW.md", "docs/LINEAGE.md",
+                           "examples/transit/tuesday-schedule.csv", "examples/transit/tuesday-dispatch.csv"))
+    evidence_files.update((*SETTING_SOURCES, *SETTING_FIXTURE_FILES))
     snapshot = write_source_snapshot(out, REPO, GITHUB, ctx["ref"], ctx["revision"], evidence_files)
     if release and not snapshot["archive"]:
         raise SystemExit("Release requires the verified source archive for the tested commit.")
+    if release:
+        retain_published_archives(out, REPO)
     archive = snapshot["archive"]
     if archive:
-        setup = (f'<a href="source/{esc(archive)}" data-source-download download>Download this demo</a>, '
-                 'unzip it, and open the extracted folder in a terminal with Python 3.9 or later.')
+        setup = (f'<a href="source/{esc(archive)}" data-source-download download>Download this demo</a> (ZIP). '
+                 'Open the unzipped folder in a macOS or Linux terminal with Git and Python 3.9 or later installed.')
+        welcome_source = (f'<a href="source/{esc(archive)}" data-source-download download>Download this version (ZIP)</a>. '
+                          'Open the extracted folder in a terminal and run the command below.')
+        welcome = "./taos welcome"
         commands = "./taos demo"
     else:
-        setup = "To try the published demo, open a terminal with Git and Python 3.9 or later."
+        setup = "To try the published demo, open a macOS or Linux terminal with Git and Python 3.9 or later installed."
+        welcome_source = "Open a macOS or Linux terminal to get the public release and try it."
+        welcome = f"git clone {GITHUB}.git\ncd ThesisAnalysisOS\n./taos welcome"
         commands = f"git clone {GITHUB}.git\ncd ThesisAnalysisOS\n./taos demo"
+    evidence_page = out / "evidence" / "index.html"
+    evidence_source = (f'<a href="../source/{esc(archive)}" data-source-download download>Download the source for this build</a>'
+                       if archive else '<a href="../source/">Browse the source for this build</a>')
+    evidence_page.write_text(evidence_page.read_text(encoding="utf-8").replace("<!--evidence-source-download-->", evidence_source), encoding="utf-8")
     homepage = out / "index.html"
     homepage.write_text(homepage.read_text(encoding="utf-8")
+                        .replace("<!--welcome-source-->", welcome_source)
+                        .replace("<!--welcome-command-block-->", copy_block("quick-setup", welcome, "Copy setup command"))
                         .replace("<!--demo-setup-->", setup)
-                        .replace("<!--demo-commands-->", esc(commands)), encoding="utf-8")
+                        .replace("<!--demo-command-block-->", copy_block("demo-commands", commands, "Copy commands")), encoding="utf-8")
     catalog = research_catalog(out / "records", url if release else "",
                                ctx["revision"] if archive else None,
                                source_archive="source/" + archive if archive else None)
@@ -1294,7 +1342,7 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
         item["abstract"] = run["finding"]
         if public_commit:
             item["sameAs"] = f'{GITHUB}/blob/{ctx["revision"]}/{item["identifier"]}'
-    catalog["creator"] = {"@type": "Person", "name": "Justin Bennett", "url": AUTHOR_GITHUB}
+    catalog["citation"] = (url if release else "") + SOFTWARE_CITATION
     groups = {Path(item["identifier"]).stem: item for item in datasets}
     briefs = study_briefs(out / "records", groups)
     if set(groups) != set(briefs) or set(groups) != {stem for stem, _ in agent_guide.STUDIES}:
@@ -1304,7 +1352,7 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
         brief = briefs[stem]
         rows = agent_guide.write_reading(out, stem, dataset, brief)
         dataset["url"] = (url if release else "") + path
-        dataset["creator"] = catalog["creator"]
+
         dataset["description"] = brief["method"] + " " + brief["scope"]
         dataset["subjectOf"] = {"@type": "DigitalDocument", "name": "Recorded comparisons, scope and source fields",
                                 "url": (url if release else "") + path + "index.md"}
@@ -1322,7 +1370,7 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     sim_base = url if release else ""
     modeled = {"@type": "Dataset", "identifier": "evals/results/" + model_name,
                "name": "What happens when assistants pass copies of results to each other?",
-               "description": f"A seeded model compared {len(model['rows'])} policies across {model['uses']:,} simulated requests. All assistant actions follow programmed rules.",
+               "description": f"A seeded model compared {len(model['rows'])} policies across {model['uses']:,} simulated requests. All agent actions follow programmed rules.",
                "url": sim_base + "exchange/simulation.md",
                "distribution": {"@type": "DataDownload", "contentUrl": sim_base + "records/" + model_name,
                                 "encodingFormat": "application/json", "sha256": hashlib.sha256(model_bytes).hexdigest()}}
@@ -1352,6 +1400,18 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
     protect_pages(out, analytics=ctx["public_analytics"])
     if preview_film_dir is None:
         verify_homepage_film(out)
+    # These guides also live outside docs/ on the website. Keep their reading
+    # paths inside this build while preserving the original files in the ZIP.
+    for route in ("exchange/simulation.md", "records/handoff-method.md",
+                  MODEL_DOWNLOADS["docs/MODEL_EVALUATION.md"]):
+        guide = out / route
+        lines = guide.read_text(encoding="utf-8").splitlines(keepends=True)
+        prefix = os.path.relpath(out / "source/raw/docs", guide.parent).replace(os.sep, "/")
+        for i, line in enumerate(lines[:5]):
+            if line.startswith("<sub><b>") and "[All documents]" in line:
+                lines[i] = re.sub(r"\]\(([A-Z_]+\.md)\)", lambda m: f"]({prefix}/{m[1]})", line)
+                break
+        write(route, "".join(lines))
     agent_guide.study_versions(out, datasets, ctx["revision"])
     write("research-audit.json", json.dumps(verify_research_guide(out, writing_report=True), indent=2) + "\n")
     problems = broken(out, url, ctx["revision"])
@@ -1369,6 +1429,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--release", action="store_true", help="require the tested commit and its exact source ZIP")
     parser.add_argument("--preview-film-dir", type=Path, help="include a private local film preview from this directory")
     args = parser.parse_args(argv)
+    worktree = subprocess.run(["git", "-C", str(REPO), "rev-parse", "--show-toplevel"],
+                              text=True, capture_output=True) if shutil.which("git") else None
+    if not worktree or worktree.returncode or Path(worktree.stdout.strip()).resolve() != REPO:
+        raise SystemExit("Building the source browser requires a Git checkout of ThesisAnalysisOS. "
+                         "Clone the repository and run this command from its root.")
     ctx = build(Path(args.out), args.ref, args.url, release=args.release, preview_film_dir=args.preview_film_dir)
     print("built {0} from {1}: {2} moments, {3} claims hold, stands on {4} files, the record drawn as {5} nodes and {6} edges".format(
         args.out, ctx["revision"][:7], len(ctx["chapters"]), len(ctx["rows"]), len(ctx["stands_on"]),

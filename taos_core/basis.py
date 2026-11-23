@@ -99,8 +99,9 @@ def listing(root: Path, ignore: Optional[List[str]] = None) -> List[str]:
     ignore = list(ignore or [])
     names: List[str] = []
     try:
-        listed = subprocess.run(["git", "-C", str(root), "ls-files", "-co", "--exclude-standard", "-z"],
-                                capture_output=True, timeout=60)
+        # Asking git what it tracks changes nothing: no index refresh, and no helper the person's git config names.
+        listed = subprocess.run(["git", "--no-optional-locks", "-c", "core.fsmonitor=false", "-C", str(root),
+                                 "ls-files", "-co", "--exclude-standard", "-z"], capture_output=True, timeout=60)
         if listed.returncode == 0:
             names = [name for name in listed.stdout.decode("utf-8", "surrogateescape").split("\0") if name]
         else:
@@ -176,6 +177,9 @@ def snapshot(root: Path, settings: Optional[Dict[str, Any]] = None) -> Dict[str,
     if declared:
         named = [pattern for patterns in declared.values() for pattern in patterns or []]
         names = sorted(set(names) | set(on_disk(root, named, settings.get("ignore"))))
+    if not names and not declared:
+        out.update(complete=False, reason="no workspace inputs were recorded; add a project input to Git or declare its path in basis.domains")
+        return out
     size = sum((root / name).stat().st_size for name in names)
     if len(names) > MAX_FILES or size > MAX_BYTES:
         out.update(complete=False, reason="the workspace is too large to fingerprint ({0} files, {1} MB); declare "
@@ -232,6 +236,8 @@ def compare(recorded: Dict[str, str], current: Dict[str, Any], *, listed: Option
     """
     if not current.get("complete"):
         return verdict(UNKNOWN, current.get("reason") or "the workspace could not be read")
+    if not recorded and not declared:
+        return verdict(UNKNOWN, "the earlier result recorded no workspace inputs; check again with named inputs")
     now = digests(current, [name for name in recorded if name != UNDECLARED] if declared else None)
     kept = (listed or {}).get("domains") or {}
     stale, unknown = [], []

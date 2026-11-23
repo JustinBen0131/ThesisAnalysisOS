@@ -7,6 +7,8 @@ from html import escape
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from plot_pendulum import figure_issue
+
 
 def load_audit(repo: Path) -> Dict[str, Any]:
     """Refuse to publish measurements whose recorded source bytes have changed."""
@@ -24,11 +26,10 @@ def load_audit(repo: Path) -> Dict[str, Any]:
         source.relative_to(root)
         if not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest() != expected:
             raise ValueError(f"Measurement audit source missing or changed: {name}")
-    # Matplotlib writes this PNG text chunk beside the plotted pixels.
     figure = root / "site/assets/pendulum-sensitivity.png"
-    fingerprint = hashlib.sha256(path.read_bytes()).hexdigest().encode("ascii")
-    if b"tEXtSourceSHA256\0" + fingerprint not in figure.read_bytes():
-        raise ValueError("The sensitivity figure needs regenerating from the recorded audit.")
+    issue = figure_issue(figure, path.read_bytes(), root / "site/plot_pendulum.py")
+    if issue:
+        raise ValueError(issue)
     return record
 
 
@@ -67,6 +68,7 @@ def audit_section(record: Dict[str, Any], boundaries: Optional[Dict[str, Any]] =
     unclassified = [case for case in cases if case["cohort"] == "unclassified-input"]
     unclassified_unknown = sum(case["retained"] == "unknown" for case in unclassified)
     stale_changed = sum(case["retained"] == "stale" for case in changed)
+    passed_after_change = sum(case["fresh_exit"] == 0 for case in changed)
     stale_unchanged = sum(case["retained"] == "stale" for case in unchanged)
     valid_reuses = [case for case in unchanged if case["retained"] == "holds" and case["fresh_exit"] == 0]
     held_omissions = sum(case["retained"] == "holds" and case["fresh_exit"] != 0 for case in omitted)
@@ -101,13 +103,14 @@ def audit_section(record: Dict[str, Any], boundaries: Optional[Dict[str, Any]] =
 <section id="measurement-audit" class="measurement-audit" aria-labelledby="audit-heading"><div class="wrap prose">
 <h2 id="audit-heading">When could the earlier pendulum check be reused?</h2>
 <p>A gravity estimate from {len(record['baseline_rows'])} pendulum readings passed the study’s check.
-In each of {len(cases)} selected cases, we asked whether the earlier pass still applied, then ran the fit and check again.
+In each of {len(cases)} selected cases, the audit checked whether the earlier pass still applied, then repeated the fit and the check.
 With all inputs listed, the software kept the earlier pass in {len(valid_reuses)} cases where the fitted result
 stayed the same ({reuse_examples}).</p>
 <ul class="answers" id="pendulum-reuse-decisions" aria-label="Earlier pass compared with the fresh fit">
 <li><strong>{stale_changed} of {len(changed)}<br>flagged</strong><span><b>All inputs listed, fitted result changed.</b>
 The estimate or its standard error moved. Even the {case_link("scale-1.001", "0.1% increase in all periods")}
-flagged the old pass, although the fresh fit still passed.</span></li>
+flagged the old pass. After recalculation, {passed_after_change} of the {len(changed)} changed fits passed the study’s check and
+{len(changed) - passed_after_change} failed.</span></li>
 <li><strong>{stale_unchanged} of {len(unchanged)}<br>flagged</strong><span><b>All inputs listed, fitted result unchanged.</b>
 {case_link("decimal-spelling", "Adding a trailing zero")}, {case_link("row-order", "reordering the readings")}
 and {case_link("fit-comment", "editing a code comment")} each flagged the old pass. The count of {len(unchanged)} includes the unchanged baseline.</span></li>

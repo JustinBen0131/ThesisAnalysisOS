@@ -11,101 +11,85 @@ repo you are in). If you cannot tell, leave the bracket text as it is.
 
 <!-- ASK: send everything between these markers verbatim -->
 
-I'll set this up around how you actually work. Here is the whole process:
+Reply once, using the question numbers. Say **defaults** for all defaults
+or **default** for one. I need an answer to #8.
 
-1. Answer the questions below in one reply. Number your answers to match.
-   Say **defaults** to take every default, or **default** for any single
-   one. Only #8 has no default.
-2. I'll read your answers and look at your repos. If something is unclear or
-   contradicts what I see on disk, I'll ask you at most three follow-ups,
-   each tied to something specific I found. If you'd rather skip that,
-   write **proceed** anywhere in your reply and I'll build with what I have.
-3. I build it, run the checks, show you the result, and give you five tips
-   on getting the most out of me. About a minute.
-4. You say **start** and I pick up your first task.
+I'll check your repos and ask up to three specific follow-ups if needed.
+Say **proceed** to skip them. I'll build, run the checks, show the result,
+and give you five tips. Say **start** to pick up your first task.
 
-**0. Does anything below need more explanation, or not fit how you work?**
-Say so here in your own words and I'll reshape it before building anything.
-Otherwise leave this blank or write N/A.
+**0. Does anything need explaining or adapting?**
+Say what to change, leave it blank, or write N/A.
 
-**1. What's your name, and what timezone are you in?**
-Default: `<shell username>`, `<machine timezone>`
+**1. What's your name and timezone?**
+Default — `<shell username>`, `<machine timezone>`
 
-**2. What should I call this project, and what should task IDs look like?**
-IDs become PREFIX-1, PREFIX-2, and they never change, so pick something short
-you won't mind typing. 2 to 8 letters.
-Default: `<repo folder name>`, prefix `<FIRST LETTERS>`
+**2. What's the project name and its task ID prefix?**
+Pick 2 to 8 letters. IDs like PREFIX-1 stay fixed.
+Default — `<repo folder name>`, prefix `<FIRST LETTERS>`
 
-**3. Which repos will you and the agents actually work in? Full paths.**
-If you keep a separate checkout per agent, say which path belongs to which
-one and I'll make it a hard boundary: the other agent can read there but
-never write. Example: `~/code/noir` is mine, `~/code/noir-claude` is Claude's.
-Default: no separate repos, everything happens in this folder
+**3. Which repos will the agents work in?**
+Give full paths, name the primary repo, and mark any checkout reserved for
+one agent. You can name each repo. With the guard active, other agents can
+read a reserved checkout but cannot write there.
+Default — use this OS clone as the workspace
 
-**4. How do you want work isolated in git, and how does it get to main?**
-Three things:
-- A worktree per task, a branch per task, a checkout per agent, or just
-  commits on main?
-- Which branches should I never commit on or push to?
-- Who merges? You only, via PR, or may an agent merge once tests pass?
-Default: a worktree per task, branches named like `nr/nr-7-short-title`,
-never touch main or master, and only you merge
+**4. How should Git work be isolated and merged?**
+Choose a worktree or branch per task, a checkout per agent, or commits on
+main. Name protected branches and say whether you merge through a PR or an
+agent can merge after checks pass.
+Default — worktree per task, branches like `nr/nr-7-short-title`, protect
+main and master, and only you merge
 
-**5. What has to pass before an agent is allowed to say something is ready?**
-Give me the real commands you'd run yourself. Anything that fails these can't
-be marked reviewable, and I'll record every run.
-Default (Rust): `cargo test`, `cargo fmt --all -- --check`,
+**5. What must pass before work is ready for review?**
+Give the commands you run. I record each run. For each check, you can name
+the paths it reads so unchanged inputs can reuse a result. Say "isolate it"
+to run with only those paths present.
+Default (Rust) — `cargo test`, `cargo fmt --all -- --check`,
 `cargo clippy --all-targets -- -D warnings`
 
-Optional, per check: which folders does it read? Then it reruns only when
-those change. Say "isolate it" to run it with only those folders present.
+**6. What can agents do without you?**
+- **propose only** — agents edit, ask before every commit, and cannot push
+- **branches** — agents commit on task branches and ask before pushing
+- **branches and PRs** — agents push task branches and open PRs
 
-**6. How much rope do the agents get?**
-- **propose only**: they edit, but every commit needs your nod and pushes are refused
-- **branches**: they commit freely on task branches, every push asks you first
-- **branches and PRs**: they push task branches and open PRs without asking
-And these stay yours no matter what: deploying or releasing, merging to main,
-signing or broadcasting a transaction, touching keys or seed phrases, spending
-money, messaging people as you. Add or remove anything.
-Default: **branches**, and that list as written
+By default, you own deploys and releases, merges to main, signing or
+broadcasting transactions, handling keys and seed phrases, spending money,
+and messaging people as you. Tell me what to adjust.
+Default — **branches** and the reserved actions above
 
-**7. Anything I should never read, beyond the obvious?**
-Already blocked: `.env`, `.pem`, `.key`, `id_rsa`, keystores, mnemonics, seed
-phrases, `~/.ssh`, `~/.aws`. Add anything project-specific, like `wallet` or
-`fixtures/private`.
-Default: nothing extra
+**7. What else should I never read?**
+TAOS already blocks `.env`, `.pem`, `.key`, `id_rsa`, keystores, mnemonics,
+seed phrases, `~/.ssh`, and `~/.aws`. Add project paths such as `fixtures/private`.
+Default — nothing extra
 
-**8. What are you actually working on? Three to seven real things.**
-One per line: `what you want :: the literal next step :: what done looks like`.
-The last part is optional; leave it off and I'll propose a finish condition
-after I've looked at the repo, and you can correct it. Add `P0` if urgent.
-Example: `fix the flaky parser tests :: reproduce under cargo test :: full
-parser suite passes twice in a row`.
-No default. This is the one I need from you.
+**8. What are three to seven real tasks?**
+Give one per line as `what you want :: the literal next step`. The fields
+`:: what done looks like` and a final priority (`:: P0` through `:: P3`)
+are optional. P0 is urgent and P2 is usual. I can propose a finish condition
+after reading the repo.
 
-**9. What resources should I assume I can use?** Rough answers, no token
-counts or prices.
-- Which agents or model families you actually have, if you know
-- Does compute or quota feel constrained, normal, or abundant
-- How much context to occupy in normal work, and how much to keep in reserve
-- Anything scarce you want protected
-- Mechanics, only if you care: which agents (both), hooks into the repos from
-  #3 (yes, existing hook files untouched), dashboard port (4331), brief time
-  (8:30am), questions queued per day (3), quiet hours (none)
-Default: your configured agents, normal availability, lean context with a
-third in reserve, mechanics as listed
+`Fix the flaky parser tests :: run cargo test parser :: parser suite passes twice :: P0`
 
-**10. When things trade off, how should I lean, and what do agents keep
-getting wrong for you?**
-- Exploration: conservative (stick to what works), balanced, or exploratory
-  (try heavier or unfamiliar approaches when they might pay off later)
-- What you care about unusually strongly: verified quality, your attention,
-  speed, money or quota, reusable capability, room to experiment
-- Corrections you keep giving agents. Each becomes a proposal; once an agent
-  sees it happen it writes a check so the machine enforces it. And how often
-  to bring those up: daily, weekly, or only when you ask
-Default: balanced; quality and your intent first, then your attention, then
-resources, with bounded room to experiment; no corrections yet; weekly
+No default.
+
+**9. What resources should I plan around?**
+Name available agents or models, whether compute is constrained, normal, or
+abundant, how much context is available and how much to use or hold in
+reserve, and anything scarce to protect.
+Default — configured agents, normal compute, lean context with a third in reserve
+
+Optional setup choices and defaults — the `codex` and `claude` role names, hooks enabled in the
+repos from #3 (existing settings may need a manual merge), dashboard at port
+4331, brief at 8:30 am, three queued decisions per day, and no quiet hours.
+
+**10. What should I prioritize, and what mistakes keep recurring?**
+Choose conservative, balanced, or exploratory. Name tradeoffs that matter
+(quality, your attention, speed, resources, reusable capability, or room
+to experiment). Tell me recurring corrections to propose as checks and how
+often to review them (daily, weekly, or on request).
+Default — balanced, quality and your intent first, then attention, then
+resources, with bounded exploration, no corrections yet, and weekly review
 
 <!-- /ASK -->
 
@@ -119,7 +103,7 @@ What each answer fills in `.taos/config.json`, and what it changes:
 |---|---|---|
 | 1 | `principal_name`, `timezone` | the rendered docs, the brief header |
 | 2 | `project_name`, `prefix` | the allocator; ids are permanent |
-| 3 | `workspaces[].path/primary/agent` | lanes: the guard denies the other agent's writes in a reserved path; `taos start` routes each agent to its own |
+| 3 | `workspaces[].name/path/primary/agent` | named lanes, or the OS clone itself if omitted. The active guard denies other agents’ writes in a reserved path. `taos start` uses the agent's lane or a shared workspace |
 | 4 | `git_isolation` (`worktree`/`branch`/`fork`/`trunk`), `branch_pattern` (`{prefix_lower}`, `{id_lower}`, `{slug}`, `{agent}`), `protected_branches`, `worktree_root`, `merge_policy` (`human_pr`/`agent_after_gates`/`trunk`) | what `taos start` prints and claims; what the guard asks and denies around commit, push, and merge |
 | 5 | `gates[]` (each may carry `depends_on` and `isolated`), `domains[]`, `stack` | `taos gate run`; `finish --state review\|done` refuses unless every gate holds on the files as they are now. Stack is auto-detected from the primary workspace (Cargo.toml, package.json, pyproject, go.mod) when unstated |
 | 6 | `autonomy` (`propose_only`/`edit_branches`/`push_branches_open_prs`), `human_only[]` | the guard's push and commit verdicts; the list shown in AGENTS.md and the panel |
@@ -128,15 +112,20 @@ What each answer fills in `.taos/config.json`, and what it changes:
 | 9 | `resources.{agents_available, compute, context_available, context_working, context_reserve, protect[]}`; mechanics `agents[]`, `install_hooks_in_workspaces`, `panel.port`, `brief_time`, `attention.max_decisions_per_day`, `attention.quiet_hours` | the controller's compute prior; limits the agents respect; the panel and brief mechanics |
 | 10 | `preference.{exploration, priorities[]}`, `agent_corrections[]`, `self_iteration.cadence` | the controller's exploration prior (initial `beta`); each correction becomes a `kind: atom` proposal, unpromoted; cadence shapes how often proposals surface |
 
-Parsing #8: `title :: next action :: done when`, any trailing `P0`..`P3`
-token is the priority; two parts means no closure was given. Parsing #9 and
-#10: map their words onto the enums (`constrained|normal|abundant`,
+Parsing #8: split on `::` and trim each field. The first two fields are
+`title` and `next_action`. A final optional field consisting of exactly
+`P0`, `P1`, `P2`, or `P3` is `priority`. Any remaining third field is
+`done_when`. For example, `Document the parser :: list the error cases :: P3`
+sets a priority and leaves `done_when` out.
+
+Parsing #9 and #10: map their words onto the enums (`constrained|normal|abundant`,
 `conservative|balanced|exploratory`); free text for context sizes is kept as
 given. These are priors and limits, never performance truths; measured
 outcomes refine the numbers without asking again.
 
 Shape: `bootstrap/answers.schema.json`. Worked example:
-`bootstrap/answers.example.json`. Omit any key the human said "default" for.
+`bootstrap/answers.example.json`. Fill required fields from the answers or
+their stated defaults. Omit other keys when the person takes the default.
 
 Parsing #4 and #6: map their words onto the enum values in the table above;
 if they say something you cannot map, ask that one thing back, and nothing

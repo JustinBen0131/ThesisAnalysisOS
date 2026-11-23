@@ -104,6 +104,7 @@ def claude_transcripts(workspace: Optional[Path] = None) -> List[Path]:
 def read_claude(path: Path, since: Optional[str] = None, until: Optional[str] = None) -> Dict[str, Any]:
     totals = dict(ZERO)
     models: Dict[str, int] = {}
+    by_model: Dict[str, Dict[str, int]] = {}
     rows = 0
     for line in _tail(path):
         if '"usage"' not in line:
@@ -120,13 +121,14 @@ def read_claude(path: Path, since: Optional[str] = None, until: Optional[str] = 
         if not isinstance(usage, dict):
             continue
         rows += 1
-        totals["input_tokens"] += int(usage.get("input_tokens") or 0)
-        totals["output_tokens"] += int(usage.get("output_tokens") or 0)
-        totals["cached_tokens"] += int(usage.get("cache_read_input_tokens") or 0)
-        totals["cache_write_tokens"] += int(usage.get("cache_creation_input_tokens") or 0)
         model = str(message.get("model") or "unknown")
         models[model] = models.get(model, 0) + 1
-    return {"ok": rows > 0, "rows": rows, "totals": totals, "models": models}
+        sample = {"input_tokens": int(usage.get("input_tokens") or 0), "output_tokens": int(usage.get("output_tokens") or 0),
+                  "cached_tokens": int(usage.get("cache_read_input_tokens") or 0),
+                  "cache_write_tokens": int(usage.get("cache_creation_input_tokens") or 0)}
+        _add_totals(totals, sample)
+        _add_totals(by_model.setdefault(model, dict(ZERO)), sample)
+    return {"ok": rows > 0, "rows": rows, "totals": totals, "models": models, "by_model": by_model}
 
 
 # --------------------------------------------------------------------------
@@ -144,9 +146,11 @@ def codex_sessions(limit_days: int = 30) -> List[Path]:
 def read_codex(path: Path, since: Optional[str] = None, until: Optional[str] = None) -> Dict[str, Any]:
     totals = dict(ZERO)
     models: Dict[str, int] = {}
+    by_model: Dict[str, Dict[str, int]] = {}
+    active_model = "unknown"
     rows = 0
     for line in _tail(path):
-        if '"token_usage_record"' not in line and '"session_meta"' not in line:
+        if '"token_usage_record"' not in line and '"session_meta"' not in line and '"turn_context"' not in line:
             continue
         try:
             row = json.loads(line)
@@ -154,10 +158,11 @@ def read_codex(path: Path, since: Optional[str] = None, until: Optional[str] = N
             continue
         kind = row.get("type")
         payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
-        if kind == "session_meta":
+        if kind in ("session_meta", "turn_context"):
             model = payload.get("model") or (payload.get("turn_context") or {}).get("model")
             if model:
-                models[str(model)] = models.get(str(model), 0) + 1
+                active_model = str(model)
+                models[active_model] = models.get(active_model, 0) + 1
             continue
         if kind != "token_usage_record":
             continue
@@ -168,13 +173,13 @@ def read_codex(path: Path, since: Optional[str] = None, until: Optional[str] = N
         if not isinstance(usage, dict):
             continue
         rows += 1
-        totals["input_tokens"] += int(usage.get("input_tokens") or 0)
-        totals["output_tokens"] += int(usage.get("output_tokens") or 0)
-        totals["cached_tokens"] += int(usage.get("cached_input_tokens") or 0)
-        totals["cache_write_tokens"] += int(usage.get("cache_write_input_tokens") or 0)
-        # Already inside output_tokens for this host: reported, never re-added.
-        totals["reasoning_tokens"] += int(usage.get("reasoning_output_tokens") or 0)
-    return {"ok": rows > 0, "rows": rows, "totals": totals, "models": models}
+        sample = {"input_tokens": int(usage.get("input_tokens") or 0), "output_tokens": int(usage.get("output_tokens") or 0),
+                  "cached_tokens": int(usage.get("cached_input_tokens") or 0),
+                  "cache_write_tokens": int(usage.get("cache_write_input_tokens") or 0),
+                  "reasoning_tokens": int(usage.get("reasoning_output_tokens") or 0)}
+        _add_totals(totals, sample)
+        _add_totals(by_model.setdefault(str(payload.get("model") or active_model), dict(ZERO)), sample)
+    return {"ok": rows > 0, "rows": rows, "totals": totals, "models": models, "by_model": by_model}
 
 
 def _in_window(stamp: str, since: Optional[str], until: Optional[str]) -> bool:
@@ -294,13 +299,34 @@ def window(
             _merge(out["agents"].setdefault("codex", {"totals": dict(ZERO), "rows": 0, "models": {}}), sample)
     out["files_scanned"] = len(claude_files[-MAX_FILES:]) + len(codex_files[-MAX_FILES:])
     for agent, data in out["agents"].items():
-        data["cost"] = estimate_cost(paths, data["totals"], data["models"])
+        subtotals = data.pop("by_model")
+        table = rates(paths)
+        prices = []
+        for model, bucket in sorted(subtotals.items()):
+            billing = dict(bucket)
+            if agent == "codex":
+                # Codex includes cache hits in its input total. Price those tokens once.
+                billing["input_tokens"] = max(0, bucket["input_tokens"] - bucket["cached_tokens"])
+            price = _price(table, billing, model)
+            if price is None:
+                prices = []
+                break
+            prices.append(price)
+        data["cost"] = (dict(prices[0], amount=round(sum(price["amount"] for price in prices), 4),
+                             basis=", ".join(sorted(subtotals))) if prices else None)
     return out
 
 
+def _add_totals(target, sample):
+    for key, value in sample.items():
+        target[key] = target.get(key, 0) + value
+
+
 def _merge(target: Dict[str, Any], sample: Dict[str, Any]) -> None:
-    for key, value in sample["totals"].items():
-        target["totals"][key] = target["totals"].get(key, 0) + value
+    _add_totals(target["totals"], sample["totals"])
+    by_model = target.setdefault("by_model", {})
+    for model, bucket in sample["by_model"].items():
+        _add_totals(by_model.setdefault(model, dict(ZERO)), bucket)
     target["rows"] += sample["rows"]
     for model, count in sample["models"].items():
         target["models"][model] = target["models"].get(model, 0) + count
@@ -313,15 +339,20 @@ def rates(paths: Paths) -> Dict[str, Any]:
 
 def estimate_cost(paths: Paths, totals: Dict[str, int], models: Dict[str, int]) -> Optional[Dict[str, Any]]:
     """Tokens times a published rate. Estimated, never billed, and null without a rate."""
-    table = rates(paths)
+    if len(models) > 1:
+        return None
+    price = _price(rates(paths), totals, next(iter(models), None))
+    return dict(price, amount=round(price["amount"], 4)) if price else None
+
+
+def _price(table, totals, model):
     entries = table.get("models") or {}
-    model = max(models.items(), key=lambda item: item[1])[0] if models else None
     rate = None
     if model:
         rate = entries.get(model)
         if rate is None:
             for name, value in entries.items():
-                if name and (name in model or model in name):
+                if name and model.startswith(name + "-"):
                     rate = value
                     break
     if rate is None:
@@ -335,7 +366,7 @@ def estimate_cost(paths: Paths, totals: Dict[str, int], models: Dict[str, int]) 
         + int(totals.get("cache_write_tokens") or 0) / million * float(rate.get("cache_write", rate.get("input", 0)))
         + int(totals.get("output_tokens") or 0) / million * float(rate.get("output", 0))
     )
-    return {"amount": round(amount, 4), "currency": table.get("currency", "USD"),
+    return {"amount": amount, "currency": table.get("currency", "USD"),
             "basis": model or "default", "rates_as_of": table.get("as_of"), "provenance": "estimated"}
 
 
@@ -391,8 +422,11 @@ def _cmd_show(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    parser = subparsers.add_parser("usage", help="token telemetry the hosts already write to disk")
+    from . import progress
+
+    parser = subparsers.add_parser("usage", help="scientific progress, compute accounting and agent token usage")
     sub = parser.add_subparsers(dest="usage_cmd", required=True)
+    progress.register(sub)
     prober = sub.add_parser("probe", help="what this machine can actually see")
     prober.add_argument("--json", action="store_true")
     prober.set_defaults(func=_cmd_probe)

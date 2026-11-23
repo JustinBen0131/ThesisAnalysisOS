@@ -1,14 +1,40 @@
 # Contributing
 
-Research notes, exchange entries, questions and reports of mistakes are welcome
-from anyone. Open an issue, or follow the steps on the research-notes and
-exchange pages.
+Start with the question you want another person to answer.
+
+| What happened? | Where to take it |
+| --- | --- |
+| TAOS repeated a check, reused an old result, or made the right call. | Describe one decision in the [public workflow form](https://github.com/JustinBen0131/ThesisAnalysisOS/issues/new?template=workflow-feedback.yml). |
+| A research note needs a correction or another test. | Open the [research exchange](https://whatstillholds.com/exchange/) and follow the reply link on the question you read. |
+| The software or website may expose private data or give someone unintended access. | Send a [private security report](https://github.com/JustinBen0131/ThesisAnalysisOS/security/advisories/new). |
+
+For a public report, keep the original receipt in your workspace. A small example with invented data is enough. Tell us what changed, what TAOS said, and what you checked. For example, if changing a plot color makes a gravity fit go stale, name the file you edited and the inputs the fit actually reads.
 
 ## Code
 
 Describe the change in an issue before sending code, so it can be agreed first.
 Code you contribute is licensed to the project and its users under the Apache
 License, Version 2.0, the same license as the rest of the repository.
+
+## Maintaining saved evidence
+
+From a checkout, check which records still match their declared inputs. The check also recomputes the reported timing statistics from the saved observations.
+
+```sh
+python3 evals/refresh_results.py --check
+```
+
+A clean check exits 0. Exit 1 lists stale files, explains what changed, and names any dependent files to check after regeneration. Use the write mode to regenerate affected records.
+
+```sh
+python3 evals/refresh_results.py --write
+```
+
+This runs the affected studies, then checks the unequal-group replay, pendulum figure and timing claims against the updated records. The figure records the fingerprints of its input data and the script that drew it. The README picture is checked against the current demo opener.
+
+Drawing the figure requires Matplotlib. Checking an existing figure uses the standard library. If the historical comparison itself needs updating, run the refresh in a Git checkout that contains the two revisions named in `evals/at_revision.py`.
+
+The first failed refresh stops the command with exit 2. Each completed file is verified before it replaces its predecessor. After fixing the reported cause, repeat `--write`, run `--check`, and review the diff. CI checks the saved evidence and independently runs the existing reproduction tests.
 
 ## The research exchange
 

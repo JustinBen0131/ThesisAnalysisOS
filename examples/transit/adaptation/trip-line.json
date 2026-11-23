@@ -1,0 +1,10 @@
+{
+  "id": "open-trip-line",
+  "rule": "In this service audit, give unresolved trip IDs on a line beginning with 'Open trips:'.",
+  "check": {
+    "type": "regex_must_match",
+    "target": "latest_handoff",
+    "pattern": "^Open trips: [A-Z][0-9]{2}(?:, [A-Z][0-9]{2})*$"
+  },
+  "fixtures": {"red": "Some trips still need checking.", "green": "Open trips: T04, T11"}
+}

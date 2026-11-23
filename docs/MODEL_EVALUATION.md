@@ -1,10 +1,12 @@
 # Can an unchanged pooled score hide an instrument-specific failure?
 
-Two fictional instruments each supplied eight quality-control readings. A binary classifier gave each reading a score. Each instrument had four known faults and four known nonfaults. A reading with a score of at least 60 was flagged. A check passed when the classifier detected at least three quarters of the known faults. We evaluated instruments A and B individually and then combined their readings for a pooled check.
+<sub><b>Check the evidence · 4 of 6</b> &nbsp;·&nbsp; [← Handoff audit](HANDOFF_AUDIT.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Exchange simulation →](EXCHANGE_SIMULATION.md)</sub>
+
+The fixture represents two fictional instruments with eight quality-control readings each. It supplies hand-set scores and reference labels for four faults and four nonfaults per instrument. The program flags readings whose supplied score is at least 60. A check passes when it flags at least three quarters of the known faults. The study checks each instrument on its own and also checks their readings pooled together.
 
 ## What happened
 
-Correcting two scores left the entire pooled confusion table unchanged. The classifier still detected six of eight faults overall. Instrument A dropped from three of four to two of four, while instrument B rose from three of four to four of four. The pooled check passed and instrument A failed.
+Correcting two scores left the entire pooled confusion table unchanged. The cutoff rule still flagged six of eight faults overall. Instrument A dropped from three of four to two of four, while instrument B rose from three of four to four of four. The pooled check passed and instrument A failed.
 
 | Edit in a fresh workspace | Faults detected by A | By B | Pooled | Checks executed after edit | Checks below 75% |
 |---|---:|---:|---:|---|---|
@@ -23,12 +25,14 @@ Each case began in a temporary TAOS home with three observed passing checks. The
 
 ## How to check the conclusion
 
-The [prespecified design](../examples/model_evaluation/predictions.json) gives the exact confusion table, sensitivity direction, old passes expected to become stale, checks expected to execute, and failed checks for each perturbation. Its SHA-256 is `3c558dae1dabe8e9a451b4867da305a040a324e6b00e6956cbfe6df2ebdf025c`. It was written before the checks ran. The [instrument A](../examples/model_evaluation/a.csv) and [instrument B](../examples/model_evaluation/b.csv) files give every original reference label and score.
+The design records the expected confusion table, sensitivity direction, old passes expected to become stale, checks expected to execute and failed checks for each edit. Its SHA-256, `3c558dae1dabe8e9a451b4867da305a040a324e6b00e6956cbfe6df2ebdf025c`, identifies the exact design used by the saved record. The design and observations first appear together in public commit `910ae72`. [Design](../examples/model_evaluation/predictions.json) · [First public commit](https://github.com/JustinBen0131/ThesisAnalysisOS/commit/910ae726e749c69173e88cfd1dc84f5c024a097c)
 
-The gate increments a count as it classifies each row. A separate calculation intersects sets of sample IDs with known faults and IDs flagged by the model. Both implementations have to agree with the hand-specified count table. Read counts in the order true positives, false negatives, false positives, true negatives. The baseline and the offsetting-corrections case both give the pooled table **(6, 2, 2, 6)**. In the latter case A gives (2, 2, 1, 3) and B gives (4, 0, 1, 3).
+The input files give every original reference label and score. [Instrument A](../examples/model_evaluation/a.csv) · [Instrument B](../examples/model_evaluation/b.csv)
+
+The gate increments a count as it applies the cutoff to each row. A separate calculation intersects the set of IDs with known faults and the set of IDs above or at the cutoff. Both calculations have to agree with the hand-specified count table. Read counts in the order true positives, false negatives, false positives, true negatives. The baseline and the offsetting-corrections case both give the pooled table **(6, 2, 2, 6)**. In the latter case A gives (2, 2, 1, 3) and B gives (4, 0, 1, 3).
 
 Run `python3 evals/model_evaluation.py --verify` from the repository root to repeat all four cases in temporary directories and compare the full result with the [saved observations](../evals/results/model_evaluation.json). The [record schema](../evals/model_evaluation.schema.json) describes the fields. The record includes the edited samples, source and input hashes, before-and-after check status, fresh executions and reused passes. The recorded source manifest includes the runner, fixtures, TAOS modules loaded by the scratch-home constructor and its setup inputs.
 
-The [standalone verifier](../evals/review_model_evaluation.py) reads the original specimen IDs, scores and labels without running TAOS or the classifier. Run `python3 evals/review_model_evaluation.py --self-test` to check the counts and confirm that it rejects an altered count, swapped instrument states and a changed observation.
+The standalone verifier independently computes the counts from the original IDs, scores and labels. Run `python3 evals/review_model_evaluation.py --self-test` to check the counts and confirm that it rejects an altered count, swapped instrument states and a changed observation. [Verifier](../evals/review_model_evaluation.py)
 
 The scores and reference labels were chosen to test aggregate cancellation and input tracking. They describe 16 invented instrument readings. This experiment provides an exact counterexample to relying on a pooled result alone. It does not estimate how often this disagreement occurs in a population, quantify deployed model performance or establish independence between subgroups. Population p-values would not answer the question tested here.

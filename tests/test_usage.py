@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import io
 import json
 import unittest
+from contextlib import redirect_stdout
+from unittest.mock import patch
 from pathlib import Path
 
 from helpers import cleanup, construct_example, make_home
@@ -38,6 +41,10 @@ def codex_row(ts: str, inp: int, out: int, cached: int, reasoning: int) -> str:
 class TestAdapters(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp, self.paths = make_home()
+        for name, directory in (("CLAUDE_ROOT", "projects"), ("CODEX_ROOT", "sessions")):
+            fixture = patch.object(usage_mod, name, self.tmp / "account" / directory)
+            fixture.start()
+            self.addCleanup(fixture.stop)
         construct_example(self.tmp, self.paths)
 
     def tearDown(self) -> None:
@@ -97,7 +104,12 @@ class TestAdapters(unittest.TestCase):
         self.assertIsNone(usage_mod.estimate_cost(self.paths, totals, {}))
 
     def test_probe_reports_with_evidence_and_never_asks(self) -> None:
+        sessions = usage_mod.CLAUDE_ROOT / usage_mod._slug_for(self.paths.home)
+        sessions.mkdir(parents=True)
+        (sessions / "fixture.jsonl").write_text(claude_row(store_mod.utc_now(), "test-model", 100, 10, 5, 0) + "\n", encoding="utf-8")
         result = usage_mod.probe(self.paths)
+        self.assertTrue(result["adapters"]["claude"]["available"])
+        self.assertFalse(result["adapters"]["codex"]["available"])
         self.assertIn("claude", result["adapters"])
         self.assertIn("codex", result["adapters"])
         for data in result["adapters"].values():
@@ -106,8 +118,10 @@ class TestAdapters(unittest.TestCase):
             if data["available"]:
                 self.assertTrue(data["fields"])
                 self.assertGreater(data["sample_rows"], 0)
-        self.assertEqual(cli(["--home", str(self.paths.home), "usage", "probe"]), 0)
-        self.assertEqual(cli(["--home", str(self.paths.home), "usage", "show", "--days", "1"]), 0)
+        with redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(cli(["--home", str(self.paths.home), "usage", "probe"]), 0)
+            self.assertEqual(cli(["--home", str(self.paths.home), "usage", "show", "--days", "1"]), 0)
+        self.assertIn("100", output.getvalue())
 
     def test_bootstrap_records_the_probe_in_config(self) -> None:
         config = config_mod.load(self.paths)

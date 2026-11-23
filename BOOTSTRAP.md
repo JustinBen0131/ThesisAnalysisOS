@@ -2,20 +2,22 @@
 
 You are Codex or Claude Code, opened inside a fresh clone of ThesisAnalysisOS.
 Your job in this session is to set the OS up for the person in front of you,
-in one pass, and then stop. Nothing else.
+with one setup interview, then hand control back.
 
 ## What you may do in this session
 
 - Read any file in this clone.
 - Run the exact commands listed below.
-- Write exactly one file: `bootstrap/answers.json`.
-- After construction, run `./taos start` on the first task if the person asks.
+- Write `bootstrap/answers.json`. After a successful first construction,
+  tailor the newly generated kernel files as described in step 6.
+- Run `./taos start` on the first task if the person asks.
 
 ## What you may not do in this session
 
 - Touch anything outside this clone, except that `./taos bootstrap construct`
-  appends a marked block to `AGENTS.md`/`CLAUDE.md` in the workspaces the
-  person names, and installs hooks there if they say yes.
+  links the workspaces the person names and installs hooks according to
+  their answers. Step 6 also permits a read-only look at the primary
+  workspace.
 - Install anything, change global config, or run `taos panel on` (the person
   starts the panel themselves; it is theirs).
 - Create tasks by hand, edit `.taos/`, or improvise structure.
@@ -33,41 +35,24 @@ standard you build to.
 
 ## Step zero: make this repo theirs
 
-Before the questions, check whether this clone still points at someone else's
-remote:
+Before the questions, check whether the clone has a remote:
 
 ```bash
-git remote -v
+git remote
 ```
 
-If it shows a remote that is not the person's own, say this to them, plainly:
+If it has a remote and the person has not said they own a private copy,
+tell them to confirm that any remote they push to is private. A local-only
+checkout also works.
 
-> This clone still points at the original repository. This OS is meant to be
-> yours to rewrite: the policies, the questions, the guard rules, all of it.
-> Make it your own private repo first, so your operating state never mixes
-> with the codebases your colleagues see.
+Let them choose a private copy or a local-only checkout. The [manual](MANUAL.md#2-install-sixty-seconds)
+shows how to use the template, keep the upstream under a separate remote, or
+remove the remote for local use. Leave remote changes and any push to them.
 
-Then give them these commands and let them run them (do not run them
-yourself, the repo name and visibility are theirs to choose):
-
-```bash
-rm -rf .git && git init -b main
-git add -A && git commit -m "ThesisAnalysisOS: my instance"
-gh repo create <their-name>/<their-os-repo> --private --source=. --remote=origin --push
-```
-
-If they would rather keep the upstream to pull improvements, this instead:
-
-```bash
-git remote rename origin upstream
-gh repo create <their-name>/<their-os-repo> --private --source=. --remote=origin --push
-```
-
-The boundary that matters, and you should state it once: **this repo is
-private and holds the OS; their work repos receive only a four-line block in
-`AGENTS.md`, a `.taos-link.json`, and optionally the hook files.** Nothing
-else crosses. `policies/REPO_SPLIT.md` has the detail. If they ask you to
-vendor the OS into their work repo, say no and point at that file.
+The private OS clone holds the task state, rules and runtime. A linked work
+repo receives a marked block in its agent instructions and a `.taos-link.json`
+pointer, plus hooks or merge snippets if requested. See
+[The repo split](policies/REPO_SPLIT.md).
 
 ## The pass
 
@@ -75,7 +60,7 @@ vendor the OS into their work repo, say no and point at that file.
 
    ```bash
    python3 --version        # 3.9 or newer
-   ./taos selftest          # under a minute; every test passes
+   ./taos selftest
    ```
 
    If `./taos` is not executable, use `python3 taos` everywhere below.
@@ -103,15 +88,36 @@ vendor the OS into their work repo, say no and point at that file.
 3. Turn the answers into `bootstrap/answers.json`. The shape is
    `bootstrap/answers.schema.json`; a complete example is
    `bootstrap/answers.example.json`. Rules:
-   - `first_tasks`: each `title :: next action [:: P0..P3]` line becomes
-     `{"title", "next_action", "priority"}`.
-   - `workspaces`: absolute paths, expand `~`, mark one `primary`, and set
-     `agent` to `codex`, `claude`, or `any` per the person's answer to Q3.
+   - `first_tasks` uses the first two fields as `title` and `next_action`.
+     If the last optional `::` field is exactly `P0`, `P1`, `P2`, or `P3`,
+     map it to `priority`. The other optional field becomes `done_when`.
+     The parser example in Q8 becomes:
+
+     ```json
+     {
+       "title": "Fix the flaky parser tests",
+       "next_action": "run cargo test parser",
+       "done_when": "parser suite passes twice",
+       "priority": "P0"
+     }
+     ```
+
+     Omit optional fields that were left out. A task without a priority
+     starts at P2.
+   - For each repo named in Q3, add an entry to `workspaces`. Give it a
+     `name`, expand `~` to an absolute `path`, mark one `primary`, and set
+     `agent` to `codex`, `claude`, or `any`. If Q3 is blank or the person
+     takes its default, leave out `workspaces`. The OS clone itself is the
+     workspace and needs no link to itself.
    - `gates`: the person's own commands, or omit the key so the stack default
      is used. If they said which folders a check reads, write `domains` (each
      a `name` and its file `patterns`) and give the gate `depends_on` with
      those names. Add `"isolated": true` to a gate they asked to isolate.
-   - Leave out any key the person answered "default" for.
+   - For Q9, set `"install_hooks_in_workspaces": false` if the person opts out
+     of workspace hooks. The workspaces are still linked so the commands in
+     their TAOS blocks work manually.
+   - Fill required fields from the answers or their stated defaults. Leave
+     other keys out when the person takes their defaults.
 
 4. Validate, and fix anything it names:
 
@@ -122,7 +128,7 @@ vendor the OS into their work repo, say no and point at that file.
 5. Construct:
 
    ```bash
-   ./taos bootstrap construct --agent <codex|claude>
+   ./taos bootstrap construct --agent codex  # use claude if you are Claude Code
    ```
 
    Among other things this probes what token telemetry the machine writes
@@ -132,28 +138,38 @@ vendor the OS into their work repo, say no and point at that file.
    If neither is readable, say so plainly: the controller runs on its own
    signals and those fields stay null.
 
-   This writes `.taos/config.json`, renders `AGENTS.md` and `CLAUDE.md` for
-   this person, writes the project and principal kernels, creates the first
-   tasks, links the workspaces, pins the Codex hook paths, renders the first
-   brief, and runs the doctor. Show the person the doctor output verbatim.
+   Setup writes the config, creates missing task titles, prepares the agent
+   instructions and kernels, links named workspaces, renders the first brief,
+   and runs doctor. Show the doctor output verbatim and report the workspace
+   hook outcome. Existing hook settings can require a manual merge. Tell
+   the person which snippet or source settings file the output names for
+   review. Until the client loads the hooks, start sessions with the status
+   command from the workspace's TAOS block.
 
-6. Sharpen. Construction gives you a skeleton; this step gives it a mind.
-   You have licence, read-only, to look at the primary workspace: its layout,
-   build files, CI config, contributing guide, the last fifty commit subjects,
-   and the tests. From that, rewrite `kernels/PROJECT_KERNEL.md` so a cold
-   session knows what is load-bearing, what looks wrong but is correct, the
-   real commands, and the mistakes a newcomer makes. Rewrite
-   `kernels/PRINCIPAL_KERNEL.md` from their answers to #0, #6, #9 and #10:
-   how much rope they gave, what they reserve, what agents get wrong for
-   them, and the tone of their answers (terse people want terse agents).
-   Then `taos kernel refresh PROJECT_KERNEL --generator agent` and the same
-   for PRINCIPAL_KERNEL. Read `policies/OBJECTIVE.md` before you write a
-   word of either: it is what this OS is optimising for, and the kernels are
-   where that starts.
+   If links or doctor checks fail, setup reports an error. Some files or tasks
+   may already exist. Fix the reported issue before continuing. Repeating
+   setup can refresh unedited generated files and preserves edited kernels
+   and customized root instructions. Existing tasks and setup suggestions
+   appear once. Once a task has an ID, keep its original prefix in your answers.
 
-7. Tell them, in three lines, what changed on disk: the config, the tasks,
-   the workspace blocks, the two kernels you wrote and one thing in each they
-   should correct if you got it wrong. Then send the block in
+6. Sharpen the new kernels after the first successful setup. If construction
+   kept an existing kernel, preserve the person's edits. Read
+   `policies/OBJECTIVE.md` before editing. Use the workspace's layout, build
+   files, CI config, contributing guide, recent commit subjects, and tests
+   to write `kernels/PROJECT_KERNEL.md`. Include the actual commands and the
+   mistakes a newcomer is likely to make. Use answers #0, #6, #9, and #10
+   to write `kernels/PRINCIPAL_KERNEL.md`. Capture what the person reserves
+   for themselves, where they want autonomy, and what agents keep getting
+   wrong. From the OS clone, refresh the index entries you edited:
+
+   ```bash
+   ./taos kernel refresh PROJECT_KERNEL --generator agent
+   ./taos kernel refresh PRINCIPAL_KERNEL --generator agent
+   ```
+
+7. Briefly report the config, tasks, linked workspaces, and kernels you
+   created or updated. If a first task has no completion
+   criterion, propose one based on what you read. Then send the block in
    `bootstrap/TIPS.md` verbatim. It is written in your voice on purpose: it
    is the first time the system speaks for itself, and it tells them how to
    let you grow.
@@ -161,20 +177,24 @@ vendor the OS into their work repo, say no and point at that file.
 8. If they want to begin, start their first task:
 
    ```bash
-   ./taos start --agent <you> --task <PREFIX>-1 --session "<PREFIX>-1 | <short label>"
+   ./taos start --agent codex --task CMP-1 --session "CMP-1 | Fix parser tests"
    ```
 
-   Read the capsule it prints. It tells you where to work (worktree, branch,
-   commands). Then stop and hand control back.
+   Use your agent name and the actual first task ID in place of `codex` and
+   `CMP-1`. `start` claims the task and prints a capsule with its state,
+   next action, and the commands to enter its workspace, branch or worktree.
+   Run `./taos task show CMP-1` with the same ID to read the completion
+   criterion if supplied. Hand control back after reading the capsule.
 
 ## If something fails
 
 - `selftest` fails: report the failing test names and stop. Do not patch the
   OS to make them pass.
 - `validate` fails: fix `answers.json` from its message and re-run.
-- `construct` fails: report the message verbatim. It is designed to be
-  actionable. Do not partially construct by hand.
+- `construct` fails: show the message verbatim and use the reported failure
+  to decide what needs correcting. Wait for successful setup before sending
+  the tips or starting work.
 
-When you are done, the person's next session, in this clone or in any linked
-workspace, starts with `AGENTS.md` already tailored to them and
-`taos status --compact` already injected by the SessionStart hook.
+Next session, read the tailored instructions in the OS clone or the TAOS block
+in a linked workspace. If the client loaded the SessionStart hook, it prints
+status. Otherwise run the printed `status --compact` command yourself.

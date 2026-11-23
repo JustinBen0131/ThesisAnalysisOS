@@ -13,13 +13,21 @@ The predictions are written down in PREDICTIONS before anything runs. The
 script exits 1 if one of them fails. P7 came later, with the isolation it
 tests: it was committed to docs/METHOD.md before that code was written.
 
+Supplemental timings compare a warm in-process consultation to one direct,
+uncached check command on eight files. Ratios are computed within each pair
+on the same machine. Their sign intervals assume independent rounds with a
+common median; shared cache and machine load can correlate repeated rounds.
+
     python3 evals/reuse_frontier.py            the full run, about two minutes
+    python3 evals/reuse_frontier.py --verify   check the saved measurements without starting a clock
     python3 evals/reuse_frontier.py --write    also record the numbers with the bytes they were measured on
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import itertools
 import json
 import math
 import platform
@@ -138,37 +146,193 @@ def trace(edits: int, seed: int, files: int = 4) -> List[Tuple[int, int]]:
     return [(rng.randrange(FOLDERS), rng.randrange(files)) for _ in range(edits)]
 
 
-def isolation_cost(pairs: int = 40, seed: int = 7) -> Optional[Dict[str, Any]]:
-    """What isolating one execution adds: the same edit in two workspaces, one with its checks isolated, asked back to back.
+# The control always reads eight six-byte files, even when the measured tree grows.
+# Each round visits every size. Each group of six rounds balances all possible orders.
+FILES_PER_FOLDER = (4, 40, 400)
+UPKEEP_ROUNDS = 12
+ISOLATION_ROUNDS = 36
+TIMING_SCHEMA = "paired-reference-v1"
 
-    The two halves of a pair differ only in the isolation, and the order
-    within a pair alternates, so a drift of the machine cancels instead of
-    landing in the answer. Reported: the median difference, and the interval
-    between the order statistics that covers the median 95% of the time.
+
+def digest(data: Any) -> str:
+    encoded = json.dumps(data, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def median_interval(values: Sequence[float]) -> Dict[str, float]:
+    """Central order statistics for a two-sided sign interval on the median.
+
+    With n independent draws from a continuous distribution and rank k (one-based),
+    the probability outside [X(k), X(n+1-k)] is 2 * P(Bin(n, 1/2) < k).
+    Use the narrowest ranks with at least 95% coverage. Ties are conservative.
     """
-    homes = [Path(tempfile.mkdtemp(prefix="taos-reuse-")) for _ in range(2)]
-    try:
-        worlds = [World(homes[0], FOLDERS), World(homes[1], FOLDERS, isolate=True)]
-        for world in worlds:
-            world.consult(-1)
-        differences: List[float] = []
-        for step, (folder, index) in enumerate(trace(pairs, seed)):
-            seconds = [0.0, 0.0]
-            for which in ((0, 1) if step % 2 == 0 else (1, 0)):
-                worlds[which].edit(step, folder, index)
-                ran, seconds[which] = worlds[which].consult(step)
-                if ran != 1:
-                    return None          # each edit is meant to rerun exactly one check
-            differences.append(seconds[1] - seconds[0])
-        differences.sort()
-        count = len(differences)
-        low = max(1, int(math.floor((count - 1.96 * math.sqrt(count)) / 2)))
-        high = min(count, int(math.ceil(1 + (count + 1.96 * math.sqrt(count)) / 2)))
-        return {"pairs": count, "median_seconds": statistics.median(differences), "low_seconds": differences[low - 1],
-                "high_seconds": differences[high - 1], "network_and_workspace_closed": gates.closes()}
-    finally:
-        for home in homes:
-            shutil.rmtree(str(home), ignore_errors=True)
+    ordered = sorted(values)
+    n = len(ordered)
+    if n < 6 or any(not math.isfinite(value) for value in ordered):
+        raise ValueError("a finite 95% median interval requires at least six finite observations")
+    tail, rank = 1, 1
+    while 40 * (tail + math.comb(n, rank)) <= 2 ** n:
+        tail += math.comb(n, rank)
+        rank += 1
+    return {"median": statistics.median(ordered), "low": ordered[rank - 1], "high": ordered[-rank],
+            "rank": rank, "coverage": 1 - 2 * tail / (2 ** n)}
+
+
+def workload(run: Dict[str, Any]) -> Dict[str, Any]:
+    seed, edits = run["seed"], run["edits"]
+    if type(seed) is not int or type(edits) is not int or edits < 1:
+        raise ValueError("expected a seeded, nonempty edit trace")
+    if (run["checks"], run["folders"], run["relied_on"]) != (CHECKS, FOLDERS, CHECKS * edits):
+        raise ValueError("workload dimensions differ from the edit trace")
+    return {"seed": seed, "edits": edits, "checks": CHECKS, "folders": FOLDERS,
+            "edit_trace_sha256": digest(trace(edits, seed)),
+            "initial_file_contents": "start\n", "upkeep_domains": 6,
+            "files_per_folder": list(FILES_PER_FOLDER), "upkeep_rounds": UPKEEP_ROUNDS,
+            "isolation_rounds": ISOLATION_ROUNDS, "isolation_domains": FOLDERS,
+            "reference": "uncached command for check 0 on two folders with four files each",
+            "consultation": "one in-process gates.run for six checks; initial verification excluded"}
+
+
+def balanced_orders(arms, rounds, rng):
+    """Randomize complete sets of permutations so each arm occupies each position equally often."""
+    permutations = list(itertools.permutations(arms))
+    if rounds % len(permutations):
+        raise ValueError("a balanced design requires complete sets of orders")
+    result = []
+    for _ in range(rounds // len(permutations)):
+        rng.shuffle(permutations)
+        result.extend(permutations)
+    return result
+
+
+def timing_schedule(seed: int):
+    rng = random.Random(seed)
+    sizes = balanced_orders(FILES_PER_FOLDER, UPKEEP_ROUNDS, rng)
+    orders = {size: balanced_orders(("ask", "reference"), UPKEEP_ROUNDS, rng) for size in FILES_PER_FOLDER}
+    for block, order in enumerate(sizes):
+        for size in order:
+            yield {"study": "upkeep", "block": block, "files": FOLDERS * size, "order": list(orders[size][block])}
+    triples = balanced_orders(("open", "isolated", "reference"), ISOLATION_ROUNDS, rng)
+    for block, (order, edit) in enumerate(zip(triples, trace(ISOLATION_ROUNDS, seed))):
+        yield {"study": "isolation", "block": block, "edit": list(edit), "order": list(order)}
+
+
+def uncached_reference(world: World) -> float:
+    """Run the actual check command directly. Its independent execution log must grow by one."""
+    command = world.command(0)
+    before = world.executions(0)
+    start = time.perf_counter()
+    code, _ = gates._execute(command, world.work, timeout=1800)
+    elapsed = time.perf_counter() - start
+    if code or world.executions(0) != before + 1:
+        raise ValueError("uncached reference did not complete exactly one check")
+    return elapsed
+
+
+def observe_timing(seed: int) -> List[Dict[str, Any]]:
+    with tempfile.TemporaryDirectory(prefix="taos-reuse-") as tmp:
+        def world(name, domains, **kwargs):
+            home = Path(tmp) / name
+            home.mkdir()
+            return World(home, domains, **kwargs)
+
+        control = world("control", FOLDERS)
+        trees = {FOLDERS * size: world("tree-" + str(size), 6, files=size) for size in FILES_PER_FOLDER}
+        arms = {name: world(name, FOLDERS, isolate=(name == "isolated")) for name in ("open", "isolated")}
+        for workspace in [*trees.values(), *arms.values()]:
+            workspace.consult(-1)
+        uncached_reference(control)
+        observations = []
+        for planned in timing_schedule(seed):
+            upkeep = planned["study"] == "upkeep"
+            if not upkeep:
+                for workspace in arms.values():
+                    workspace.edit(planned["block"], *planned["edit"])
+            seconds = {}
+            for arm in planned["order"]:
+                if arm == "reference":
+                    seconds[arm] = uncached_reference(control)
+                else:
+                    target = trees[planned["files"]] if upkeep else arms[arm]
+                    ran, seconds[arm] = target.consult(planned["block"])
+                    if ran != (0 if upkeep else 1):
+                        raise ValueError("timing arm executed an unexpected number of checks")
+            observations.append(dict(planned, seconds=seconds))
+        return observations
+
+
+def summarize_timing(run: Dict[str, Any], observations: list, conditions: dict) -> Dict[str, Any]:
+    """Validate the recorded experiment design before deriving every quoted number."""
+    schedule = list(timing_schedule(run["seed"]))
+    if not isinstance(observations, list) or len(observations) != len(schedule):
+        raise ValueError("timing record is missing observations")
+    trees = {FOLDERS * size: [] for size in FILES_PER_FOLDER}
+    reference, deltas, overhead = [], [], []
+    for planned, row in zip(schedule, observations):
+        if not isinstance(row, dict) or {k: v for k, v in row.items() if k != "seconds"} != planned:
+            raise ValueError("timing observation differs from its scheduled block or order")
+        seconds = row.get("seconds")
+        if not isinstance(seconds, dict) or set(seconds) != set(planned["order"]):
+            raise ValueError("timing observation lacks the scheduled arms")
+        if any(type(v) not in (int, float) or not math.isfinite(v) or v <= 0 for v in seconds.values()):
+            raise ValueError("each elapsed time must be positive and finite")
+        reference.append(seconds["reference"])
+        if planned["study"] == "upkeep":
+            trees[planned["files"]].append(seconds)
+        else:
+            delta = seconds["isolated"] - seconds["open"]
+            deltas.append(delta)
+            overhead.append(delta / seconds["reference"])
+
+    finest = max((row for row in run["rows"] if "domain(s) declared" in row["policy"]),
+                 key=lambda row: int(row["policy"].split()[1]))
+    spared = CHECKS - finest["executions"] / run["edits"]
+    sizes = []
+    for files, pairs in trees.items():
+        elapsed = statistics.median(p["ask"] for p in pairs)
+        sizes.append({"files": files, "input_bytes": files * len(b"start\n"), "seconds": elapsed,
+                      "break_even_check_seconds": elapsed / spared if spared > 0 else None,
+                      "reference_ratio": median_interval([p["ask"] / p["reference"] for p in pairs])})
+    # Each list is in block order, so this compares tree sizes within the same round.
+    small, large = trees[min(trees)], trees[max(trees)]
+    growth = median_interval([b["ask"] / a["ask"] for a, b in zip(small, large)])
+    delta = median_interval(deltas)
+    return {"upkeep": sizes, "checks_spared_per_consultation": spared,
+            "seconds_per_execution": statistics.median(reference), "large_to_small_time_ratio": growth,
+            "isolating_one_execution": {"pairs": len(deltas), "median_seconds": delta["median"],
+                                        "low_seconds": delta["low"], "high_seconds": delta["high"],
+                                        "network_and_workspace_closed": conditions["network_and_workspace_closed"],
+                                        "added_reference_ratio": median_interval(overhead)}}
+
+
+def timing_record(run: Dict[str, Any]) -> Dict[str, Any]:
+    design = workload(run)
+    observations = observe_timing(run["seed"])
+    conditions = {"system": platform.system(), "release": platform.release(), "architecture": platform.machine(),
+                  "python": platform.python_version(), "clock": "time.perf_counter", "cache": "warmed",
+                  "concurrent_machine_load": "uncontrolled", "network_and_workspace_closed": gates.closes()}
+    dataset = {"schema": TIMING_SCHEMA, "workload": design, "conditions": conditions, "observations": observations}
+    return dict(dataset, dataset_sha256=digest(dataset), **summarize_timing(run, observations, conditions))
+
+
+def verify_timing(run: Dict[str, Any]) -> None:
+    """Check dataset identity, matched ordering and derived values. No local clocks are sampled."""
+    timing = run.get("timing")
+    if not isinstance(timing, dict) or timing.get("schema") != TIMING_SCHEMA:
+        raise ValueError("saved record has no raw timings in the paired-reference format")
+    if timing.get("workload") != workload(run):
+        raise ValueError("timing workload differs from the recorded edit trace")
+    conditions = timing.get("conditions")
+    required = ("system", "release", "architecture", "python", "clock", "cache", "concurrent_machine_load")
+    if (not isinstance(conditions, dict) or not all(isinstance(conditions.get(k), str) and conditions[k] for k in required)
+            or type(conditions.get("network_and_workspace_closed")) is not bool):
+        raise ValueError("timing record is missing measurement conditions")
+    dataset = {k: timing.get(k) for k in ("schema", "workload", "conditions", "observations")}
+    if timing.get("dataset_sha256") != digest(dataset):
+        raise ValueError("timing dataset fingerprint differs from its raw observations or conditions")
+    for key, value in summarize_timing(run, timing["observations"], conditions).items():
+        if timing.get(key) != value:
+            raise ValueError("summary differs from raw timings: " + key)
 
 
 def expected(edit_trace: Sequence[Tuple[int, int]], k: int) -> int:
@@ -182,14 +346,13 @@ def measure(edit_trace: Sequence[Tuple[int, int]], k: int, tasks: int = 1, hide:
     try:
         world = World(tmp, k, tasks=tasks, hide=hide, isolate=isolate)
         world.consult(-1)                                   # the first verification of everything is not counted
-        executions, wrong, samples = 0, 0, []
+        executions, wrong = 0, 0
         for step, (folder, index) in enumerate(edit_trace):
             world.edit(step, folder, index)
-            ran, seconds = world.consult(step)
+            ran, _ = world.consult(step)
             executions += ran
             wrong += world.stale_relied_on()
-            samples.append((ran, seconds))
-        return {"executions": executions, "wrong": wrong, "samples": samples}
+        return {"executions": executions, "wrong": wrong}
     finally:
         shutil.rmtree(str(tmp), ignore_errors=True)
 
@@ -226,38 +389,16 @@ def window(edit_trace: Sequence[Tuple[int, int]], every: int) -> Dict[str, int]:
     return {"executions": executions, "wrong": wrong}
 
 
-def upkeep(files: int, repeats: int = 5) -> Dict[str, float]:
-    """Seconds to ask "does everything still hold?" when nothing changed, for a workspace of a given size."""
-    tmp = Path(tempfile.mkdtemp(prefix="taos-reuse-"))
-    try:
-        world = World(tmp, 6, files=files)
-        world.consult(-1)
-        asked = [world.consult(0)[1] for _ in range(repeats)]
-        return {"files": FOLDERS * files, "seconds": statistics.median(asked)}
-    finally:
-        shutil.rmtree(str(tmp), ignore_errors=True)
-
-
-def line_fit(samples: Sequence[Tuple[int, float]]) -> Tuple[float, float]:
-    """Least squares for seconds = base + per_check * executions."""
-    xs, ys = [float(ran) for ran, _ in samples], [seconds for _, seconds in samples]
-    mean_x, mean_y = statistics.mean(xs), statistics.mean(ys)
-    spread = sum((x - mean_x) ** 2 for x in xs)
-    slope = sum((x - mean_x) * (y - mean_y) for x, y in zip(xs, ys)) / spread if spread else 0.0
-    return mean_y - slope * mean_x, slope
-
-
 def experiment(edits: int = 60, seed: int = 7, ks: Sequence[int] = GRANULARITIES, timing: bool = True) -> Dict[str, Any]:
     edit_trace = trace(edits, seed)
     oracle = expected(edit_trace, FOLDERS)
     rows: List[Dict[str, Any]] = [{"policy": "rerun everything", "executions": CHECKS * edits, "wrong": 0}]
     for every in WINDOWS:
         rows.append(dict(window(edit_trace, every), policy="rerun when older than {0} consultations".format(every)))
-    by_k, pooled = {}, []
+    by_k = {}
     for k in ks:
         found = measure(edit_trace, k)
         by_k[k] = dict(found, expected=expected(edit_trace, k))
-        pooled += found["samples"]
         rows.append({"policy": "TAOS, {0} domain(s) declared".format(k), "executions": found["executions"], "wrong": found["wrong"],
                      "expected": by_k[k]["expected"]})
     rows.append({"policy": "oracle (knows what every check reads)", "executions": oracle, "wrong": 0})
@@ -286,16 +427,7 @@ def experiment(edits: int = 60, seed: int = 7, ks: Sequence[int] = GRANULARITIES
                               "rows": rows, "predictions": {key: {"text": PREDICTIONS[key], "held": held[key]} for key in PREDICTIONS},
                               "environment": {"python": platform.python_version(), "platform": platform.platform()}}
     if timing:
-        base, per_check = line_fit(pooled)
-        sizes = [upkeep(files) for files in (4, 40, 400)]
-        spared = CHECKS - by_k[finest]["executions"] / float(edits)      # checks not rerun per consultation
-        for size in sizes:
-            size["break_even_check_seconds"] = size["seconds"] / spared
-        result["timing"] = {"seconds_when_something_reran": base, "seconds_per_execution": per_check, "upkeep": sizes,
-                            "checks_spared_per_consultation": spared}
-        added = isolation_cost()
-        if added is not None:
-            result["timing"]["isolating_one_execution"] = added
+        result["timing"] = timing_record(result)
     return result
 
 
@@ -310,14 +442,13 @@ def report(result: Dict[str, Any]) -> str:
         out.append("  {0} {1}  {2}".format(key, "held  " if item["held"] else "FAILED", item["text"]))
     timing = result.get("timing")
     if timing:
-        added = timing.get("isolating_one_execution")
-        out += ["", "  On this machine one execution of these small checks costs {0:.1f} ms{1}, and asking costs:".format(
-            1000 * timing["seconds_per_execution"],
-            "" if added is None else "; isolating it adds {0:.1f} ms, the median of {1} paired runs (95% interval {2:.1f} to {3:.1f} ms)".format(
-                1000 * added["median_seconds"], added["pairs"], 1000 * added["low_seconds"], 1000 * added["high_seconds"]))]
-        for size in timing["upkeep"]:
-            out.append("    {0:>5} files: {1:6.1f} ms to ask when nothing changed; reuse pays for any check slower than {2:.1f} ms".format(
-                size["files"], 1000 * size["seconds"], 1000 * size["break_even_check_seconds"]))
+        from claims import timing_claims
+        out.extend(["", "  Supplemental timings for this workload on the recorded machine."])
+        out.extend("  " + label + ": " + value for label, value in timing_claims(result).items())
+        if timing.get("schema") == TIMING_SCHEMA:
+            growth = timing["large_to_small_time_ratio"]
+            out.append("  Largest/smallest tree consultation time within each round: "
+                       "{median:.2g}× (95% median interval {low:.2g} to {high:.2g}).".format(**growth))
     return "\n".join(out)
 
 
@@ -326,14 +457,32 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser.add_argument("--edits", type=int, default=60)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--no-timing", action="store_true")
-    parser.add_argument("--write", action="store_true", help="record the numbers with the bytes they were measured on")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--verify", action="store_true", help="verify the saved timing data, summaries and source fingerprints without measuring again")
+    mode.add_argument("--write", action="store_true", help="record the numbers with the bytes they were measured on")
     args = parser.parse_args(argv)
+    if args.verify:
+        try:
+            run = json.loads(RECORD.read_text(encoding="utf-8"))
+            verify_timing(run)
+            if run.get("measured_on", {}).get("patterns") != sorted(STANDS_ON):
+                raise ValueError("saved source declaration differs from this experiment")
+            verdict = measured.standing(run)
+            if verdict["state"] != "holds":
+                raise ValueError(verdict["reason"])
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            print("Could not verify recorded timings: " + str(exc), file=sys.stderr)
+            return 1
+        print("Verified source fingerprints, timing dataset, paired orders and derived summaries.")
+        return 0
+    if args.edits < 1:
+        parser.error("--edits must be positive")
     result = experiment(edits=args.edits, seed=args.seed, timing=not args.no_timing)
     print(report(result))
     if args.write:
         result["measured_on"] = measured.stamp(STANDS_ON)
         RECORD.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        print("recorded in {0}".format(RECORD.relative_to(REPO)))
+        print("recorded in {0}".format(RECORD))
     return 0 if all(item["held"] for item in result["predictions"].values()) else 1
 
 

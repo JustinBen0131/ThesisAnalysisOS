@@ -1,0 +1,100 @@
+/* The document follows the reader's system until they choose an appearance. */
+.reader-appearance[hidden] { display: none; }
+.reader-appearance {
+  display: inline-flex; align-items: center; gap: .38rem;
+  color: var(--soft); font: 500 .78rem/1.2 var(--sans);
+}
+.reader-appearance select {
+  min-height: 2.35rem; padding: .25rem .26rem .25rem .45rem;
+  font: 600 .81rem/1.2 var(--sans); color: var(--ink); background: var(--card);
+  border: 1px solid var(--soft); border-radius: .38rem; cursor: pointer;
+}
+.reader-appearance select:focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+@media (max-width: 48rem) {
+  .reader-appearance { flex-direction: column; align-items: flex-start; gap: .05rem; font-size: .69rem; }
+  .reader-appearance select { min-height: 1.85rem; }
+  .top .wrap, .top nav { flex-wrap: wrap; }
+}
+@media (max-width: 34rem) {
+  .top nav:has(.reader-appearance:not([hidden])) {
+    display: grid; grid-template-columns: auto auto; gap: 0 .75rem; padding-block: .25rem;
+  }
+  .top nav:has(.reader-appearance:not([hidden])) a { grid-column: 1; line-height: 1.55rem; }
+  .top nav .reader-appearance { grid-column: 2; grid-row: 1 / 3; }
+  .reader-appearance select { min-height: 2.1rem; }
+}
+@media (max-width: 23rem) {
+  .top .wrap:has(.reader-appearance:not([hidden])) { padding-inline: .65rem; }
+  .top nav:has(.reader-appearance:not([hidden])) { gap: 0 .45rem; }
+}
+@media print { .reader-appearance { display: none; } }
+
+/* Every pair gives the paper edition first and the original night edition second. */
+@supports (color: light-dark(black, white)) {
+  @media screen {
+    :root {
+      color-scheme: light dark;
+      --paper: light-dark(#f7f6ed, #08110d);
+      --card: light-dark(#fffef8, #0d1914);
+      --ink: light-dark(#182b22, #e9efe9);
+      --soft: light-dark(#455c50, #9bada3);
+      --line: light-dark(#c6cfc1, #1d2d26);
+      --edge: light-dark(#809386, #34483e);
+      --link: light-dark(#215f45, #e3bd6a);
+      --holds: light-dark(#236044, #6fd3a0);
+      --stale: light-dark(#82460b, #f2a23a);
+      --fails: light-dark(#963e35, #ef8f80);
+      --unknown: light-dark(#40576b, #a3b3c2);
+      --field: light-dark(#e9eee2, #13291f);
+      --on-accent: light-dark(#fffef8, #10160f);
+      --accent-hover: light-dark(#174630, #f1d08a);
+    }
+    :root[data-reader-theme="light"] { color-scheme: light; }
+    :root[data-reader-theme="dark"] { color-scheme: dark; }
+    .top { background: light-dark(rgb(247 246 237 / .96), rgb(8 17 13 / .88)); }
+    .foot { background: light-dark(#e9eee4, #060d0a); }
+    .document .hero.slim, .home .example-routes { background-color: light-dark(#edf0e7, transparent); }
+    .hero.living .lead, ul.three p { color: light-dark(#344d40, #cdd8d0); }
+    .home .film-entry { color: light-dark(#215f45, #f4dfae); }
+    .home .film-entry-title { text-decoration-color: light-dark(#678773, #9d854f); }
+    .home .film-premise { color: light-dark(#355140, #c5d0c7); }
+    .home .film-duration { color: light-dark(#475d50, #aab9ae); }
+    .skip, .button:not(.ghost), .reuse-play .reuse-ctl button:not(.quiet),
+    .reuse-play .reuse-folder.changed, .reuse-play .reuse-folder.changed:not(:disabled):hover { color: var(--on-accent); }
+    .button:not(.ghost):hover, .reuse-play .reuse-ctl button:not(.quiet):hover {
+      background: var(--accent-hover); border-color: var(--accent-hover);
+    }
+    .button.ghost:hover { background: light-dark(#e1eadb, rgb(227 189 106 / .12)); }
+    .stepnav button[aria-current="step"] span { color: light-dark(#d7e5d9, #4c5b52); }
+    .model-result .result-failed { color: light-dark(#914632, #edaa85); }
+    .comparison-label { color: var(--soft); }
+
+    /* Keep the instrument, motion picture and captured outputs on their calibrated dark fields. */
+    .mind-page, .film-frame, .term, .command-block, .demo-facts, .lesson-log, .reuse-unit, .first-game__field {
+      color-scheme: dark;
+    }
+    .mind-page, .lesson-log, .reuse-unit { color: var(--ink); }
+    .copy-status { color: var(--panel-ink); }
+
+    .first-game { background: light-dark(#f0f3e9, #0c1913); border-color: light-dark(#92a795, #455c50); }
+    .first-game > summary { background: linear-gradient(100deg, light-dark(#e1eadb, #15291e), light-dark(#f0f3e8, #0f1e17) 82%); }
+    .first-game__change { background: var(--field); border-color: light-dark(#9cab95, #355441); }
+    .first-game__card { background: light-dark(#fffef8, #101e17); border-color: light-dark(#a5b29f, #3b5044); }
+    .first-game__choice:hover { background: light-dark(#e9eee0, #172a20); }
+    .first-game__choice:has(input:checked) { background: light-dark(#dfe9d8, #263325); }
+    .first-game__inputs code { background: light-dark(#e8eddc, #132a20); border-color: light-dark(#a5b29f, #355441); }
+    .lesson-bench { background-color: light-dark(#fffef8, transparent); }
+
+    .transit-exhibit {
+      --transit-rail: light-dark(#728675, #52665a);
+      --transit-warm: light-dark(#80521b, #efd08f);
+      --transit-mint: light-dark(#235f43, #addec2);
+    }
+    .transit-intro { background: radial-gradient(ellipse at 81% 0%, light-dark(#dae6d7, #183529), var(--paper) 65%); }
+    .transit-ledger { background: light-dark(#fffef8, #101f18); }
+    .transit-ledger > p { color: light-dark(#40584a, #c5d1c7); }
+    .transit-rule { background: light-dark(#e8eee0, #111f17); }
+    .transit-decision { background: light-dark(#f3ecd8, #211d11); }
+    .transit-state[data-standing="stale"] { color: light-dark(#82460b, #ffc270); }
+  }
+}

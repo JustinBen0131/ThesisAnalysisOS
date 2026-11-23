@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TAOS: start here</title>
+<style>
+  :root { --bg:#f7f6f2; --card:#fff; --ink:#1c1b19; --soft:#5d5a54; --line:#e2dfd7; --go:#1f7a3d; --go-bg:#e3f3e7;
+          --warn:#8a5a00; --warn-bg:#fbefd2; --bad:#a3271b; --bad-bg:#fbe6e3; --dim:#55524c; --dim-bg:#ebe8e0; --accent:#b4441b; --on-accent:#fff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#151514; --card:#1f1f1d; --ink:#ecebe6; --soft:#a5a199; --line:#33322f; --go:#7fd69a; --go-bg:#173323;
+            --warn:#f0c56a; --warn-bg:#3a2e12; --bad:#ff9d91; --bad-bg:#3d1a16; --dim:#b9b5ac; --dim-bg:#2c2b28; --accent:#ff9a6b; --on-accent:#1c1b19; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; }
+  main { max-width:560px; margin:0 auto; padding:28px 16px 56px; }
+  h1 { font-size:32px; line-height:1.1; margin:0 0 14px; }
+  .lede { font-size:19px; margin:0 0 14px; }
+  section { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin:10px 0; }
+  section[hidden] { display:none; }
+  #try { border-color:var(--ink); padding:18px 18px 14px; }
+  h2 { font-size:18px; margin:0 0 8px; }
+  .soft { color:var(--soft); font-size:15px; margin:8px 0 0; }
+  .result { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .label { font-size:13px; letter-spacing:.06em; text-transform:uppercase; color:var(--soft); margin:0 0 6px; }
+  #t-result { font:700 24px/1.2 ui-monospace,Menlo,Consolas,monospace; transition:opacity .25s; } #t-word { font-size:24px; }
+  #t-result.doubt { opacity:.45; } #t-result.wrong { opacity:.45; text-decoration:line-through; }
+  .file { margin:10px 0 2px; font:15px ui-monospace,Menlo,Consolas,monospace; color:var(--soft); }
+  #t-data { color:var(--ink); border-radius:6px; padding:1px 4px; }
+  @media (prefers-reduced-motion: no-preference) { #t-data.flash { animation:flash 1.2s ease-out; } }
+  @keyframes flash { from { background:var(--warn-bg); } to { background:transparent; } }
+  #t-means { min-height:3em; margin:8px 0 10px; }
+  #t-take { margin:14px 0 10px; font-weight:600; }
+  @media (prefers-reduced-motion: no-preference) { .word.pop { animation:pop .35s ease-out; } }
+  @keyframes pop { 50% { transform:scale(1.14); } }
+  .link { background:none; border:0; padding:0; font:inherit; color:var(--soft); text-decoration:underline; cursor:pointer; }
+  input[type=text] { width:100%; font:inherit; padding:10px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--ink); }
+  input[type=text]:focus-visible, button:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  .list { max-height:150px; overflow:auto; margin-top:8px; border:1px solid var(--line); border-radius:10px; }
+  .list:empty { display:none; }
+  .list button { display:block; width:100%; text-align:left; font:inherit; padding:7px 12px; background:none; border:0;
+                 border-bottom:1px solid var(--line); color:var(--ink); cursor:pointer; }
+  .list button:last-child { border-bottom:0; } .list button:hover { background:var(--bg); }
+  .pick { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+  .chip { font:inherit; font-size:16px; color:var(--ink); background:none; border:1px solid var(--line); border-radius:999px; padding:6px 13px; cursor:pointer; user-select:none; }
+  .chip.on { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .plan { border-color:var(--ink); } #plan { margin:0 0 10px; }
+  button.main { font:inherit; font-weight:700; padding:11px 20px; border-radius:12px; border:0; background:var(--accent); color:var(--on-accent); cursor:pointer; }
+  button.main:disabled { opacity:.45; cursor:default; }
+  .word { display:inline-block; font-weight:700; padding:1px 9px; border-radius:999px; }
+  .word.big { font-size:28px; padding:4px 18px; transition:background .25s, color .25s; }
+  .holds { color:var(--go); background:var(--go-bg); } .fails { color:var(--bad); background:var(--bad-bg); }
+  .stale { color:var(--warn); background:var(--warn-bg); } .unknown { color:var(--dim); background:var(--dim-bg); }
+  #now p { margin:8px 0; } .why { color:var(--soft); font-size:15px; } #act { margin-top:10px; }
+  pre { white-space:pre-wrap; word-break:break-word; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:9px 12px;
+        font:14px/1.45 ui-monospace,Menlo,Consolas,monospace; margin:6px 0; }
+  code { font:14px ui-monospace,Menlo,Consolas,monospace; background:var(--bg); border:1px solid var(--line); padding:2px 6px; border-radius:6px; word-break:break-word; }
+  .row { display:flex; gap:10px; align-items:flex-start; margin:12px 0; } .row > div { flex:1; min-width:0; }
+  .row .say { margin-bottom:4px; }
+  .small { font:inherit; font-size:14px; padding:6px 12px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; }
+  .refused { color:var(--bad); background:var(--bad-bg); border-radius:10px; padding:10px 12px; margin-top:10px; white-space:pre-wrap; }
+  details { margin-top:10px; } summary { cursor:pointer; color:var(--soft); font-size:15px; }
+  .add { display:flex; gap:8px; margin-top:6px; } .add input { flex:1; min-width:0; font-size:15px; }
+  ul.plain { list-style:none; padding:0; margin:6px 0; } ul.plain li { margin:4px 0; }
+  hr { border:0; border-top:1px solid var(--line); margin:14px 0 4px; }
+  footer { color:var(--soft); font-size:14px; margin-top:18px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>What still holds?</h1>
+
+  <section id="try" hidden>
+    <p class="lede">A result holds until a file under it changes.</p>
+    <p class="label">Try it on a practice result</p>
+    <div class="result"><span id="t-result">average = 4.0</span><span id="t-word" class="word big holds">holds</span></div>
+    <p class="file">made from data.csv: <span id="t-data">3, 4, 5</span></p>
+    <p id="t-means" aria-live="polite">It matches its data, so it holds.</p>
+    <button class="main" id="t-go" type="button">Change the data</button>
+    <p id="t-take" hidden>TAOS keeps that word for every result in your folder. Your assistants read it first.</p>
+    <button class="main" id="t-next" type="button" hidden>Now your folder</button>
+    <details id="t-real"><summary>These are real files</summary><p class="soft" id="t-where"></p></details>
+  </section>
+
+  <section id="done" hidden>
+    <h2 id="done-title"></h2>
+    <div id="now" aria-live="polite" hidden>
+      <p><span id="big" class="word big unknown">unknown</span></p>
+      <p id="means"></p>
+      <div id="rows"></div>
+      <div id="act"></div>
+    </div>
+    <details id="printed" hidden><summary>What the check printed</summary><div id="tails"></div></details>
+    <hr id="rule">
+    <div id="next"></div>
+    <details id="more"><summary>Add a check</summary>
+      <p class="soft">A command that passes when your work is right.</p>
+      <div class="add"><input type="text" id="mine" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="python3 analysis/check.py" aria-label="A check of your own"><button class="small" id="add" type="button">Add it</button></div>
+    </details>
+    <details><summary>What TAOS wrote, and undo</summary>
+      <ul class="plain" id="written"></ul>
+      <p class="soft" id="undo"></p>
+    </details>
+  </section>
+
+  <section id="s-folder" hidden>
+    <h2>Your folder</h2>
+    <input type="text" id="folder" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Folder">
+    <div class="pick" id="likely" aria-label="Folders that look like your work"></div>
+    <div class="list" id="folders" aria-label="Folders to pick from"></div>
+    <p class="soft" id="seen" hidden></p>
+  </section>
+
+  <section id="s-who" hidden>
+    <h2>Your assistants</h2>
+    <input type="text" id="who" autocomplete="off" spellcheck="false" placeholder="Type any names: Claude, Cursor, ..." aria-label="Assistants">
+    <div class="pick" id="chips" aria-label="Assistants named so far"></div>
+  </section>
+
+  <section class="plan" id="s-plan" hidden>
+    <p id="plan" aria-live="polite"></p>
+    <button class="main" id="go" disabled>Set it up</button>
+    <p class="soft" id="same"></p>
+    <div id="refused" class="refused" hidden></div>
+  </section>
+
+  <footer>Runs on this computer only. Nothing is sent anywhere. <button class="link" id="again" type="button" hidden>Practice again</button></footer>
+</main>
+<script>
+const KEY = "__KEY__";
+const OFFERED = ["Claude", "Codex", "ChatGPT", "Gemini"];
+const $ = id => document.getElementById(id);
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; };
+const get = async (route, asked) => (await fetch(route + "?" + new URLSearchParams(Object.assign({ key: KEY }, asked)))).json();
+const post = async (route, body) => {
+  try { return await (await fetch(route, { method: "POST", headers: { "Content-Type": "application/json", "X-TAOS-Key": KEY }, body: JSON.stringify(body) })).json(); }
+  catch (e) { return { refused: "The page lost touch with TAOS. Start it again." }; } };
+const recall = () => { try { return JSON.parse(localStorage.getItem("taos.welcome") || "{}"); } catch (e) { return {}; } };
+const remember = () => { try { localStorage.setItem("taos.welcome", JSON.stringify({ who: $("who").value })); } catch (e) {} };
+const button = (text, cls, does) => { const b = el("button", text, cls); b.type = "button"; b.onclick = () => does(b); return b; };
+let names = [], elsewhere = "", asked = 0, watching = null, drawn = "", offered = [], wait, pace = 3000, due;
+const soon = fn => { clearTimeout(wait); wait = setTimeout(fn, 220); };
+if (recall().who) $("who").value = recall().who;
+
+// The try: a practice result on real files. One button: change the data, check it, redo the result.
+const TRY = { holds: ["Change the data", "change"], stale: ["Check it", "check"], unknown: ["Check it", "check"], fails: ["Redo the result", "redo"] };
+function paint(got) {
+  if (!got || got.refused) { if (got) $("t-means").textContent = got.refused; return; }
+  const word = got.word, files = (got.why || "").split("changed since it passed: ")[1], data = $("t-data");
+  $("t-result").textContent = got.result; $("t-result").className = word === "holds" ? "" : word === "fails" ? "wrong" : "doubt";      // the number fades when it is no longer known
+  if (data.textContent !== got.data) { data.textContent = got.data; data.classList.remove("flash"); void data.offsetWidth; data.classList.add("flash"); }
+  $("t-word").className = "word big " + word + ($("t-word").textContent !== word ? " pop" : ""); $("t-word").textContent = word;
+  $("t-means").textContent = word === "holds" ? (got.rounds ? "Redone from the new data. It holds again." : "It matches its data, so it holds.")
+    : word === "stale" && files ? files + " changed. Nobody has checked since." : got.said ? "Checked. " + got.said : got.why || "";
+  $("t-go").textContent = TRY[word][0]; $("t-go").dataset.does = TRY[word][1];
+  $("t-take").hidden = !got.rounds; $("t-next").hidden = !got.rounds || !!watching;      // tried once: the way on is their own folder
+  $("t-go").className = got.rounds && !watching ? "small" : "main";
+  if ($("t-where").dataset.at !== got.folder) { $("t-where").dataset.at = got.folder; $("t-where").replaceChildren("Edit data.csv there and watch the word: ", el("code", got.folder)); }
+}
+async function tryit(does) {
+  const b = $("t-go"); b.disabled = true;
+  let got; try { got = does ? await post("/api/try", { do: does }) : await get("/api/try"); } catch (e) { got = null; }
+  paint(got); b.disabled = false;
+}
+$("t-go").onclick = () => tryit($("t-go").dataset.does || "change");
+$("t-next").onclick = () => { $("s-folder").scrollIntoView({ behavior: "smooth", block: "start" }); $("folder").focus({ preventScroll: true }); };
+$("again").onclick = () => { $("try").hidden = false; $("again").hidden = true; tryit(""); window.scrollTo({ top: 0, behavior: "smooth" }); };
+setInterval(() => { if (!$("try").hidden && $("t-real").open && !document.hidden) get("/api/try").then(paint, () => {}); }, 3000);
+
+// Two views: someone new sees the try and two questions; a project this copy keeps opens on its word.
+function view(mine) { $("try").hidden = mine; $("s-folder").hidden = mine; $("s-plan").hidden = mine; $("s-who").hidden = false; $("again").hidden = !mine; }
+async function begin() {
+  let got; try { got = await get("/api/kept", { assistants: $("who").value }); } catch (e) { got = {}; }
+  if (got.task) { names = got.assistants || []; chips(); show(got); return; }
+  view(false); tryit(""); list("");
+}
+async function list(under, typing) {
+  let got; try { got = await get("/api/folders", under ? { under } : {}); } catch (e) { return; }
+  if (!typing) $("folder").value = got.here;
+  const into = name => (got.here === "/" ? "" : got.here.replace(/\/$/, "")) + "/" + name;
+  if (got.likely) $("likely").replaceChildren(...got.likely.map(path => { const b = button(path.split("/").pop(), "chip", () => list(path)); b.title = path; return b; }));
+  $("folders").replaceChildren();
+  if (got.up) $("folders").append(button(".. (up one folder)", "", () => list(got.up)));
+  got.inside.forEach(name => $("folders").append(button(name, "", () => list(into(name)))));
+  look();
+}
+function chips() {
+  const have = names.map(n => n.name), all = OFFERED.concat(have.filter(n => !OFFERED.includes(n)));
+  $("chips").replaceChildren(...all.map(name => { const on = have.includes(name),
+    b = button(name, "chip" + (on ? " on" : ""), () => { $("who").value = (on ? have.filter(n => n !== name) : have.concat(name)).join(", "); who(); });
+    b.setAttribute("aria-pressed", on); return b; }));
+}
+async function who() {                                      // the assistants changed: the plan before setup, the next steps after
+  remember();
+  if (!watching) return look();
+  let got; try { got = await get("/api/kept", { assistants: $("who").value }); } catch (e) { return; }
+  names = got.assistants || []; chips(); steps(got.next);
+}
+async function look() {
+  const mine = ++asked;
+  let got; try { got = await get("/api/look", { folder: $("folder").value, assistants: $("who").value }); } catch (e) { return; }
+  if (mine !== asked) return;
+  names = got.assistants || []; chips(); remember();
+  $("plan").textContent = got.says || "";
+  elsewhere = got.elsewhere || "";
+  $("go").disabled = !got.ok && !elsewhere; $("go").textContent = elsewhere ? "Open " + elsewhere : got.already ? "Show where it stands" : "Set it up";
+  $("same").textContent = got.same_as ? "Or in a terminal: " + got.same_as : (got.also || "");
+  const seen = $("seen"); seen.hidden = !got.ok;
+  if (got.ok) seen.textContent = [got.files + (got.more ? "+" : "") + (got.files === 1 ? " file" : " files"),
+    (got.checks || []).length ? "a check found" : "", got.already ? "already set up" : ""].filter(Boolean).join(" · ");
+}
+async function send(check) {
+  $("go").disabled = true; $("refused").hidden = true;
+  const got = await post("/api/start", { folder: $("folder").value, check: check || "", assistants: $("who").value });
+  $("go").disabled = false;
+  if (got.refused) { $("refused").textContent = got.refused; $("refused").hidden = false; return; }
+  show(got);
+}
+function step(s) {
+  const row = el("div", null, "row"), left = el("div");
+  left.append(el("div", s.say, "say"));
+  if (s.copy.length > 64 || s.copy.includes("\n")) { const d = el("details"); d.style.marginTop = "0"; d.append(el("summary", "Show the text"), el("pre", s.copy)); left.append(d); }
+  else left.append(el("code", s.copy));
+  row.append(left, button("Copy", "small", b => { navigator.clipboard && navigator.clipboard.writeText(s.copy); b.textContent = "Copied"; setTimeout(() => { b.textContent = "Copy"; }, 1600); }));
+  return row;
+}
+function steps(next) { $("next").replaceChildren(...(next || []).map(step)); $("rule").hidden = !(next || []).length; }
+function tails(results) {
+  const shown = results.filter(r => r.tail), failed = results.some(r => r.exit !== 0);
+  $("printed").hidden = !shown.length; $("printed").open = failed;
+  $("tails").replaceChildren(...shown.map(r => el("pre", r.tail)));
+}
+const ASK = "Look at this folder and write one small command that passes only when my main result is right. Then tell me the command.";
+const MEANS = { holds: "Still stands. Change any file in the folder and watch this word.", stale: "Something it rested on changed.",
+                fails: "The check does not pass.", unknown: "Not checked yet." };
+function draw(parts) {
+  const worst = ["fails", "stale", "unknown", "holds"].find(w => parts.some(p => p.state === w)) || "unknown";
+  const big = $("big"), rows = $("rows"), act = $("act");
+  $("now").hidden = false; big.className = "word big " + worst + (big.textContent !== worst ? " pop" : ""); big.textContent = worst;      // one element, so the colour moves
+  $("means").textContent = parts.length ? MEANS[worst] : "No check yet. A check is a command that passes when your work is right.";
+  rows.replaceChildren(); act.replaceChildren();
+  if (!parts.length) {
+    offered.forEach(c => { const row = el("div", null, "row"), left = el("div"); left.append(el("div", "Found in this folder:", "say"), el("code", c.command));
+      row.append(left, button("Use it", "small", () => send(c.name + ": " + c.command))); rows.append(row); });
+    if (!offered.length) rows.append(step({ say: "Ask an assistant to write one:", copy: ASK }));
+    $("more").open = !offered.length; return;
+  }
+  parts.forEach(p => { const row = el("p", null, "why"); if (parts.length > 1) row.append(el("span", p.state, "word " + p.state), " ");
+    row.append(p.name + ": " + (p.reason || "").split(today() + " ").join("today ")); rows.append(row); });
+  if (worst !== "holds") act.append(button("Run the check again", "main", rerun));
+}
+function today() { const d = new Date(), two = n => String(n).padStart(2, "0"); return d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate()); }
+function later() { clearTimeout(due); due = setTimeout(standing, pace); }
+async function standing() {
+  later();
+  if (!watching || document.hidden) return;
+  const began = Date.now();
+  let got; try { got = await get("/api/standing", { task: watching }); } catch (e) { return; }
+  pace = Math.min(60000, Math.max(3000, 10 * (Date.now() - began))); later();      // a large folder is read less often
+  const parts = (got.parts || []).filter(p => p.kind === "check"), now = JSON.stringify(parts);
+  if (got.refused || now === drawn) return;
+  drawn = now; draw(parts);
+}
+async function rerun(b) {
+  b.disabled = true; b.textContent = "Running it";
+  const got = await post("/api/check", { task: watching });
+  if (got.refused) { b.disabled = false; b.textContent = "Run the check again"; $("act").append(el("p", got.refused, "refused")); return; }
+  tails(got.ran || []); drawn = ""; standing();
+}
+function show(got) {
+  view(true); $("done").hidden = false;
+  $("done-title").textContent = got.project;
+  $("folder").value = got.folder_short;
+  offered = got.suggested_checks || [];
+  if (got.checks) tails(got.checks.results || []);
+  steps(got.next);
+  const wrote = Object.entries(got.written || {});
+  $("written").replaceChildren(...(wrote.length ? wrote : [["AGENTS.md", ""], ["CLAUDE.md", ""], [".taos-link.json", ""]]).map(([name, what]) => { const li = el("li"); li.append(el("code", name), what ? " " + what : ""); return li; }));
+  $("undo").textContent = "In " + got.folder_short + ", task " + got.task + ". To take TAOS out again: " + got.undo;
+  watching = got.task; drawn = ""; standing();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+$("folder").addEventListener("input", () => soon(() => list($("folder").value, true)));
+$("folder").addEventListener("keydown", e => { if (e.key === "Enter") list($("folder").value); });
+$("who").addEventListener("input", () => soon(who));
+$("who").addEventListener("keydown", e => { if (e.key === "Enter" && !watching && !$("go").disabled) $("go").click(); });
+$("go").onclick = () => elsewhere ? begin() : send("");
+$("add").onclick = () => { const text = $("mine").value.trim(); if (text) { send(text); $("mine").value = ""; } };
+$("mine").addEventListener("keydown", e => { if (e.key === "Enter") $("add").click(); });
+later();
+begin();
+</script>
+</body>
+</html>

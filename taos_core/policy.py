@@ -16,6 +16,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from . import plain
 from .paths import Paths
 from .util import TaosError
 
@@ -266,7 +267,7 @@ def _cmd_show(args: argparse.Namespace, paths: Paths) -> int:
     candidate = args.name if args.name.endswith(".md") else "{0}.md".format(args.name.upper())
     path = paths.policies_dir / Path(candidate).name
     if not path.is_file():
-        raise TaosError("no such policy: {0}".format(candidate))
+        raise TaosError(plain.missing("policy", args.name, sorted(p.stem for p in paths.policies_dir.glob("*.md")), "taos policy list"))
     print(path.read_text(encoding="utf-8"))
     return 0
 
@@ -282,7 +283,7 @@ def _cmd_check(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    parser = subparsers.add_parser("policy", help="which rules apply, and where they are")
+    parser = subparsers.add_parser("policy", help="which rule pages apply to a request")
     sub = parser.add_subparsers(dest="policy_cmd", required=True)
 
     router = sub.add_parser("route", help="what to read for a given request")

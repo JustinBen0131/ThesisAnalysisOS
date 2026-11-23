@@ -5,18 +5,27 @@ four letters and gives four answers, so each letter takes the shade of one
 answer, in the order the promise names them: the mark is also the legend.
 Where the stream cannot carry box-drawing characters, the same box is drawn
 in plain ones.
+
+At an interactive terminal the welcome opens with a recorded pendulum check.
+The saved fit goes stale when one timing changes, then passes on the new data.
+A pipe, a short or narrow terminal and TAOS_MOTION=0 get the static page.
 """
 
 from __future__ import annotations
 
+import os
 import re
+import shlex
+import shutil
+import sys
 import textwrap
-from typing import Any, Dict, List, Optional, Tuple
+import time
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
-from . import __version__
+from . import __version__, opener
 
 ANSWERS = ("holds", "stale", "fails", "unknown")
-SHADE = {"holds": "32", "ok": "32", "held": "32", "stale": "33", "fails": "31", "FAIL": "31", "unknown": "2"}
+SHADE = {"holds": "32", "stale": "33", "fails": "31", "unknown": "2"}       # the four answers, and nothing else
 BOLD, DIM = "1", "2"
 WIDTH = 80
 NAME, HOME = "ThesisAnalysisOS", "whatstillholds.com"
@@ -24,13 +33,62 @@ PROMISE = ("Every result is kept with what it stood on.", "Ask it later: holds, 
 MARK = ("╺┳╸ ┏━┓ ┏━┓ ┏━╸",
         " ┃  ┣━┫ ┃ ┃ ┗━┓",
         " ╹  ╹ ╹ ┗━┛ ╺━┛")
+MOTION_S = opener.DURATION
+STILL = ("0", "off", "no", "false")
+
+
+def terminal(out: Any) -> bool:
+    return bool(getattr(out, "isatty", lambda: False)())
+
+
+def shades(out: Any) -> bool:
+    """Does this stream take shades? A terminal that can show them does, unless the person has said NO_COLOR."""
+    if os.environ.get("NO_COLOR"):
+        return False
+    return bool(os.environ.get("FORCE_COLOR")) or (terminal(out) and os.environ.get("TERM") != "dumb")
+
+
+def moves(out: Any) -> bool:
+    """May the page arrive in motion? For a person at a terminal with room to redraw the box in place, unless they have
+    said TAOS_MOTION=0. A pipe, a file, a CI log and a narrow or short window get the finished page at once."""
+    if not terminal(out) or os.environ.get("CI") or os.environ.get("TAOS_MOTION", "").strip().lower() in STILL:
+        return False
+    size = shutil.get_terminal_size()
+    return size.columns >= WIDTH and size.lines >= 12
+
+
+def launcher() -> str:
+    """How this person started taos, so that a command shown to them can be pasted: `taos` when it is on their PATH,
+    else the path they typed (`./taos`, `../os/taos`)."""
+    typed = sys.argv[0] if sys.argv and sys.argv[0] else ""
+    found = shutil.which("taos")
+    if os.path.basename(typed) == "taos" and os.sep in typed:
+        if found and os.path.realpath(found) == os.path.realpath(typed):
+            return "taos"
+        return shlex.quote(typed)
+    return "taos" if found else "./taos"
+
+
+def commands(verbs: Sequence[str]) -> Any:
+    """Finds `taos` where a line names a command to run (`taos status`, `taos --help`): not `./taos`, not the word in prose."""
+    known = "|".join(sorted((re.escape(verb) for verb in verbs), key=len, reverse=True))
+    return re.compile(r"(?<![\w./-])taos(?= (?:" + known + r")\b| --help\b| --version\b)")
 
 
 class Page(object):
     """Writes for a person. Piped, every line is plain and whole. On a terminal it is folded to the width and shaded."""
 
-    def __init__(self, out: Any, width: Optional[int], color: bool):
+    def __init__(self, out: Any, width: Optional[int], color: bool, live: bool = False):
         self.out, self.width, self.color = out, width, color
+        self.live = live                                    # a person is at a terminal: an address can be a link
+
+    @classmethod
+    def to(cls, out: Any, width: Optional[int] = None, color: Optional[bool] = None, whole: bool = False) -> "Page":
+        """A page for this stream. A terminal gets its own width; a pipe gets 80 columns, or every line whole if asked."""
+        if width is None and (terminal(out) or not whole):
+            width = min(shutil.get_terminal_size().columns, 100) if terminal(out) else WIDTH
+        color = shades(out) if color is None else color
+        return cls(out, width, color, live=bool(color) and terminal(out))
 
     def ink(self, code: str, text: str) -> str:
         return "\x1b[{0}m{1}\x1b[0m".format(code, text) if self.color and code else text
@@ -75,40 +133,142 @@ class Page(object):
             return [letters + " " * (len(MARK[0]) - 4)] + [" " * len(MARK[0])] * 2
         return [" ".join(self.ink(SHADE[answer], row[4 * at:4 * at + 3]) for at, answer in enumerate(ANSWERS)) for row in MARK]
 
+    def home(self, link: bool = True) -> str:
+        """Where it lives. For a person at a terminal the address is a link: a click opens it where the terminal can,
+        and everywhere else the same words are shown."""
+        text = self.ink(DIM, HOME)
+        if link and self.live and not os.environ.get("TERM", "").startswith("linux"):
+            return "\x1b]8;;https://{0}\x1b\\{1}\x1b]8;;\x1b\\".format(HOME, text)
+        return text
+
+    def arrive(self, still: List[str]) -> None:
+        """Replay into five rows. Restore the printed welcome and the cursor even on interruption."""
+        back = "\x1b[{0}A\r".format(len(still))
+        first = True
+        began = time.monotonic()
+        self.out.write("\x1b[?25l")
+        try:
+            while MOTION_S > 0:
+                at = (time.monotonic() - began) / MOTION_S
+                if at >= 1:
+                    break
+                rows = opener.frame(at, self.ink, WIDTH)
+                self.out.write("\x1b[?2026h" + ("" if first else back) + "\n".join(rows) + "\n\x1b[?2026l")
+                self.out.flush()
+                first = False
+                time.sleep(1 / 24)
+        finally:
+            self.out.write(("" if first else back) + "\n".join(still) + "\n\x1b[?25h")
+            self.out.flush()
+
     def opener(self) -> None:
         """The name in a box: the mark, the version and where it lives, and the promise with its four answers."""
         drawn = self.draws()
         if (self.width or WIDTH) < WIDTH:                   # a narrow window: the mark without its box, the words under it
-            beside = ["", self.ink(BOLD, NAME) + " " + self.ink(DIM, __version__), self.ink(DIM, HOME)]
-            for mark, text in zip(self.mark(drawn), beside):
-                self.line((mark + "   " + text).rstrip())
+            beside = ["", self.ink(BOLD, NAME) + " " + self.ink(DIM, __version__), self.home()]
+            if self.width < len(MARK[0]) + 3 + len(NAME) + 1 + len(__version__):   # narrower still: the words under the mark too
+                for mark in self.mark(drawn):
+                    self.line(mark.rstrip())
+                for text in beside[1:]:
+                    self.line(text)
+            else:
+                for mark, text in zip(self.mark(drawn), beside):
+                    self.line((mark + "   " + text).rstrip())
             self.prose(PROMISE[0])
             self.prose(PROMISE[1], states=True)
             return
+        still = self.boxed(drawn)
+        if drawn and self.live and moves(self.out):
+            try:
+                "⠿◆●·→±²".encode(getattr(self.out, "encoding", None) or "utf-8")
+            except (UnicodeError, LookupError):
+                pass
+            else:
+                self.arrive(still)
+                return
+        for line in still:
+            self.line(line)
+
+    def boxed(self, drawn: bool, link: bool = True) -> List[str]:
+        """The five rows of the boxed opener, each as wide as the box."""
         room = WIDTH - len(MARK[0]) - 9
         gap = room - len(NAME) - len(__version__) - len(HOME) - 1
-        said = [self.ink(BOLD, NAME) + " " + self.ink(DIM, __version__) + " " * gap + self.ink(DIM, HOME),
+        said = [self.ink(BOLD, NAME) + " " + self.ink(DIM, __version__) + " " * gap + self.home(link),
                 PROMISE[0].ljust(room),
                 self.states(PROMISE[1]) + " " * (room - len(PROMISE[1]))]
         side, flat = ("│", "─") if drawn else ("|", "-")
-        self.line(self.ink(DIM, ("┌{0}┐" if drawn else " {0}").format(flat * (WIDTH - 2))))
-        for mark, text in zip(self.mark(drawn), said):
-            self.line("{0}  {1}   {2}  {0}".format(self.ink(DIM, side), mark, text))
-        self.line(self.ink(DIM, ("└{0}┘" if drawn else " {0}").format(flat * (WIDTH - 2))))
+        return ([self.ink(DIM, ("┌{0}┐" if drawn else " {0}").format(flat * (WIDTH - 2)))]
+                + ["{0}  {1}   {2}  {0}".format(self.ink(DIM, side), mark, text) for mark, text in zip(self.mark(drawn), said)]
+                + [self.ink(DIM, ("└{0}┘" if drawn else " {0}").format(flat * (WIDTH - 2)))])
+
+
+def idea(page: Page, moment: Dict[str, Any]) -> None:
+    """One idea of the short page, and under it a row for each answer, led by the word the record gave."""
+    page.line()
+    page.line(page.ink(BOLD, "{0}  {1}".format(moment["number"], moment["idea"])))
+    for step in moment["steps"]:
+        if step.get("brief"):
+            answer = step.get("answer", "").ljust(7)
+            parts = page.fold("   {0} {1}".format(answer, step["brief"]), hang=11)
+            page.line("   " + page.ink(SHADE.get(answer.strip(), ""), answer) + parts[0][10:])
+            for part in parts[1:]:
+                page.line(part)
 
 
 def short(page: Page, record: Dict[str, Any]) -> None:
     """One screen: each idea, and under it a row for each answer, led by the word the record gave."""
     for moment in record["moments"]:
-        page.line()
-        page.line(page.ink(BOLD, "{0}  {1}".format(moment["number"], moment["idea"])))
-        for step in moment["steps"]:
-            if step.get("brief"):
-                answer = step.get("answer", "").ljust(7)
-                parts = page.fold("   {0} {1}".format(answer, step["brief"]), hang=11)
-                page.line("   " + page.ink(SHADE.get(answer.strip(), ""), answer) + parts[0][10:])
-                for part in parts[1:]:
-                    page.line(part)
+        idea(page, moment)
+
+
+def ending(page: Page, closing: Sequence[str]) -> None:
+    """How the run ended."""
+    page.line()
+    for text in closing:
+        page.line(text) if text.startswith("  ") else page.prose(text)   # a line to paste is never folded
+
+
+class Arriving(object):
+    """The short page for a person at a terminal, written as it happens. The opener arrives, then each idea is written
+    when its commands have answered; until then the command now running is shown on the line below. The wait becomes
+    something to watch, and what is left on the screen is, line for line, the page a pipe gets."""
+
+    def __init__(self, page: Page, example: str):
+        self.page, self.waiting = page, False
+        page.opener()
+        page.prose(example)
+        page.out.flush()
+
+    @classmethod
+    def at(cls, out: Any, example: str, width: Optional[int] = None, color: Optional[bool] = None) -> Optional["Arriving"]:
+        """The page as it happens for a person at a terminal with room for it, and None for every other reader."""
+        page = Page.to(out, width, color)
+        return cls(page, example) if page.live and moves(out) else None
+
+    def running(self, command: str) -> None:
+        """Show the command now running, on the line the next idea will start from."""
+        text, room = "   $ " + command, (self.page.width or WIDTH) - 1
+        self.settle()
+        self.page.out.write(self.page.ink(DIM, text if len(text) <= room else text[:room - 3] + "..."))
+        self.page.out.flush()
+        self.waiting = True
+
+    def settle(self) -> None:
+        """Take the running command off the screen: it was never part of the page."""
+        if self.waiting:
+            self.page.out.write("\r\x1b[K")
+            self.page.out.flush()
+            self.waiting = False
+
+    def idea(self, moment: Dict[str, Any]) -> None:
+        self.settle()
+        idea(self.page, moment)
+        self.page.out.flush()
+
+    def end(self, closing: Sequence[str]) -> None:
+        self.settle()
+        ending(self.page, closing)
+        self.page.out.flush()
 
 
 def transcript(page: Page, record: Dict[str, Any]) -> None:
@@ -134,13 +294,62 @@ def transcript(page: Page, record: Dict[str, Any]) -> None:
         page.line("  {0}  {1}  {2}".format(moment["number"], moment["idea"].ljust(pad), page.states(moment["answered"])))
 
 
-def write(record: Dict[str, Any], out: Any, *, full: bool = True, width: Optional[int] = None, color: bool = False,
+class Shaded(object):
+    """A terminal with a person at it. A line led by holds, stale, fails or unknown takes its shade, and a command a
+    line names is written the way this person started taos, so that it can be pasted."""
+
+    LED = re.compile(r"^(\s{1,4})(" + "|".join(SHADE) + r")(?=\s\s|$)")     # a row's lead, not a word a fold left alone
+
+    def __init__(self, out: Any, shade: bool = True, said: Any = None, me: str = "taos"):
+        self.out, self.rest, self.begun = out, "", False
+        self.shade, self.said, self.me = shade, said, me
+
+    def dressed(self, text: str) -> str:
+        if self.said is not None and self.me != "taos":
+            text = self.said.sub(lambda _: self.me, text)
+        if self.shade and not self.begun:
+            text = self.LED.sub(lambda led: "{0}\x1b[{1}m{2}\x1b[0m".format(led.group(1), SHADE[led.group(2)], led.group(2)), text)
+        return text
+
+    def write(self, text: str) -> int:
+        *lines, self.rest = (self.rest + text).split("\n")
+        for line in lines:
+            self.out.write(self.dressed(line) + "\n")
+            self.begun = False
+        return len(text)
+
+    def flush(self) -> None:
+        if self.rest:                                               # a line shown before it ends keeps its lead's shade
+            self.out.write(self.dressed(self.rest))
+            self.rest, self.begun = "", True
+        self.out.flush()
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self.out, name)
+
+
+def greet(out: Any, start: Sequence[Tuple[str, str]], me: Optional[str] = None) -> None:
+    """What `taos` says when asked nothing: the name in a box, then where to start, as this person can type it."""
+    page = Page.to(out)
+    me = launcher() if me is None else me
+    start = [(me + command[4:] if command.startswith("taos") else command, does) for command, does in start]
+    page.opener()
+    page.line()
+    wide = max(len(command) for command, _ in start)
+    for command, does in start:
+        if page.width and 2 + wide + 3 + len(does) > page.width:    # a narrow window: the command, and under it what it does
+            page.line("  " + page.ink(BOLD, command))
+            for part in page.fold("      " + does, hang=6):
+                page.line(page.ink(DIM, part))
+        else:
+            page.line("  {0}   {1}".format(page.ink(BOLD, command.ljust(wide)), page.ink(DIM, does)))
+
+
+def write(record: Dict[str, Any], out: Any, *, full: bool = True, width: Optional[int] = None, color: Optional[bool] = None,
           closing: Tuple[str, ...] = ()) -> None:
     """The run as a page for a person: the opener, the short page or the transcript, and how it ended."""
-    page = Page(out, width, color)
+    page = Page.to(out, width, color, whole=full)
     page.opener()
     page.prose(record["example"])
     (transcript if full else short)(page, record)
-    page.line()
-    for text in closing:
-        page.line(text) if "/" in text else page.prose(text)         # a path is never folded
+    ending(page, closing)

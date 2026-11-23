@@ -1,0 +1,408 @@
+{
+  "schema": "instrument-correction-paths/1",
+  "fixture": "examples/model_evaluation",
+  "fixture_sha256": "24ad07f9b1f8a10fec54a5cef643d3ad5e434ec99e824986e7e14739218519eb",
+  "source_sha256": {
+    "a.csv": "7d8067525c66ce5346d2732f37f86da19e599663220ee245439a2be0c935a4e2",
+    "b.csv": "19c200941878010a3a77805a58a985193c20cbc1f12d4719925a5eeceef05f3b",
+    "model.py": "4b6304a340abbd51e2a39bf5f81782b6f5f3d4ad68300e4eae7e5d4a0bf7cdf0",
+    "policy.json": "8152ed2bd1ed563bef2423d57cb3fd4e56574dc91e5c9ed1191df99c4049a87a",
+    "predictions.json": "3c558dae1dabe8e9a451b4867da305a040a324e6b00e6956cbfe6df2ebdf025c"
+  },
+  "policy": {
+    "flag_if_score_at_least": 60,
+    "minimum_sensitivity": {
+      "numerator": 3,
+      "denominator": 4
+    }
+  },
+  "checks": [
+    "A",
+    "B",
+    "pooled"
+  ],
+  "edits": {
+    "A": {
+      "id": "A03",
+      "from": 70,
+      "to": 50
+    },
+    "B": {
+      "id": "B04",
+      "from": 50,
+      "to": 70
+    }
+  },
+  "independent_csv_counts": {
+    "baseline": {
+      "A": {
+        "tp": 3,
+        "fn": 1,
+        "fp": 1,
+        "tn": 3
+      },
+      "B": {
+        "tp": 3,
+        "fn": 1,
+        "fp": 1,
+        "tn": 3
+      },
+      "pooled": {
+        "tp": 6,
+        "fn": 2,
+        "fp": 2,
+        "tn": 6
+      }
+    },
+    "A": {
+      "A": {
+        "tp": 2,
+        "fn": 2,
+        "fp": 1,
+        "tn": 3
+      },
+      "B": {
+        "tp": 3,
+        "fn": 1,
+        "fp": 1,
+        "tn": 3
+      },
+      "pooled": {
+        "tp": 5,
+        "fn": 3,
+        "fp": 2,
+        "tn": 6
+      }
+    },
+    "AB": {
+      "A": {
+        "tp": 2,
+        "fn": 2,
+        "fp": 1,
+        "tn": 3
+      },
+      "B": {
+        "tp": 4,
+        "fn": 0,
+        "fp": 1,
+        "tn": 3
+      },
+      "pooled": {
+        "tp": 6,
+        "fn": 2,
+        "fp": 2,
+        "tn": 6
+      }
+    },
+    "B": {
+      "A": {
+        "tp": 3,
+        "fn": 1,
+        "fp": 1,
+        "tn": 3
+      },
+      "B": {
+        "tp": 4,
+        "fn": 0,
+        "fp": 1,
+        "tn": 3
+      },
+      "pooled": {
+        "tp": 7,
+        "fn": 1,
+        "fp": 2,
+        "tn": 6
+      }
+    }
+  },
+  "routes": [
+    {
+      "order": [
+        "A",
+        "B"
+      ],
+      "steps": [
+        {
+          "state": "baseline",
+          "before": {
+            "A": "unknown",
+            "B": "unknown",
+            "pooled": "unknown"
+          },
+          "after": {
+            "A": "holds",
+            "B": "holds",
+            "pooled": "holds"
+          },
+          "executed": [
+            "A",
+            "B",
+            "pooled"
+          ],
+          "reused": [],
+          "rerun_all_count": 3,
+          "native_sensitivity": {
+            "A": "3/4",
+            "B": "3/4",
+            "pooled": "6/8"
+          },
+          "action": "start"
+        },
+        {
+          "state": "A",
+          "before": {
+            "A": "stale",
+            "B": "holds",
+            "pooled": "stale"
+          },
+          "after": {
+            "A": "fails",
+            "B": "holds",
+            "pooled": "fails"
+          },
+          "executed": [
+            "A",
+            "pooled"
+          ],
+          "reused": [
+            "B"
+          ],
+          "rerun_all_count": 3,
+          "native_sensitivity": {
+            "A": "2/4",
+            "B": "3/4",
+            "pooled": "5/8"
+          },
+          "action": "apply A"
+        },
+        {
+          "state": "AB",
+          "before": {
+            "A": "fails",
+            "B": "stale",
+            "pooled": "stale"
+          },
+          "after": {
+            "A": "fails",
+            "B": "holds",
+            "pooled": "holds"
+          },
+          "executed": [
+            "A",
+            "B",
+            "pooled"
+          ],
+          "reused": [],
+          "rerun_all_count": 3,
+          "native_sensitivity": {
+            "A": "2/4",
+            "B": "4/4",
+            "pooled": "6/8"
+          },
+          "action": "apply B"
+        },
+        {
+          "state": "A",
+          "before": {
+            "A": "fails",
+            "B": "holds",
+            "pooled": "fails"
+          },
+          "after": {
+            "A": "fails",
+            "B": "holds",
+            "pooled": "fails"
+          },
+          "executed": [
+            "A",
+            "pooled"
+          ],
+          "reused": [
+            "B"
+          ],
+          "rerun_all_count": 3,
+          "native_sensitivity": {
+            "A": "2/4",
+            "B": "3/4",
+            "pooled": "5/8"
+          },
+          "action": "rewind B"
+        },
+        {
+          "state": "baseline",
+          "before": {
+            "A": "holds",
+            "B": "holds",
+            "pooled": "holds"
+          },
+          "after": {
+            "A": "holds",
+            "B": "holds",
+            "pooled": "holds"
+          },
+          "executed": [],
+          "reused": [
+            "A",
+            "B",
+            "pooled"
+          ],
+          "rerun_all_count": 3,
+          "native_sensitivity": {
+            "A": "3/4",
+            "B": "3/4",
+            "pooled": "6/8"
+          },
+          "action": "rewind A"
+        }
+      ],
+      "restored_fixture_bytes": true,
+      "native_executions": 10,
+      "rerun_all_executions": 15
+    },
+    {
+      "order": [
+        "B",
+        "A"
+      ],
+      "steps": [
+        {
+          "state": "baseline",
+          "before": {
+            "A": "unknown",
+            "B": "unknown",
+            "pooled": "unknown"
+          },
+          "after": {
+            "A": "holds",
+            "B": "holds",
+            "pooled": "holds"
+          },
+          "executed": [
+            "A",
+            "B",
+            "pooled"
+          ],
+          "reused": [],
+          "rerun_all_count": 3,
+          "native_sensitivity": {
+            "A": "3/4",
+            "B": "3/4",
+            "pooled": "6/8"
+          },
+          "action": "start"
+        },
+        {
+          "state": "B",
+          "before": {
+            "A": "holds",
+            "B": "stale",
+            "pooled": "stale"
+          },
+          "after": {
+            "A": "holds",
+            "B": "holds",
+            "pooled": "holds"
+          },
+          "executed": [
+            "B",
+            "pooled"
+          ],
+          "reused": [
+            "A"
+          ],
+          "rerun_all_count": 3,
+          "native_sensitivity": {
+            "A": "3/4",
+            "B": "4/4",
+            "pooled": "7/8"
+          },
+          "action": "apply B"
+        },
+        {
+          "state": "AB",
+          "before": {
+            "A": "stale",
+            "B": "holds",
+            "pooled": "stale"
+          },
+          "after": {
+            "A": "fails",
+            "B": "holds",
+            "pooled": "holds"
+          },
+          "executed": [
+            "A",
+            "pooled"
+          ],
+          "reused": [
+            "B"
+          ],
+          "rerun_all_count": 3,
+          "native_sensitivity": {
+            "A": "2/4",
+            "B": "4/4",
+            "pooled": "6/8"
+          },
+          "action": "apply A"
+        },
+        {
+          "state": "B",
+          "before": {
+            "A": "holds",
+            "B": "holds",
+            "pooled": "holds"
+          },
+          "after": {
+            "A": "holds",
+            "B": "holds",
+            "pooled": "holds"
+          },
+          "executed": [],
+          "reused": [
+            "A",
+            "B",
+            "pooled"
+          ],
+          "rerun_all_count": 3,
+          "native_sensitivity": {
+            "A": "3/4",
+            "B": "4/4",
+            "pooled": "7/8"
+          },
+          "action": "rewind A"
+        },
+        {
+          "state": "baseline",
+          "before": {
+            "A": "holds",
+            "B": "holds",
+            "pooled": "holds"
+          },
+          "after": {
+            "A": "holds",
+            "B": "holds",
+            "pooled": "holds"
+          },
+          "executed": [],
+          "reused": [
+            "A",
+            "B",
+            "pooled"
+          ],
+          "rerun_all_count": 3,
+          "native_sensitivity": {
+            "A": "3/4",
+            "B": "3/4",
+            "pooled": "6/8"
+          },
+          "action": "rewind B"
+        }
+      ],
+      "restored_fixture_bytes": true,
+      "native_executions": 7,
+      "rerun_all_executions": 15
+    }
+  ],
+  "native_executions": 17,
+  "rerun_all_executions": 30
+}

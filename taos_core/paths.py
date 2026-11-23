@@ -72,6 +72,9 @@ class Paths(object):
                 linked = cls._read_link(link)
                 if linked is not None and cls._is_home(linked):
                     return cls(linked)
+        own = Path(__file__).resolve().parent.parent                 # a folder no copy knows: the copy whose
+        if cls._is_home(own):                                        # `taos` was called answers
+            return cls(own)
         raise TaosError(
             "no TAOS home found from {0}. Run commands inside the OS clone, "
             "or set TAOS_HOME to it.".format(here)

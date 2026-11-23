@@ -7,6 +7,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 from . import events as events_mod
+from . import plain
 from .paths import Paths
 from .store import atomic_write_json, locked, read_json, utc_now
 from .util import TaosError, short_id
@@ -79,7 +80,9 @@ def answer(paths: Paths, *, decision_id: str, choice: str, by: str = "human", no
                 raise TaosError("decision {0} is already {1}".format(decision_id, decision.get("status")))
             options = decision.get("options") or []
             if options and str(choice) not in options:
-                raise TaosError("choice must be one of: {0}".format(", ".join(options)))
+                near = plain.nearest(str(choice), options)
+                raise TaosError("{0} is answered with one of: {1}.{2}".format(
+                    decision_id, ", ".join(options), " Did you mean '{0}'?".format(near) if near else ""))
             decision["status"] = "answered"
             decision["answer"] = str(choice)
             decision["answered_by"] = by
@@ -88,7 +91,7 @@ def answer(paths: Paths, *, decision_id: str, choice: str, by: str = "human", no
             events_mod.emit(paths, "decision_answer", by, decision_id=decision["id"], answer=str(choice))
             _save(paths, data)
             return decision
-    raise TaosError("no such decision: {0}".format(decision_id))
+    raise TaosError(plain.missing("decision", str(decision_id), [d.get("id") for d in data.get("decisions", [])], "taos decide list"))
 
 
 # --------------------------------------------------------------------------
@@ -128,11 +131,11 @@ def _cmd_list(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    decide = subparsers.add_parser("decide", help="ask the human, or answer")
+    decide = subparsers.add_parser("decide", help="ask the person a question, or record their answer")
     sub = decide.add_subparsers(dest="decide_cmd", required=True)
 
     asker = sub.add_parser("ask", help="queue a decision for the human")
-    asker.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    asker.add_argument("--agent", required=True, choices=subparsers.actors)
     asker.add_argument("--task")
     asker.add_argument("--question", required=True)
     asker.add_argument("--option", action="append")
@@ -142,7 +145,7 @@ def register(subparsers: Any) -> None:
     answerer.add_argument("decision_id")
     answerer.add_argument("--choice", required=True)
     answerer.add_argument("--note")
-    answerer.add_argument("--by", default="human", choices=list(events_mod.AGENTS))
+    answerer.add_argument("--by", default="human", choices=subparsers.actors)
     answerer.set_defaults(func=_cmd_answer)
 
     listing = sub.add_parser("list", help="show open decisions")

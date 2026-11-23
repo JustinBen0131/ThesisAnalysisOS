@@ -1,0 +1,2 @@
+Fictional transfer receipt for C.1
+Input manifest: 2 readings. Staged input: 0 readings. A complete source copy is available.

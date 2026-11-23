@@ -124,16 +124,35 @@ def read_jsonl(path: Path) -> List[Dict[str, Any]]:
     if not path.is_file():
         return []
     rows: List[Dict[str, Any]] = []
-    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    lines = path.read_text(encoding="utf-8").splitlines()
+    last = max((number for number, line in enumerate(lines, start=1) if line.strip()), default=0)
+    for number, line in enumerate(lines, start=1):
         if not line.strip():
             continue
         try:
             row = json.loads(line)
         except ValueError as exc:
+            if number == last:                  # a write that died mid-line: skipped here, named by `taos doctor`
+                break
             raise TaosError("{0} line {1} is not valid JSON: {2}".format(path, number, exc))
         if isinstance(row, dict):
             rows.append(row)
     return rows
+
+
+def torn_last_line(path: Path) -> bool:
+    """Is the last line of this log not valid JSON (a process died while appending it)? `read_jsonl` skips such a line."""
+    path = Path(path)
+    if not path.is_file():
+        return False
+    lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if not lines:
+        return False
+    try:
+        json.loads(lines[-1])
+    except ValueError:
+        return True
+    return False
 
 
 @contextmanager
@@ -162,7 +181,8 @@ def locked(paths, timeout: float = 15.0) -> Iterator[None]:
                 break
             except OSError:
                 if time.time() > deadline:
-                    raise TaosError("state lock is busy: {0}".format(lock_path))
+                    raise TaosError("Another taos command is writing the record right now ({0} is held). "
+                                    "Wait for it to finish, then run this again.".format(lock_path))
                 time.sleep(0.05)
         _LOCAL.depth = 1
         try:

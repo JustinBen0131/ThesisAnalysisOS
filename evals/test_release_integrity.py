@@ -9,6 +9,8 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "site"))
 from film_player import PUBLIC_MEDIA_DIR, film_files, opening_link, render_player
+from release_integrity import PageScripts, version_assets
+from reading_navigation import THEME_INTEGRITY
 from release_integrity import browser_policy, script_hash, verify_homepage_film, verify_manifest, write_manifest
 from build import broken, GITHUB, REPO, load_audit
 import demo_walkthrough
@@ -25,12 +27,43 @@ class TestBrowserPolicy(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unregistered inline"):
             browser_policy(tag, "index.html", set(), False)
 
+    def test_local_assets_are_pinned_while_inline_and_external_content_is_preserved(self):
+        markup = ('<link rel="stylesheet" href="../assets/style.css">\n'
+                  '<script defer src="../assets/site.js"></script>\n'
+                  '<script src="https://example.org/bg.js"></script>'
+                  '<pre>&lt;script src="../assets/site.js"&gt;</pre>')
+        resources = PageScripts(markup).resources
+        versions = {"assets/site.js": "old-script", "assets/style.css": "same-style"}
+        first = version_assets(markup, "hpc/index.html", resources, versions)
+        self.assertIn('href="../assets/style.css?v=same-style"', first)
+        self.assertIn('src="../assets/site.js?v=old-script"', first)
+        self.assertIn('<script src="https://example.org/bg.js">', first)
+        self.assertIn('<pre>&lt;script src="../assets/site.js"&gt;</pre>', first)
+        versions["assets/site.js"] = "new-script"
+        second = version_assets(markup, "hpc/index.html", resources, versions)
+        self.assertEqual(first.replace("v=old-script", "v=new-script"), second)
+
     def test_source_listings_and_public_reporting_have_separate_permissions(self):
         listing = '<script type="application/ld+json">{"name":"example"}</script>'
         self.assertIn("script-src 'none'", browser_policy(listing, "source/index.html", set(), False))
         analytics = '<script src="assets/interactions.js"></script>'
         with self.assertRaisesRegex(ValueError, "Unregistered script"):
             browser_policy(analytics, "index.html", set(), False)
+        live = browser_policy(analytics, "index.html", set(), True)
+        self.assertIn("https://static.cloudflareinsights.com/beacon.min.js", live)
+        self.assertIn("https://whatstillholds-interactions.", live)
+        theme = f'<script src="../assets/theme.js" integrity="{THEME_INTEGRITY}"></script>'
+        source_policy = browser_policy(theme, "source/index.html", set(), True)
+        self.assertIn(f"script-src '{THEME_INTEGRITY}'", source_policy)
+        self.assertIn("connect-src 'none'", source_policy)
+        with self.assertRaisesRegex(ValueError, "Unexpected script in source viewer"):
+            browser_policy(theme.replace("assets/theme.js", "assets/site.js"), "source/index.html", set(), True)
+        with self.assertRaisesRegex(ValueError, "Unexpected script in source viewer"):
+            browser_policy(theme.replace(THEME_INTEGRITY, "sha256-wrong"), "source/index.html", set(), True)
+        project_review = '<script src="../assets/hpc-review.js"></script>'
+        self.assertIn("script-src 'self'", browser_policy(project_review, "hpc/index.html", set(), False))
+        with self.assertRaisesRegex(ValueError, "Unregistered script"):
+            browser_policy(project_review, "exchange/index.html", set(), False)
         page = '<script src="assets/site.js"></script>'
         self.assertIn("api.github.com", browser_policy(page, "index.html", set(), False))
 
@@ -83,6 +116,18 @@ class TestDemoWalkthrough(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "larger correction"):
             demo_walkthrough.chapters(self.record, audit)
 
+    def test_a_new_execution_cannot_be_reported_as_a_reused_pass(self):
+        record = copy.deepcopy(self.record)
+        runs = {s["id"]: s for moment in record["moments"] for s in moment["steps"] if s.get("id")}
+        # Both requests say "holds" in the current terminal. Show a fresh execution
+        # in the second request, with a consistent answer and expectation.
+        for field in ("answer", "printed", "expected"):
+            runs["shared"][field] = runs["rerun"][field]
+        record["checked"] = sum(len(s["expected"]) for moment in record["moments"] for s in moment["steps"]
+                                if s["kind"] == "run")
+        with self.assertRaisesRegex(ValueError, "shared does not support"):
+            demo_walkthrough.chapters(record, self.audit)
+
 
 class TestHomepageFilm(unittest.TestCase):
     def test_release_requires_the_reviewed_film_and_a_working_entry(self):
@@ -94,6 +139,9 @@ class TestHomepageFilm(unittest.TestCase):
             home = root / "index.html"
             home.write_text(entry + player, encoding="utf-8")
             verify_homepage_film(root)
+            home.write_text(entry + player.replace('kind="captions"', 'kind="metadata"'), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "English captions"):
+                verify_homepage_film(root)
             home.write_text(player, encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "link to the film"):
                 verify_homepage_film(root)

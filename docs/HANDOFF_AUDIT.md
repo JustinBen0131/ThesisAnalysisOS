@@ -1,5 +1,7 @@
 # Which pendulum result can the next task inherit?
 
+<sub><b>Check the evidence · 3 of 6</b> &nbsp;·&nbsp; [← Measurement audit](MEASUREMENT_AUDIT.md) &nbsp;·&nbsp; [All documents](README.md) &nbsp;·&nbsp; [Model evaluation →](MODEL_EVALUATION.md)</sub>
+
 Start with one passing fit for six pendulum swings. Three tasks ask the same
 check in one shared history as a plot style changes, a revised reading makes
 the fit fail, and the original data returns. The check declares the analysis

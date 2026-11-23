@@ -1,14 +1,21 @@
 # The manual
 
-For the human. The agents read `AGENTS.md`; you read this.
+Start here if you want to see what TAOS can tell you about a result or a compute campaign. From a downloaded or cloned copy, run either command with Python 3.9 or later. Both work offline before you set up a project.
+
+| What do you want to know? | Try it from the repository root |
+| --- | --- |
+| A measurement changed. Which earlier results still hold? | `python3 taos demo` |
+| Three sensor outputs came back from a compute run. Which can I use? | `python3 taos usage progress --packet examples/hpc/campaign.json` |
+
+The demo changes one pendulum reading and shows why the fit needs checking again. In the sensor example, two outputs pass their supplied checks and one has no readings. Its recorded worker time still counts. To use the same tools on your own project, continue to [Set up a private project](#2-set-up-a-private-project).
 
 ## 1. What you get
 
-- One task list both agents share, with ids that never change.
-- Claims: a lease on a task, a branch, a worktree, or a path. While one agent
-  holds it, the other cannot write there. Reading is always free.
-- Lanes: a workspace reserved for one agent is off limits to the other, enforced
-  by the guard, not by asking nicely.
+- One task list all project agents share, with stable IDs.
+- Claims record which agent has taken responsibility for a task, branch,
+  worktree or path. Other tools with write access can still change its files.
+- Lanes: reserve a workspace for one agent. When the guard is active,
+  it blocks writes by other agents through the configured hooks.
 - Worktrees or branches per task, computed and printed for the agent by
   `taos start`, so context stays bounded and nothing lands on main by accident.
 - Gates: your test and lint commands, run and recorded before anything may be
@@ -21,16 +28,19 @@ For the human. The agents read `AGENTS.md`; you read this.
 - Self-iteration: corrections become checkable atoms; kernels expire; a weekly
   retro says what went stale; burns archive-verify-delete old working files.
 
-## 2. Install (sixty seconds)
+<a name="2-install-sixty-seconds"></a>
 
-Make your own private copy from the template. You are meant to rewrite the
-policies, the questions, and the guard rules, and a template copy starts
-with a history that is yours.
+## 2. Set up a private project
+
+Make a private copy from the template. Change the example GitHub owner and
+repository name in the first two lines.
 
 ```bash
-gh repo create <you>/<your-os-repo> --private --clone --template JustinBen0131/ThesisAnalysisOS
-cd <your-os-repo>
-codex        # or: claude
+taos_owner="YOUR_GITHUB_USERNAME"
+taos_repo="my-private-taos"
+gh repo create "$taos_owner/$taos_repo" --private --clone --template JustinBen0131/ThesisAnalysisOS &&
+  cd "$taos_repo" &&
+  codex  # or: claude
 ```
 
 On github.com the same thing is the **Use this template** button. Two other
@@ -38,9 +48,8 @@ ways, if you prefer them:
 
 - To keep pulling upstream improvements, `git clone` this repository, then
   `git remote rename origin upstream` and create your own private `origin`.
-- Without GitHub, `git clone` it and start a history of your own with
-  `rm -rf .git && git init -b main && git add -A && git commit -m "my OS"`.
-  That removes only your clone's copy of this project's history.
+- For a local-only copy, clone it and run `git remote remove origin` in
+  your clone. You can use the OS with no remote and keep the original history.
 
 First message to the agent:
 
@@ -48,7 +57,10 @@ First message to the agent:
 Read BOOTSTRAP.md in this repo and follow it exactly. Ask me the ten bootstrap questions in one message, then construct the OS from my answers. Do not touch anything outside this directory until I have answered.
 ```
 
-Requirements: macOS or Linux, Python 3.9+, git. Nothing is installed.
+For this assisted setup, use macOS or Linux, Python 3.9 or later, Git, and
+Codex or Claude Code. The command above also uses the GitHub CLI (`gh`). Run the manual's
+`./taos` commands from the root of your private OS clone. If the launcher
+isn't executable, run `python3 taos` there instead.
 
 ### The repo split
 
@@ -57,43 +69,49 @@ Two repos, two failure domains:
 - **This one, private.** The runtime, your `AGENTS.md`, your policies,
   kernels, atoms, hooks. `.taos/` (tasks, claims, events, handoffs, gate runs)
   is git-ignored, so your working state stays on your disk.
-- **Your work repos, shared.** They receive a four-line block in `AGENTS.md`
-  and `CLAUDE.md`, a `.taos-link.json`, and the hook files only if they did
-  not already exist. Nothing else, ever.
+- **Your work repos, shared.** Each workspace named in setup gets a marked
+  block in `AGENTS.md` and `CLAUDE.md` and a `.taos-link.json` pointer. TAOS
+  can also install hooks. It keeps existing settings and can write a
+  separate snippet for you to review and merge.
 
-If you do not want even those three in your team's history, exclude them
-locally rather than in `.gitignore`:
+The block, pointer and hooks can contain the absolute path to your OS.
+Review those changes before staging them in a shared repo. A local Git
+exclude can keep new files out of the index. It has no effect on already
+tracked files such as an existing `AGENTS.md`.
 
-```bash
-printf '.taos-link.json\n.codex/hooks.json\n' >> <work-repo>/.git/info/exclude
-```
-
-Full rules: `policies/REPO_SPLIT.md`.
+See [The repo split](policies/REPO_SPLIT.md).
 
 ## 3. Day 1
 
-After construction:
+After successful construction, check the setup and list your task IDs:
 
 ```bash
-./taos status            # ten lines: hot work, decisions owed, claims, health
-./taos panel on          # opens http://127.0.0.1:4331
+./taos doctor
+./taos status --compact
+./taos task list
 ```
 
-Then open a workspace repo (or this clone) in Codex or Claude and say:
+If doctor reports a failure, read the named check before starting work. If
+you want the local panel, run `./taos panel on`. Its default address is
+`http://127.0.0.1:4331`.
 
-```
-work on <PREFIX>-1
-```
+If you left question 3 blank, open the OS clone in Codex or Claude. It is
+your first workspace and needs no link to itself. If you named another repo,
+open that workspace and look for the TAOS block between `<!-- taos:begin -->`
+and `<!-- taos:end -->` in `AGENTS.md` or `CLAUDE.md`. It includes a command
+with the absolute path to the OS launcher and its home. Copy that command as
+printed when running from a workspace or its worktree.
 
-The agent runs `taos start`, reads the capsule, creates its worktree and
-branch as instructed, and works. When it is done it runs the gates and
-`taos finish`. You will see the task move in the panel.
+Give the agent a task ID from `./taos task list`, for example `work on CMP-1`.
+`taos start` claims the task and prints a capsule with its next action,
+workspace assignment, and the commands for its branch or worktree. Use
+`./taos task show CMP-1` with the same ID to see any completion criterion.
+The agent follows the capsule's commands to begin. When it finishes, it runs
+the gates and records the outcome for you to review.
 
-Two things to check on day one:
-
-1. `./taos doctor` is green. Warnings are fine; failures are not.
-2. Open one of your linked workspaces and confirm `AGENTS.md` ends with the
-   `<!-- taos:begin -->` block. Your original content is untouched above it.
+If you opted out of workspace hooks or setup reported a settings conflict,
+the workspace stays linked. Run the status command in its TAOS block at the
+start of each session until any hook entries you want are merged and enabled.
 
 ## 4. The daily loop
 
@@ -116,16 +134,30 @@ it. If you do not, say the work and the agent will find or create the task.
 
 Evening: nothing. The brief regenerates on demand; the state is already on disk.
 
-## 5. Working with two agents
+### Follow the evidence behind your compute
 
-They are peers. Give either of them any task. What keeps them apart:
+A backup of `.taos/` preserves filed summaries. To repeat a compute review, keep the original packet and the files it cites alongside your project backup. If you open a report in the browser, keep its JSON file to reopen it after refreshing the page.
 
-- `taos start` claims the task, its branch, and its worktree. The other agent's
+Run `./taos usage progress` to see which tasks have run checks, reused checks or received a compute review. Add `--task TASK-ID` for one question. The view identifies each campaign, its last review, recorded worker time, and the current standing of the task checks and acceptance. Use `./taos usage show` separately for the token usage your local tools expose. [Try the three-output example](policies/HPC.md)
+
+## 5. Working with multiple AI agents
+
+One person can assign separate tasks to many agent sessions. Give sessions
+distinct role names when their claims and handoffs need separate attribution.
+For example, a planner can prepare a run, a builder can carry it out and a
+reviewer can check the result. Several sessions can use one tool, or you can
+share a selected handoff with an assistant in another tool. You choose what
+each receives and which decisions need your approval.
+[Set up the roster](docs/AGENT_ROLES.md) · [Use a local or web assistant](docs/AGENT_INTERFACES.md)
+
+The following rules apply to each named role.
+
+- `taos start` claims the task, its branch, and its worktree. Another agent’s
   `start` on the same task fails with exit code 4 and a message saying who
   holds it.
-- A workspace you reserved for one agent (Q3) is write-protected against the
-  other by the guard.
-- A claim goes stale after 6 hours without a heartbeat. The other agent may
+- When a workspace is reserved for one agent (Q3), the configured guard
+  blocks other agents’ writes through its hooks.
+- A claim goes stale after 6 hours without a heartbeat. Another agent may
   then take it over with a reason; the guard asks you first.
 
 Handing work across: the finishing agent writes a handoff file with five
@@ -149,9 +181,10 @@ What you chose in Q4 is enforced:
   `<pattern>`. The agent is told the exact `git worktree add` command.
 - Branch mode: a branch per task in the workspace.
 - Fork mode: each agent already has its own checkout; branches inside it.
-- Protected branches: the guard asks before any commit made while on them and
-  refuses pushes to them outright.
-- Merge policy: with `human_pr` the agents open PRs and stop. Only you merge.
+- Protected branches: the guard checks the branch or destination it can identify.
+  Use hosting-service branch protection when all pushes require review.
+- Merge policy: with `human_pr`, agents are instructed to open a PR and leave
+  the merge decision to you.
 
 Cleaning up worktrees after a merge is yours to do (`git worktree remove`);
 the guard refuses `--force` removal from agents.
@@ -171,14 +204,19 @@ gates pass.
 holds: its checks, the instructions it was closed under, its work products
 and their inputs, your acceptance. `taos why` alone lists what no longer
 holds across all closed work. When you have looked at a result and accept it,
-say so with `taos task accept <ID>`. That is recorded for that exact version,
-and an edit afterwards does not inherit it. See `policies/GATES.md`.
+run `taos task accept <ID> --by human`. The acceptance records the supplied
+reviewer label, input state and applicable instructions. An edit to the
+recorded inputs changes its standing. See `policies/GATES.md`.
 
-Change the gates by editing `.taos/config.json` under `"gates"`.
+Change the checks under `"gates"` in `.taos/config.json`. Record who reviewed
+the proposed definition and why. After changing a check, review the new
+calculation and record a fresh sign-off. The local acceptance record alone
+does not establish who edited the check or approved that definition.
 
-**Say what a check reads.** By default a check depends on every file in the
-workspace, so any edit makes its pass stale. Name the folders it reads and it
-is rerun only when one of them changes:
+**Say what a check reads.** By default TAOS uses files Git tracks or would
+track, and ordinary project files outside Git. An undeclared workspace with
+no visible inputs reports `unknown`. Name the folders a check reads to
+include scientific data that Git ignores.
 
 ```json
 "basis": {"domains": {"analysis": ["src/*", "data/*"], "figures": ["figs/*"]}},
@@ -189,13 +227,13 @@ An edit under `figs/` now leaves `fit` standing, and two tasks that ask for
 `fit` on the same files share one run. A domain is what its patterns match on
 disk, so measured data that git ignores counts once a domain names it.
 
-**Isolate a check you would rather not trust.** A declaration is a promise.
-Add `"isolated": true` and the check runs in an empty folder that holds only
-the files it declared, in a fixed environment, so a file or a variable it did
-not declare is not there to be read. On macOS the network and the rest of the
-workspace are closed to it as well, and every result records what was closed.
-`"isolated": "strict"` does not run on a machine that cannot close them. The
-setup interview asks about both (question 5).
+**Give a check a private copy of its inputs.** With `"isolated": true`,
+the runner copies the selected inputs into a temporary folder, verifies
+their fingerprints and runs the check there with a fixed environment. Writes
+through those copies leave the originals intact. On supported macOS systems,
+TAOS also probes network and workspace-read restrictions and records which
+restrictions were available. Commands still run under your operating-system
+account. Use trusted commands. Strict mode requires the probed restrictions.
 
 ## 8. Correcting an agent so it compounds
 
@@ -211,7 +249,10 @@ panel, or:
 ./taos atoms promote prop_xxxx --by human
 ```
 
-From then on `taos doctor` and every brief check it. Lessons that cannot be
+The recorded decision belongs to that proposal ID. A later proposal can ask
+the same question. Review the change on its merits each time. A person with
+write access can also edit the local configuration and promoted rules.
+From then on `taos doctor` and every brief check the promoted rule. Lessons that cannot be
 checked go into `kernels/PRINCIPAL_KERNEL.md` instead, by the agent, as one
 line each.
 
@@ -268,11 +309,13 @@ Three levels, all reversible, none of which touch your state:
   claim, or run gates, and the guard keeps only the safety floor (secrets,
   force pushes, the store, the cage). `./taos resume` brings it back. Use it
   for a quick fix or a day off.
-- `./taos panel off` stops the only process the OS ever runs. There are no
-  daemons, timers, or scheduled jobs.
-- `./taos bootstrap unlink-workspace <path>` removes exactly what linking
-  added to a repo: the marked block, the link file, and the hook files if the
-  OS wrote them. Your own files are never touched.
+- `./taos panel off` stops the local panel. The optional setup page has its own
+  local server. An MCP connection uses a separate process started by its client.
+- To detach a workspace, run `./taos bootstrap unlink-workspace` with its
+  quoted path, for example `./taos bootstrap unlink-workspace "$HOME/code/My Project"`.
+  Read the output to see what was removed and what was kept. TAOS uses the
+  link's ownership record to remove its unchanged generated files. Edited
+  hooks, unrelated snippets and files it cannot attribute are kept.
 
 Everything else is a file that does nothing until you run `taos`.
 
@@ -293,44 +336,50 @@ Everything else is a file that does nothing until you run `taos`.
 
 ## 13. Uninstall
 
-```bash
-./taos panel off
-rm -rf ~/ThesisAnalysisOS
-```
-
-In each linked workspace: delete the block between `<!-- taos:begin -->` and
-`<!-- taos:end -->` in `AGENTS.md` and `CLAUDE.md`, delete `.taos-link.json`,
-and delete `.codex/hooks.json` and `.claude/settings.json` if they were
-installed by the OS (if they existed before, the OS wrote a `*.taos-snippet.json`
-next to them instead and touched nothing).
+From the OS clone, run `./taos panel off` and unlink each linked workspace
+as described in section 11. Review any settings you merged or edited and
+remove the TAOS entries yourself if you no longer want them. Once you have
+saved any tasks, evidence and kernels you want to keep, remove the private
+OS clone if you no longer need it.
 
 ## 14. Troubleshooting
 
 - `TAOS not constructed`: run the bootstrap (section 2).
-- `no TAOS home found`: run from inside the clone or a linked workspace, or
-  set `TAOS_HOME=/path/to/ThesisAnalysisOS`.
+- `no TAOS home found`: use the full command from your workspace's TAOS
+  block, including `--home` and the printed quotes. In the OS clone, use
+  `./taos`.
 - `scope is held by another agent` (exit 4): the other agent has it. Wait,
   hand off, or release it as a human with `--force`.
 - `has no passing gate run`: run `taos gate run`, or fix the gates.
 - `the panel did not come up`: another process owns the port. `--port 4332`.
-- Doctor `fail` on `task_ids_valid` or `allocator_monotonic`: someone edited
-  `.taos/` by hand. Restore from git or from a burn archive; never patch the
-  numbers.
-- An agent ignores the contract: check that `AGENTS.md` in the workspace ends
-  with the TAOS block, and that the hooks are installed there.
+- Doctor `fail` on `task_ids_valid` or `allocator_monotonic`: check that the
+  setup answers still use your original task prefix. If task state was
+  damaged, use a known-good backup of `.taos/`.
+- A session starts without a TAOS status message: read the workspace's
+  TAOS block and run the status command shown there. If you chose to use
+  hooks, check whether the settings were merged and your client loaded them.
+- Setup returned an error: read the failed link or doctor check in its output.
+  Fix the named issue before retrying. Setup may have already written the
+  config, seeded tasks, or linked other workspaces.
 
 ## 15. FAQ
 
-**Does it need the internet?** No. Nothing here calls a network.
+**Does it need the internet?** The TAOS CLI runs locally. Your agent client,
+Git remotes or project checks may need a connection.
 
 **Does it call a model?** No. Briefs, kernels, doctor, panel: all deterministic.
 
 **Can I use only one agent?** Yes. Everything works with one; claims just never
 conflict.
 
-**Can I edit the questions or the templates?** Yes. `bootstrap/QUESTIONS.md`
-and `taos_core/templates/`. Re-run `taos bootstrap construct` to re-render;
-it is idempotent and keeps your tasks.
+**Can I edit the questions or the templates?** Yes. They live in
+`bootstrap/QUESTIONS.md` and `taos_core/templates/`. From the OS clone,
+revisit your answers, keep your original task prefix, and run
+`./taos bootstrap validate`, then
+`./taos bootstrap construct`. Construction updates config from those answers,
+adds missing task titles, and can refresh unedited generated files. It keeps
+existing tasks, edited kernels and customized root instructions. To apply a
+new template to a file you customized, merge the changes yourself.
 
 **How do I update the OS itself?** `git pull` in the clone. Your state is in
 `.taos/` and is ignored by git. If `.codex/hooks.json` conflicts, keep yours.

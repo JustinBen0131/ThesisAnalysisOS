@@ -4,14 +4,58 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import struct
+import zlib
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-from matplotlib.ticker import MultipleLocator
+
+def figure_inputs(source, renderer):
+    return {"SourceSHA256": hashlib.sha256(source).hexdigest(),
+            "RendererSHA256": hashlib.sha256(renderer.read_bytes()).hexdigest()}
+
+
+def figure_issue(figure, source, renderer):
+    """Read PNG chunks without importing Matplotlib, and check both build inputs."""
+    data = figure.read_bytes()
+    expected = figure_inputs(source, renderer)
+    if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "the pendulum figure is not a PNG"
+    pos = 8
+    seen = {}
+    have_pixels = False
+    while pos + 12 <= len(data):
+        length, kind = struct.unpack_from(">I4s", data, pos)
+        end = pos + 8 + length
+        if end + 4 > len(data) or zlib.crc32(data[pos + 4:end]) != int.from_bytes(data[end:end + 4], "big"):
+            return "the pendulum figure contains a damaged PNG chunk"
+        body = data[pos + 8:end]
+        if pos == 8 and (kind != b"IHDR" or length != 13 or 0 in struct.unpack_from(">II", body)):
+            return "the pendulum figure has an invalid image header"
+        pos = end + 4
+        if kind == b"IDAT":
+            have_pixels |= bool(body)
+        elif kind == b"tEXt":
+            key, _, value = body.partition(b"\0")
+            name = key.decode("latin1")
+            if name in expected:
+                if name in seen:
+                    return f"duplicate {name} in the pendulum figure"
+                seen[name] = value
+        if kind == b"IEND":
+            if body or pos != len(data) or not have_pixels:
+                return "the pendulum figure has an invalid ending"
+            for key, value in expected.items():
+                if seen.get(key) != value.encode("ascii"):
+                    return f"pendulum figure needs regeneration ({key} differs)"
+            return None
+    return "the pendulum figure is incomplete"
 
 
 def main():
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import MultipleLocator
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=Path("evals/results/measurement_audit.json"))
     parser.add_argument("--output", type=Path, default=Path("site/assets/pendulum-sensitivity.png"))
@@ -64,7 +108,7 @@ def main():
     fig.text(.069, .061, f"Baseline g = {baseline:.4f} m/s². Dotted lines mark the gravity limits.", color=quiet, fontsize=10)
     fig.text(.069, .025, "The check also applies a separate uncertainty limit.", color=quiet, fontsize=10)
     fig.savefig(args.output, dpi=180, facecolor=paper, metadata={
-        "SourceSHA256": hashlib.sha256(source).hexdigest(),
+        **figure_inputs(source, Path(__file__)),
         "Title": "Pendulum sensitivity to one-swing period edits",
         "Description": "Gravity shifts from recorded one-swing period edits with fixed baseline gravity thresholds.",
     })

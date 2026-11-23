@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from typing import Any, Dict, List
 
 from . import atoms as atoms_mod
@@ -16,7 +17,7 @@ from . import config as config_mod
 from . import kernels as kernels_mod
 from . import tasks as tasks_mod
 from .paths import Paths
-from .store import age_days, read_json, read_jsonl
+from .store import age_days, read_json, read_jsonl, torn_last_line
 from .util import TaosError
 
 VERSION = "1.1.0"
@@ -237,6 +238,12 @@ def run(paths: Paths) -> Dict[str, Any]:
         )
     )
 
+    # a log whose last line was cut off by a process that died mid-append: readers skip that line, say so here
+    for log in sorted(paths.state.rglob("*.jsonl")) if paths.state.is_dir() else []:
+        if torn_last_line(log):
+            checks.append(_check("log_last_line", "warn",
+                                 "{0}: the last line was incomplete and is ignored".format(paths.relative(log))))
+
     ok = all(c["status"] != "fail" for c in checks)
     return {"ok": ok, "checks": checks}
 
@@ -252,19 +259,21 @@ def _cmd_doctor(args: argparse.Namespace, paths: Paths) -> int:
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0 if report["ok"] else 3
     for check in report["checks"]:
-        marker = {"pass": "ok  ", "warn": "warn", "fail": "FAIL"}[check["status"]]
-        print("{0}  {1:<24} {2}".format(marker, check["name"], check["detail"]))
+        marker = {"pass": "holds", "warn": "warn ", "fail": "fails"}[check["status"]]     # the words every answer uses
+        print("  {0}  {1:<24} {2}".format(marker, check["name"], check["detail"]))
     print("")
     print("doctor: {0}".format("green" if report["ok"] else "failing"))
     return 0 if report["ok"] else 3
 
 
 def _cmd_selftest(args: argparse.Namespace, paths: Paths) -> int:
-    process = subprocess.run(
-        [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-t", "tests", "-p", "test_*.py"],
-        cwd=str(paths.home),
-    )
-    return process.returncode
+    # Host integrations in the suite see only the test account, including in child commands.
+    with tempfile.TemporaryDirectory(prefix="taos-selftest-account-") as account:
+        environment = dict(os.environ, HOME=account, USERPROFILE=account)
+        return subprocess.run(
+            [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-t", "tests", "-p", "test_*.py"],
+            cwd=str(paths.home), env=environment,
+        ).returncode
 
 
 def _cmd_version(args: argparse.Namespace, paths: Paths) -> int:
@@ -273,11 +282,11 @@ def _cmd_version(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    doctor = subparsers.add_parser("doctor", help="mechanical health of the OS")
+    doctor = subparsers.add_parser("doctor", help="check that TAOS itself is set up and healthy")
     doctor.add_argument("--json", action="store_true")
     doctor.set_defaults(func=_cmd_doctor)
 
-    selftest = subparsers.add_parser("selftest", help="run the test suite")
+    selftest = subparsers.add_parser("selftest", help="run the tests of TAOS itself")
     selftest.set_defaults(func=_cmd_selftest)
 
     version = subparsers.add_parser("version", help="print the version")

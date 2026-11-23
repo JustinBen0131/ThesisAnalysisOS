@@ -391,7 +391,7 @@ def _cmd_status(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    panel = subparsers.add_parser("panel", help="the local dashboard")
+    panel = subparsers.add_parser("panel", help="a dashboard in your browser, on this machine only")
     sub = panel.add_subparsers(dest="panel_cmd", required=True)
 
     on_parser = sub.add_parser("on", help="start it")

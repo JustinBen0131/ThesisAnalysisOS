@@ -3,59 +3,99 @@
   "use strict";
   var cover = document.getElementById("architecture-cover"), demo = document.getElementById("mind-demo");
   var start = document.getElementById("mind-start"), fallback = document.getElementById("mind-static");
+  var fileStart = document.getElementById("mind-change-start");
   if (!cover || !demo || !start || !fallback) { return; }
-  var controls = null, demoOpen = false, entrance = null;
-  var participant = demo.querySelector(".mind-person");
+  var controls = null, demoOpen = false, explorerEntry = null;
   var heading = document.getElementById("mind-title"), header = document.querySelector(".top");
-  start.hidden = false; fallback.hidden = true;
+  var guideTitle = document.getElementById("guide-title"), copy = document.getElementById("guide-copy");
+  var guideRole = document.getElementById("guide-role"), next = document.getElementById("guide-next");
+  var back = document.getElementById("guide-back"), explore = document.getElementById("guide-explore");
+  var time = document.getElementById("guide-time"), gravity = document.getElementById("guide-gravity");
+  var data = document.getElementById("swing-reading").dataset;
+  var handoff = document.getElementById("guide-handoff"), interaction = document.getElementById("guide-check");
+  var contrast = document.getElementById("guide-compare");
+  var guideStep = 0;
+  var scenes = [
+    [guideTitle.textContent, guideRole.textContent, copy.textContent],
+    ["Which result should Codex recheck?", "You → Codex",
+      "The earlier " + Number(data.oldG).toFixed(2) + " m/s² pass used the original timings. Choose which result to follow."],
+    ["What did Codex find?", "Codex → You",
+      "The gravity fit falls below the required " + data.low + "–" + data.high + " m/s². Codex’s handoff covers the pendulum study alone."],
+    ["What does the next agent inherit?", "You · Reviewer",
+      "The next agent inherits the failed pendulum check. You decide whether to approve a revised estimate."]
+  ];
+  function showGuide(step, focus) {
+    if (!Number.isInteger(step) || step < 0 || step >= scenes.length) { step = 0; }
+    guideStep = step;
+    cover.dataset.guideStep = String(step);
+    guideTitle.textContent = scenes[step][0]; guideRole.textContent = scenes[step][1]; copy.textContent = scenes[step][2];
+    time.querySelector("span").textContent = (step ? data.newPeriod : data.oldPeriod) + " s";
+    time.href = step ? time.dataset.corrected : time.dataset.original;
+    gravity.href = step ? gravity.dataset.corrected : gravity.dataset.original;
+    document.getElementById("guide-fit").textContent = Number(step >= 2 ? data.newG : data.oldG).toFixed(2) + " m/s²";
+    document.getElementById("guide-verdict").textContent = ["✓ Passed", "↻ Recheck", "× Failed", "× Failed"][step];
+    document.getElementById("guide-retain").textContent = step ? "✓ Unchanged" : "Recorded";
+    start.hidden = step !== 0; interaction.hidden = step === 0; back.hidden = step === 0;
+    next.hidden = step !== 1 && step !== 2;
+    contrast.hidden = step !== 1;
+    cover.removeAttribute("data-guide-contrast");
+    next.textContent = step === 1 ? "Recheck gravity →" : "Review the handoff →";
+    handoff.hidden = step !== 3;
+    try { history.replaceState(Object.assign({}, history.state, {livingRecordGuide: step}), ""); } catch (_) {}
+    if (focus) {
+      (step === 0 ? start : step === 3 ? handoff.querySelector("a") : next).focus({preventScroll: true});
+    }
+  }
+  // The reader changes scenes. No renderer, clock or network request drives the guide.
+  guideTitle.setAttribute("aria-live", "polite");
+  copy.setAttribute("aria-live", "polite");
+  copy.setAttribute("aria-atomic", "true");
+  start.hidden = false; fallback.hidden = true; explore.hidden = false;
+  if (fileStart) { fileStart.hidden = false; }
+  start.addEventListener("click", function () { showGuide(1, true); });
+  next.addEventListener("click", function () { showGuide(guideStep + 1, true); });
+  contrast.addEventListener("click", function () {
+    if (guideStep !== 1) { return; }
+    cover.setAttribute("data-guide-contrast", "");
+    copy.textContent = contrast.dataset.explanation;
+  });
+  back.addEventListener("click", function () { showGuide(guideStep - 1, true); });
 
   function returnToArchitecture(focusStart) {
     demoOpen = false;
-    if (entrance) { entrance.cancel(); entrance = null; }
     if (controls) { controls.stop(); }
     demo.hidden = true; cover.hidden = false;
-    if (focusStart !== false) { start.focus({preventScroll: true}); }
+    if (focusStart !== false) { (explorerEntry || explore).focus(); }
   }
   function revealHeading() {
     var top = heading.getBoundingClientRect().top, covered = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
     if (top < covered || top >= window.innerHeight) { heading.scrollIntoView({block: "start", behavior: "instant"}); }
   }
-
   function openExample(savedStep, comparing, selection) {
-    var origin = savedStep === undefined && !cover.hidden ? cover.querySelector(".architecture-user").getBoundingClientRect() : null;
     demoOpen = true; cover.hidden = true; demo.hidden = false;
     if (!controls) { controls = createRecord(function () { return demoOpen; }, returnToArchitecture); }
     if (!controls) {
       demoOpen = false; demo.hidden = true; cover.hidden = false;
-      start.hidden = true; fallback.hidden = false;
-      if (savedStep === undefined && !selection) { fallback.click(); }
+      explore.hidden = true; if (fileStart) { fileStart.hidden = true; }
       return;
     }
     controls.play(savedStep, comparing, selection);
-    if (savedStep !== undefined || selection) { return; }
-    heading.focus({preventScroll: true});
-    var stageRect = participant.parentNode.getBoundingClientRect();
-    var navigation = demo.querySelector(".story-controls").getBoundingClientRect();
-    var stickyBottom = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
-    var spaceAboveTitle = heading.getBoundingClientRect().top - stickyBottom - 12;
-    if (spaceAboveTitle > 0 && Math.max(stageRect.bottom, navigation.bottom) > window.innerHeight) {
-      window.scrollBy({top: spaceAboveTitle, behavior: "instant"});
-    } else { revealHeading(); }
-    if (origin && participant.animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      var target = participant.getBoundingClientRect(), stageBounds = participant.parentNode.getBoundingClientRect();
-      var dx = origin.left + origin.width / 2 - target.left - target.width / 2;
-      var dy = origin.top + origin.height / 2 - target.top - target.height / 2;
-      if (origin.bottom < 0 || origin.top > window.innerHeight || Math.abs(dy) > stageBounds.height * 0.40) {
-        // The page may have scrolled to reveal the first caption.
-        dx = -Math.min(stageBounds.width * 0.38, 310); dy = 0;
-      }
-      entrance = participant.animate([
-        {transform: "translate(" + dx + "px, calc(-50% + " + dy + "px))"},
-        {transform: "translate(0, -50%)"}
-      ], {duration: 920, easing: "cubic-bezier(.33,0,.19,1)"});
-    }
   }
-  start.addEventListener("click", function () { openExample(); });
+  explore.addEventListener("click", function () {
+    explorerEntry = explore;
+    openExample(0);
+    if (!demoOpen) { fallback.click(); return; }
+    document.getElementById("record-explorer").open = true;
+    document.getElementById("record-picker").focus();
+  });
+  if (fileStart) { fileStart.addEventListener("click", function () {
+    explorerEntry = fileStart;
+    openExample(0);
+    if (!demoOpen) { fallback.click(); return; }
+    document.getElementById("mind-file-action").click();
+    heading.focus({preventScroll: true});
+    revealHeading();
+  }); }
   demo.addEventListener("click", function (event) {
     if (event.target.closest("[data-mind=next],[data-mind=previous]")) { revealHeading(); }
   });
@@ -72,7 +112,10 @@
         {key: key, changed: [], expanded: true, focus: "heading", direct: true});
     }
     else if (Number.isInteger(savedStep) && savedStep >= 0) { openExample(savedStep, state.livingRecordComparing === true); }
-    else if (demoOpen) { returnToArchitecture(false); }
+    else {
+      if (demoOpen) { returnToArchitecture(false); }
+      showGuide(state.livingRecordGuide, false);
+    }
   }
   window.addEventListener("popstate", restoreEntry);
   window.addEventListener("hashchange", function () {
@@ -476,6 +519,9 @@
   function tally() {
     var stale = staleCount();
     if (tallyEl) { tallyEl.innerHTML = "<span class=\"holds\">" + (records.length - stale) + " still apply</span><span class=\"stale\">" + stale + " to recheck</span>"; }
+    var action = document.getElementById("mind-file-action");
+    var input = action && files.find(function (node) { return node.l === action.getAttribute("data-file"); });
+    if (input) { action.textContent = input.changed ? "Reset simulated edits" : "Edit the experiment script"; }
   }
   // Standing is computed on input. A frame or pulse can only change what is drawn.
   function change(file, guided) {
@@ -956,7 +1002,7 @@
     var topInset = 0.105, visibleHeight = 0.865;
     w = Math.min(W, h * aspect / visibleHeight); h = w / aspect;
     box = [(W - w) / 2, (H - h * visibleHeight) / 2 - h * topInset, w, h];
-    unit = Math.max(0.62, Math.min(1.3, w / 640));
+    unit = Math.max(0.62, Math.min(2, w / 640));
     positionLabels = true;
     userPoint = project(HUB[0], HUB[1], 0);
     stage.style.setProperty("--shell-width", (box[2] * 0.88) + "px");
@@ -1028,7 +1074,16 @@
       }
       else {
         var file = files.find(function (node) { return node.l === button.getAttribute("data-file"); });
-        if (file) { selectRecord(file, false); simulateSelectedEdit(); }
+        if (file && button.getAttribute("data-mind") === "illustrate") {
+          dismissSelection(false);
+          if (file.changed) {
+            resetRecord(); leaveStory();
+            say("The original files are back. Each recorded result can be used again.");
+          } else {
+            change(file.i, false);
+          }
+          storyHeadline.textContent = "What changes after one file edit?";
+        } else if (file) { selectRecord(file, false); simulateSelectedEdit(); }
       }
       wake();
     });
@@ -1060,7 +1115,7 @@
   var readout = figure.querySelector(".mind-read"), narrative = figure.querySelector(".mind-story");
   var selected = null, inlineSelected = false, recordByKey = new Map();
   var evidenceKinds = {tested: "Example from a test", measured: "Recorded observation",
-    documented: "From the project documentation", forecast: "Prediction written before the run"};
+    documented: "From the project documentation", forecast: "Saved prediction"};
 
   // Public bookmarks remain the same when titles, counts, and node order change.
   var claimIds = [
@@ -1068,7 +1123,7 @@
     ["The answer names", "changed-file"], ["No route moves", "closure-waiver"],
     ["A result is shared", "shared-result"], ["A change to a file", "unassigned-input"],
     ["A declared domain", "ignored-input"], ["A check marked isolated", "isolated-files"],
-    ["Only a person", "review"], ["A work product", "output-inputs"],
+    ["An acceptance records", "review"], ["Only a person accepts", "review"], ["A work product", "output-inputs"],
     ["A new or lapsed", "changed-instruction"], ["The instruction that", "earlier-instruction"],
     ["A replacement governs", "temporary-instruction"], ["What governs a task", "startup-instructions"],
     ["A reminder shown", "judged-repeat"], ["A setup is credited", "observed-setup"],
@@ -1081,7 +1136,10 @@
     ["The tests notice", "removed-safeguards"], ["Reuse by basis", "reuse-counts"],
     ["Age limits trade", "age-limits"], ["In the open", "omitted-input"],
     ["Isolated, a check", "omitted-isolated-input"], ["Asking costs", "file-count-cost"],
-    ["Isolating a check costs", "isolation-cost"], ["The suite passes", "test-matrix"]
+    ["Cost of consulting", "file-count-cost"], ["Isolating a check costs", "isolation-cost"],
+    ["Added cost of isolating", "isolation-cost"], ["The first-minute reads run locally", "local-session-reads"],
+    ["Reading one demo session", "session-reading"], ["The suite passes", "test-matrix"],
+    ["Cases collected by the self-test suite", "test-matrix"]
   ];
   var readmeIds = [
     [/^\d+ tests$/, "readme-tests"], [/fail at/, "readme-releases"], [/removals are caught/, "readme-faults"],
@@ -1153,7 +1211,7 @@
     "temporary-instruction": "When the one-reviewer exception expired on March 8, releases once again required two reviewers.",
     "judged-repeat": "Three replies already included units, so three reminders produced zero repeated mistakes.",
     "observed-setup": "The session counted once, but no setup received credit because nobody recorded which one ran.",
-    "blocked-start": "An assistant tried to start a blocked repair and acquired no assignment.",
+    "blocked-start": "An agent tried to start a blocked repair and acquired no assignment.",
     "missing-label": "A row with no outcome label contributed zero to the harmless-outcome count.",
     "saved-answers": "A reviewer could recover the original answers behind scores of one and four.",
     "fixed-prediction": "Entering a time saving without a source was refused even when it fell inside the predicted range.",

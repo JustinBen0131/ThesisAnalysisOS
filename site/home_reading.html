@@ -1,0 +1,109 @@
+<div class="visitor-story">
+<section class="visit-intro" id="top">
+  <h1>Something changed.<br><em>What still holds?</em></h1>
+  <p class="lede">ThesisAnalysisOS keeps your AI agents' instructions, work, and evidence connected across tasks and sessions—so you know what can continue, what needs checking, and what still needs your decision.</p>
+  <a class="cue" href="#see">See the problem · 30 seconds <span aria-hidden="true">↓</span></a>
+</section>
+
+<section class="see" id="see" aria-label="The problem">
+  <div class="beats" id="lineage">
+    <article class="beat on" data-b="1" id="one-question"><h2>Every result stands on something.</h2>
+      <p>The data it used. The code that made it. A setting someone chose.</p></article>
+    <article class="beat" data-b="2" id="idea"><h2>Then one of those changes.</h2>
+      <p>Someone flips a setting. Someone edits a file. An ordinary Tuesday.</p></article>
+    <article class="beat" data-b="3"><h2>Nothing says so.</h2>
+      <p>The result still looks finished. One agent builds on it. Then another. Then ten.</p></article>
+    <article class="beat" data-b="4"><h2>Someone finds out late.</h2>
+      <p>A person, by luck. By then, everything built since is in doubt.</p></article>
+    <article class="beat" data-b="5"><h2>This says so. In one word.</h2>
+      <p>The result reads <b class="st">stale</b> and names what changed. Every agent and every person gets the same word. Check it again and it reads <b class="ho">holds</b>. The judgment stays yours.</p>
+      <a class="onward film-entry" href="#field-film">Watch it work · 1 min 40 <span aria-hidden="true">↓</span></a></article>
+  </div>
+  <div class="sticky">
+    <div class="obj" id="obj" data-b="1" aria-hidden="true">
+      <span class="lab">Built on it</span>
+      <div class="pile" id="pile"></div>
+      <div class="pilelabel" id="pilelabel">nothing yet</div>
+      <span class="lab">A result</span>
+      <div class="res"><span class="word" id="word">finished ✓</span><span class="why" id="why">&nbsp;</span></div>
+      <div class="stem"></div>
+      <span class="lab">Stands on</span>
+      <div class="base"><span class="chip">the data</span><span class="chip">the code</span><span class="chip" id="setting">a setting</span></div>
+      <div class="hint" id="hint"></div>
+    </div>
+  </div>
+</section>
+<div id="watch">
+$film
+<p class="film-next"><a class="onward" href="#try">Next, your turn. A real project, about a minute <span aria-hidden="true">↓</span></a></p>
+</div>
+<div id="try-decision"><span id="record"></span><span id="practice"></span></div>
+<!--next-agent-->
+<section class="visit-block" id="run">
+  <h2 class="h">Put it under your own work.</h2>
+  <p class="fine"><!--welcome-source--></p>
+  <!--welcome-command-block-->
+  <div class="loop">
+    <span><b>Change</b> a file<i class="st">stale</i></span>
+    <span><b>Check</b> it<i class="fa">fails</i></span>
+    <span><b>Redo</b> the result<i class="ho">holds</i></span>
+  </div>
+  <p class="fine">Your first ten seconds, on a practice result. Then it asks for your folder and your agents. Needs Git and Python 3.9 or later, and runs on your computer.</p>
+  <a class="code" href="record.html">Explore the project record</a>
+  <span aria-hidden="true"> · </span><a class="code" href="$github">Read the code</a>
+  <span class="fine">&nbsp; Open source under the Apache License 2.0.</span>
+  <p class="doors"><span>Keep going</span>
+    <a href="decision/#decisions">Five more real decisions</a>
+    <a href="workflows/transit/">A worked example</a>
+    <a href="evidence/">The evidence</a></p>
+  <details class="more"><summary>Everything else</summary>
+    <a href="llms.txt">Guide for AI agents</a>
+    <a href="hpc/">Shared computing</a>
+  </details>
+  <p class="fine source-option"><a href="#start">More setup options</a></p>
+</section>
+</div>
+<details class="research-library full-library"><summary>Download, examples and evidence</summary>
+<section id="start" class="reader-band"><div class="wrap">
+<h2>Try it on your computer.</h2>
+<div class="reading-start"><div><h3>Run the example</h3><p><!--demo-setup--></p><!--demo-command-block-->
+<p class="small">The demo runs offline in a temporary folder. <a href="records/demo.txt">Preview the output</a>.</p></div>
+<div><h3>Start your own project</h3><p>Open the local setup page from the same download. Change a practice file, check the old result, then redo it. You can see each answer before connecting your own folder and agents.</p>
+$welcome_command
+<details class="reading-drawer"><summary>Other ways to set up</summary><p>To connect a project from the terminal, replace the folder and command with your own.</p>
+$own_command
+<p>Or give your AI agent the setup message from the project’s README.</p>$bootstrap_block
+<p><a href="$github/generate">Use the GitHub template</a> · <a href="$github/blob/$ref/MANUAL.md">Read the manual</a></p></details></div></div>
+<div><details class="reading-drawer"><summary>Explore the pendulum experiment</summary>
+$first_lesson
+<details class="recorded-steps" id="recorded-steps"><summary>See each command and its recorded output</summary>
+<p class="runplay"><button type="button" class="button ghost" data-play hidden aria-pressed="false">&#9654; Play the steps</button>
+<a href="#run-3">Go to the timing correction</a></p><div class="stepper">$steps</div></details>
+<p><a href="records/demo-transcript.txt">Read the full transcript</a> · <a href="evidence/pendulum/">Compare the measurements</a></p></details></div>
+</div></section>
+
+
+<section id="evidence" class="reader-band"><div class="wrap">
+<div class="reading-pair"><h2>What can you check for yourself?</h2>
+<div><p>After each file edit, the experiment requested all $checks results again. That made $relied requests. When every check listed the files it read, the software ran $trace_executions checks and reused a stale result $trace_wrong times.</p>
+<p>Then each check left one input off its list. In $hidden_wrong of those $relied requests, the software used a result whose inputs had changed.</p>
+<a href="evidence/#reuse-full">Inspect the measurements and the missing-input case</a></div></div>
+<details class="reading-drawer"><summary>Try the six-check experiment</summary>
+<figure class="experiment reuse-example" aria-labelledby="reuse-question"><figcaption><h3 id="reuse-question">Which checks need to run after one file changes?</h3></figcaption>
+$reuse_play
+<details class="reuse-details"><summary>See all recorded comparisons</summary><p>$reuse_recorded</p>$bars
+<p><a href="records/reuse_frontier.json">Recorded data</a> · <a href="$github/blob/$ref/evals/reuse_frontier.py">Experiment code</a></p></details></figure></details>
+<div class="reading-links"><a href="evidence/">All evidence and methods</a><a href="exchange/">Open research questions</a></div>
+</div></section>
+
+<section id="workflows" class="reader-band"><div class="wrap reading-pair">
+<h2 id="research-uses">Try a different problem.</h2><div class="reading-links">
+<a href="workflows/transit/#handoff">Pick up the next shift’s bus report</a>
+<a href="workflows/review/">Review an instrument comparison</a>
+<a href="hpc/">Plan a large computing run</a></div></div></section>
+
+<section id="agents" class="reader-band"><div class="wrap reading-pair">
+<h2>Follow a result to its source.</h2><div><p>Open a claim to find its test, inputs and recorded outcome. The guide for AI agents leads to the same evidence.</p>
+<details class="reading-drawer"><summary>Inspect the code and tests behind these decisions</summary><ul>$source_readings</ul></details>
+<div class="reading-links"><a href="llms.txt">Agent guide</a><a href="record.html" data-record-archive>Explore the project record</a><a href="claims.json">Claim records</a><a href="source/">Browse this build’s source</a></div></div></div></section>
+</details>

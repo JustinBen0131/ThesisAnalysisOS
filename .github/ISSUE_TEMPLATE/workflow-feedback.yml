@@ -5,7 +5,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        Think of one task. A useful detail is the moment you found what you needed, had to correct something, or got stuck. Share only what can be public. Your answers become a public GitHub issue when you submit.
+        Your answers become a **public GitHub issue** when you submit. Pick one moment when TAOS helped you reuse work, sent you back to check a result, or left you unsure. A small example with invented data is enough. Keep private receipts, project names and credentials in your workspace.
+
+        If you suspect a security problem, use the [private reporting form](https://github.com/JustinBen0131/ThesisAnalysisOS/security/advisories/new).
   - type: dropdown
     id: setting
     attributes:
@@ -26,6 +28,7 @@ body:
         - Find the evidence behind a result
         - Decide what to rerun after a change
         - Pick up work from another person or assistant
+        - Review a compute campaign and its usable outputs
         - Set up or run a check
         - Something else
     validations:
@@ -55,12 +58,14 @@ body:
         - Read the assistant's answer
         - Have not checked
         - No result to check
+    validations:
+      required: true
   - type: textarea
     id: observation
     attributes:
       label: What should a fresh assistant do with the same inputs?
       description: Give one step you would keep or change and one result that would show it worked. If you ran your own copy, a public file, software version or saved check helps someone repeat it.
-      placeholder: Only the timing file changed. The next assistant should rerun the gravity fit and reuse the instrument comparison. I would check which two tasks it ran or skipped.
+      placeholder: I changed one pendulum reading. I expected the gravity fit to go stale and the independent instrument check to stay usable. I compared the two saved results after the edit.
   - type: input
     id: website-build
     attributes:

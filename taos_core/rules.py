@@ -221,9 +221,9 @@ def _cmd_audit(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    rule = subparsers.add_parser("rule", help="instructions that keep their date, scope and limits")
+    rule = subparsers.add_parser("rule", help="keep an instruction in its own words, with its date and scope")
     sub = rule.add_subparsers(dest="rule_cmd", required=True)
-    agents = list(events_mod.AGENTS)
+    agents = subparsers.actors
 
     adder = sub.add_parser("add", help="save an instruction as its original words")
     adder.add_argument("--quote", required=True)

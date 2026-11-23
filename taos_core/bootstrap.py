@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import argparse
+import fcntl
 import json
+import os
 import re
+import shlex
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from . import atoms as atoms_mod
 from . import brief as brief_mod
 from . import config as config_mod
 from . import doctor as doctor_mod
@@ -18,8 +21,8 @@ from . import projections as projections_mod
 from . import proposals as proposals_mod
 from . import tasks as tasks_mod
 from .paths import Paths
-from .store import atomic_write_json, atomic_write_text, locked, read_json, utc_now
-from .util import TaosError, slugify, validate_json_schema
+from .store import atomic_write_json, atomic_write_text, locked, read_json, sha256_file, sha256_text, utc_now
+from .util import TaosError, validate_json_schema
 
 BEGIN = "<!-- taos:begin -->"
 END = "<!-- taos:end -->"
@@ -76,10 +79,15 @@ def validate_answers(answers: Any, paths: Optional[Paths] = None) -> List[str]:
         for index, task in enumerate(tasks):
             if not isinstance(task, dict) or not str(task.get("title", "")).strip():
                 problems.append("first_tasks[{0}] needs a title".format(index))
+    agents = answers.get("agents", list(config_mod.DEFAULT_AGENTS))
+    problems.extend(config_mod.roster_problems(agents))
     for index, workspace in enumerate(answers.get("workspaces") or []):
         if not isinstance(workspace, dict) or not workspace.get("path"):
             problems.append("workspaces[{0}] needs a path".format(index))
             continue
+        owner = workspace.get("agent", "any")
+        if owner != "any" and (not isinstance(agents, list) or owner not in agents):
+            problems.append(f"workspaces[{index}].agent must be any or a name in agents")
         if not str(workspace["path"]).startswith("/"):
             problems.append("workspaces[{0}].path must be absolute".format(index))
     return [p for p in problems if p]
@@ -310,15 +318,76 @@ def _bullets(items: List[str]) -> str:
     return "\n".join("- {0}".format(item) for item in items)
 
 
-def _absolutize_codex_hooks(paths: Paths) -> None:
-    """Codex runs hook commands relative to its cwd; pin them to this clone."""
-    source = paths.home / ".codex" / "hooks.json"
-    if not source.is_file():
-        return
+HOOK_FILES = (".codex/hooks.json", ".claude/settings.json")
+
+# These are the untouched, unconstructed files distributed in the public clone.
+# A guard marker, heading or file name alone is never proof of ownership.
+STARTER_DIGESTS = {
+    "AGENTS.md": "f7ff9cad2c36e679eac5727f05d8c021f28de22ca735b40661853cac7bfa1d0f",
+    "CLAUDE.md": "99b7f7a1fb2a7041f7deee3659fb53551341d9d67149c549bef60701e9b26378",
+    "kernels/PROJECT_KERNEL.md": "999c64dcb56f6147ef5d4474e37ce8a0e0ceb6c587aaa9b520d94d8a8b16a371",
+    "kernels/PRINCIPAL_KERNEL.md": "182db639d1d10c59456b85471fbd1ce14e67c4b7c88f1a58c0826752a4bc5db3",
+}
+
+
+def _cli(paths: Paths) -> str:
+    return shlex.join([str(paths.launcher), "--home", str(paths.home)])
+
+
+def _pin_hook(paths: Paths, command: str) -> str:
+    for name in ("guard.py", "session_start.py", "stop_labels.py"):
+        script = "hooks/" + name
+        path = str(paths.home / script)
+        # The last spelling was emitted by earlier setups even for paths with spaces.
+        prefixes = ("python3 " + script, 'python3 "${CLAUDE_PROJECT_DIR}/' + script + '"', "python3 " + path)
+        for prefix in prefixes:
+            if command == prefix or command.startswith(prefix + " "):
+                return "python3 " + shlex.quote(path) + command[len(prefix):]
+    return command
+
+
+def _hook_payload(paths: Paths, source: Path) -> str:
     text = source.read_text(encoding="utf-8")
-    pinned = text.replace('"python3 hooks/', '"python3 {0}/hooks/'.format(paths.home))
-    if pinned != text:
-        atomic_write_text(source, pinned)
+    try:
+        settings = json.loads(text)
+        changed = False
+        for groups in settings.get("hooks", {}).values():
+            for group in groups:
+                for hook in group.get("hooks", []):
+                    command = hook.get("command", "")
+                    pinned = _pin_hook(paths, command)
+                    if pinned != command:
+                        hook["command"] = pinned
+                        changed = True
+        return json.dumps(settings, indent=2, ensure_ascii=False) + "\n" if changed else text
+    except (ValueError, AttributeError, TypeError) as exc:
+        raise TaosError("check the hook settings in {0}: {1}".format(source, exc))
+
+
+def _render_home_files(paths: Paths, config: Dict[str, Any], previous: Dict[str, Any],
+                       values: Dict[str, str]) -> List[str]:
+    generated = {}
+    kept = []
+    for rel, starter_digest in STARTER_DIGESTS.items():
+        target = paths.home / rel
+        template = paths.templates_dir / (target.name + ".tmpl")
+        if not template.is_file():
+            continue
+        text = _render(template.read_text(encoding="utf-8"), values)
+        if target.parent == paths.home:
+            text = _strip_guard(text)
+        if target.resolve() != target or (target.exists() and not target.is_file()):
+            kept.append(rel)
+            continue
+        if target.is_file():
+            digest = sha256_file(target)
+            if digest != previous.get("generated_files", {}).get(rel) and digest != starter_digest:
+                kept.append(rel)
+                continue
+        atomic_write_text(target, text)
+        generated[rel] = sha256_text(text)
+    config["generated_files"] = generated
+    return kept
 
 
 def construct(paths: Paths, answers: Dict[str, Any], actor: str = "system") -> Dict[str, Any]:
@@ -327,99 +396,131 @@ def construct(paths: Paths, answers: Dict[str, Any], actor: str = "system") -> D
         raise TaosError("answers are not usable yet:\n  - " + "\n  - ".join(problems))
 
     with locked(paths):
-        paths.ensure_state()
-        config = _config_from(answers)
-        atomic_write_json(paths.config_file, config)
+        return _construct(paths, answers, actor)
 
-        if not paths.allocator_file.is_file():
-            atomic_write_json(
-                paths.allocator_file,
-                {"schema": tasks_mod.ALLOCATOR_SCHEMA, "prefix": config["project"]["prefix"], "next": 1, "updated_at": utc_now()},
-            )
-        for path, empty in (
-            (paths.tasks_file, {"schema": tasks_mod.TASKS_SCHEMA, "tasks": {}}),
-            (paths.claims_file, {"schema": "TAOS_CLAIMS_V1", "claims": []}),
-            (paths.decisions_file, {"schema": "TAOS_DECISIONS_V1", "decisions": []}),
-        ):
-            if not path.is_file():
-                atomic_write_json(path, empty)
 
-        values = {
-            "principal_name": config["principal"]["name"],
-            "project_name": config["project"]["name"],
-            "prefix": config["project"]["prefix"],
-            "stack": config["project"]["stack"],
-            "agents": ", ".join(config["agents"]),
-            "workspaces_block": _workspace_block(config),
-            "human_only_block": _bullets(config["human_only"]),
-            "git_block": _git_block(config),
-            "gates_block": _gates_block(config),
-            "autonomy_block": _autonomy_block(config),
-            "attention_block": _attention_block(config),
-            "constructed_at": config["constructed_at"],
-        }
-        _absolutize_codex_hooks(paths)
-        for template_name, target in (
-            ("AGENTS.md.tmpl", paths.agents_md),
-            ("CLAUDE.md.tmpl", paths.claude_md),
-        ):
-            template_path = paths.templates_dir / template_name
-            if template_path.is_file():
-                atomic_write_text(target, _strip_guard(_render(template_path.read_text(encoding="utf-8"), values)))
+def _construct(paths: Paths, answers: Dict[str, Any], actor: str) -> Dict[str, Any]:
+    previous = read_json(paths.config_file, {}) or {}
+    if not answers.get("workspaces"):
+        answers = dict(answers, workspaces=[{"path": str(paths.home), "primary": True}])
+    config = _config_from(answers)
+    added_agents = previous.get("added_agents") or []
+    if added_agents:
+        config["added_agents"] = added_agents
+        config["agents"] = list(dict.fromkeys(config["agents"] + added_agents))
+    if actor not in config["agents"] + list(config_mod.RESERVED_ACTORS):
+        raise TaosError(f"Setup actor {actor!r} is outside the project roster.")
 
-        for template_name, target in (
-            ("PROJECT_KERNEL.md.tmpl", paths.kernels_dir / "PROJECT_KERNEL.md"),
-            ("PRINCIPAL_KERNEL.md.tmpl", paths.kernels_dir / "PRINCIPAL_KERNEL.md"),
-        ):
-            template_path = paths.templates_dir / template_name
-            if template_path.is_file():
-                atomic_write_text(target, _render(template_path.read_text(encoding="utf-8"), values))
+    store = tasks_mod.TaskStore(paths)
+    task_records = store.load()["tasks"]
+    prefix = config["project"]["prefix"]
+    for task_id in task_records:
+        if not task_id.startswith(prefix + "-"):
+            raise TaosError(f"This project already has task {task_id}. Keep its prefix {task_id.rsplit('-', 1)[0]} "
+                            f"in the setup answers. To start a project with prefix {prefix}, use a new copy.")
+    allocator = read_json(paths.allocator_file)
+    if paths.allocator_file.exists() and (not isinstance(allocator, dict) or type(allocator.get("next")) is not int):
+        raise TaosError("The project's ID allocator is unreadable. Restore it before repeating setup.")
+    if allocator is None:
+        if task_records:
+            raise TaosError("Existing tasks have no ID allocator. Restore the project's allocator before repeating setup.")
+        atomic_write_json(paths.allocator_file, {"schema": tasks_mod.ALLOCATOR_SCHEMA, "prefix": prefix,
+                                                 "next": 1, "updated_at": utc_now()})
+    elif allocator.get("prefix") != prefix:
+        if task_records or allocator.get("next") != 1:
+            raise TaosError(f"The task ID allocator uses prefix {allocator.get('prefix')}. "
+                            f"Check the saved allocator before repeating setup with prefix {prefix}.")
+        atomic_write_json(paths.allocator_file, dict(allocator, prefix=prefix, updated_at=utc_now()))
+    for path, empty in (
+        (paths.tasks_file, {"schema": tasks_mod.TASKS_SCHEMA, "tasks": {}}),
+        (paths.claims_file, {"schema": "TAOS_CLAIMS_V1", "claims": []}),
+        (paths.decisions_file, {"schema": "TAOS_DECISIONS_V1", "decisions": []}),
+    ):
+        if not path.is_file():
+            atomic_write_json(path, empty)
 
-        store = tasks_mod.TaskStore(paths)
-        existing_titles = {t.get("title") for t in store.list()}
-        created = []
-        for item in answers.get("first_tasks") or []:
-            title = str(item.get("title", "")).strip()
-            if not title or title in existing_titles:
-                continue
-            task = store.create(
-                title=title,
-                actor=actor,
-                goal=str(item.get("goal") or ""),
-                next_action=str(item.get("next_action") or ""),
-                priority=str(item.get("priority") or "P2"),
-                status="next",
-                done_when=str(item.get("done_when") or ""),
-                verification=str(item.get("verification") or ""),
-            )
-            created.append(task["id"])
+    values = {
+        "taos_cli": _cli(paths),
+        "principal_name": config["principal"]["name"],
+        "project_name": config["project"]["name"],
+        "prefix": config["project"]["prefix"],
+        "stack": config["project"]["stack"],
+        "agents": "see `taos bootstrap status` for the current roster",
+        "workspaces_block": _workspace_block(config),
+        "human_only_block": _bullets(config["human_only"]),
+        "git_block": _git_block(config),
+        "gates_block": _gates_block(config),
+        "autonomy_block": _autonomy_block(config),
+        "attention_block": _attention_block(config),
+        "constructed_at": config["constructed_at"],
+    }
+    kept = _render_home_files(paths, config, previous, values)
+    rel = ".codex/hooks.json"
+    source = paths.home / rel
+    if source.exists() or source.is_symlink():
+        # Pin the distributed hook once. Leave a person's own root settings intact.
+        original = "1cb6a56af682424f7e054b89e54599381870f6722af1717c95ef8087b593a9ac"
+        if source.resolve() == source and source.is_file() and sha256_file(source) in (
+                original, previous.get("generated_files", {}).get(rel)):
+            pinned = _hook_payload(paths, source)
+            if pinned != source.read_text(encoding="utf-8"):
+                atomic_write_text(source, pinned)
+            config["generated_files"][rel] = sha256_text(pinned)
+        else:
+            kept.append(rel)
+    atomic_write_json(paths.config_file, config)
 
-        seeded = []
-        for correction in answers.get("agent_corrections") or []:
-            text = str(correction).strip()
-            if not text:
-                continue
-            proposal = proposals_mod.propose(
-                paths,
-                kind="atom",
-                title=text[:70],
-                body=(
-                    "{0}\n\nThis came from the principal at setup. Turn it into a checkable "
-                    "atom when you have seen it happen once in real work, then propose it "
-                    "again with --atom-json so `taos doctor` enforces it.".format(text)
-                ),
-                evidence=["setup answer 9"],
-                agent="system" if actor not in ("codex", "claude") else actor,
-            )
-            seeded.append(proposal["id"])
+    existing_titles = {t.get("title") for t in task_records.values()}
+    created = []
+    for item in answers.get("first_tasks") or []:
+        title = str(item.get("title", "")).strip()
+        if not title or title in existing_titles:
+            continue
+        task = store.create(
+            title=title,
+            actor=actor,
+            goal=str(item.get("goal") or ""),
+            next_action=str(item.get("next_action") or ""),
+            priority=str(item.get("priority") or "P2"),
+            status="next",
+            done_when=str(item.get("done_when") or ""),
+            verification=str(item.get("verification") or ""),
+        )
+        created.append(task["id"])
+        existing_titles.add(title)
+
+    seeded = []
+    recorded_suggestions = {p.get("body") for p in proposals_mod.all_proposals(paths)
+                            if p.get("kind") == "atom" and p.get("evidence") == ["setup answer 9"]}
+    for correction in answers.get("agent_corrections") or []:
+        text = str(correction).strip()
+        if not text:
+            continue
+        body = (f"{text}\n\nThis came from the principal at setup. Turn it into a checkable "
+                "atom when you have seen it happen once in real work, then propose it "
+                "again with --atom-json so `taos doctor` enforces it.")
+        if body in recorded_suggestions:
+            continue
+        proposal = proposals_mod.propose(
+            paths,
+            kind="atom",
+            title=text[:70],
+            body=body,
+            evidence=["setup answer 9"],
+            agent=actor if actor in config["agents"] else "system",
+        )
+        seeded.append(proposal["id"])
+        recorded_suggestions.add(body)
 
     linked = []
-    if config.get("install_hooks_in_workspaces") is not None:
-        for workspace in config.get("workspaces") or []:
-            try:
-                linked.append(link_workspace(paths, Path(workspace["path"]), install_hooks=config["install_hooks_in_workspaces"]))
-            except TaosError as exc:
-                linked.append({"path": workspace["path"], "error": str(exc)})
+    for workspace in config["workspaces"]:
+        target = Path(workspace["path"])
+        if target.resolve() == paths.home:
+            continue
+        try:
+            linked.append(link_workspace(paths, target, configured_hooks=config["install_hooks_in_workspaces"]))
+        except (OSError, TaosError) as exc:
+            linked.append({"path": str(target), "error": str(exc)})
 
     # What token telemetry this machine actually writes. Evidence, at setup, once.
     telemetry_probe: Dict[str, Any] = {}
@@ -441,6 +542,8 @@ def construct(paths: Paths, answers: Dict[str, Any], actor: str = "system") -> D
         telemetry_probe = {}
 
     for name in ("OS_KERNEL", "PROJECT_KERNEL", "PRINCIPAL_KERNEL"):
+        if "kernels/" + name + ".md" in kept:
+            continue
         try:
             kernels_mod.index_refresh(paths, name, "taos")
         except TaosError:
@@ -464,127 +567,219 @@ def construct(paths: Paths, answers: Dict[str, Any], actor: str = "system") -> D
         "tasks_created": created,
         "proposals_seeded": seeded,
         "workspaces_linked": linked,
+        "kept": kept,
         "telemetry": telemetry_probe,
         "doctor": report,
     }
 
 
-def _upsert_block(path: Path, block: str) -> str:
-    """Add or replace our marked block without touching anything else."""
-    if path.is_file():
-        text = path.read_text(encoding="utf-8")
-    else:
-        text = ""
-    payload = "{0}\n{1}\n{2}".format(BEGIN, block.strip(), END)
-    if BEGIN in text and END in text:
-        head, rest = text.split(BEGIN, 1)
-        _, tail = rest.split(END, 1)
-        new_text = head + payload + tail
+def _edit_block(path: Path, block: Optional[str], receipts: Dict[str, Any]) -> str:
+    """Change only the exact delimited text we last inserted, including its spacing."""
+    previous = receipts.pop(path.name, {})
+    existed = path.is_file()
+    text = path.read_bytes().decode("utf-8") if existed else ""
+    mode = path.stat().st_mode & 0o777 if existed else 0o644
+    if BEGIN in text or END in text:
+        if text.count(BEGIN) != 1 or text.count(END) != 1 or text.index(END) < text.index(BEGIN):
+            return "kept (review the TAOS block markers)"
+        gap = previous.get("gap", "")
+        if gap not in ("", "\n", "\n\n"):
+            return "kept (unverified block)"
+        start = text.index(BEGIN) - len(gap)
+        end = text.index(END) + len(END) + 1
+        if start < 0 or sha256_text(text[start:end]) != previous.get("sha256"):
+            return "kept (changed or unverified block)"
+        before, after = text[:start], text[end:]
+        created = previous.get("created") is True
         action = "updated"
     else:
-        separator = "\n\n" if text.strip() else ""
-        new_text = text.rstrip() + separator + payload + "\n"
+        if block is None:
+            return "no block" if existed else "absent"
+        gap = "" if not text or text.endswith("\n\n") else "\n" if text.endswith("\n") else "\n\n"
+        before, after, created = text, "", not existed
         action = "appended"
-    atomic_write_text(path, new_text if new_text.endswith("\n") else new_text + "\n")
+    if block is None:
+        if created and not before and not after:
+            path.unlink()
+            return "removed (the file held only our block)"
+        atomic_write_text(path, before + after, mode=mode)
+        return "block removed"
+    payload = gap + BEGIN + "\n" + block.strip() + "\n" + END + "\n"
+    new_text = before + payload + after
+    if text != new_text:
+        atomic_write_text(path, new_text, mode=mode)
+    receipts[path.name] = {"sha256": sha256_text(payload), "gap": gap, "created": created}
     return action
 
 
-def link_workspace(paths: Paths, workspace: Path, install_hooks: bool = True) -> Dict[str, Any]:
-    workspace = Path(workspace).expanduser()
-    if not workspace.is_dir():
-        raise TaosError("workspace does not exist: {0}".format(workspace))
+def _safe_target(workspace: Path, rel: str) -> Path:
+    target = workspace / rel
+    if target.resolve() != target or (target.exists() and not target.is_file()):
+        raise TaosError("kept {0}; a link destination must be a regular file inside the workspace".format(target))
+    if target.parent.exists() and not target.parent.is_dir():
+        raise TaosError("kept {0}; the parent must be a directory".format(target))
+    return target
 
-    template_path = paths.templates_dir / "workspace_block.md.tmpl"
-    if not template_path.is_file():
-        raise TaosError("missing template: taos_core/templates/workspace_block.md.tmpl")
-    config = config_mod.load_soft(paths)
-    block = _render(
-        template_path.read_text(encoding="utf-8"),
-        {
-            "taos_home": str(paths.home),
+
+@contextmanager
+def _workspace_link(paths: Paths, workspace: Path):
+    workspace = Path(workspace).expanduser()
+    if workspace.is_symlink() or not workspace.is_dir():
+        raise TaosError("workspace does not exist or is a symbolic link: {0}".format(workspace))
+    workspace = workspace.resolve()
+    if workspace == paths.home:
+        raise TaosError("the OS home is already its own workspace; use its root instructions directly")
+    # A directory lock serializes two OS homes attempting the first link without
+    # leaving another file in the project. Always take the OS lock first.
+    with locked(paths):
+        fd = os.open(str(workspace), os.O_RDONLY)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            pointer = _safe_target(workspace, ".taos-link.json")
+            previous = read_json(pointer)
+            if pointer.exists():
+                if not isinstance(previous, dict) or previous.get("schema") != "TAOS_LINK_V1":
+                    raise TaosError("kept {0}; its existing link could not be verified".format(pointer))
+                if (not isinstance(previous.get("installed", []), list)
+                        or not isinstance(previous.get("file_sha256", {}), dict)
+                        or not isinstance(previous.get("blocks", {}), dict)
+                        or not all(isinstance(record, dict) for record in previous.get("blocks", {}).values())):
+                    raise TaosError("kept {0}; its ownership records could not be verified".format(pointer))
+                if previous.get("taos_home") != str(paths.home):
+                    raise TaosError("kept {0}; unlink it from its original OS home first".format(pointer))
+            yield workspace, pointer, previous or {}
+        except TaosError:
+            raise
+        except (OSError, ValueError, RuntimeError) as exc:
+            raise TaosError("workspace {0}: {1}".format(workspace, exc))
+        finally:
+            os.close(fd)
+
+
+def _drop_generated(target: Path, digest: Optional[str]) -> str:
+    if not target.exists():
+        return "absent"
+    if digest and sha256_file(target) == digest:
+        target.unlink()
+        return "removed"
+    return "kept (edited or pre-existing)"
+
+
+def _snippet(rel: str) -> str:
+    path = Path(rel)
+    return str(path.with_name(path.stem + ".taos-snippet.json"))
+
+
+def link_workspace(paths: Paths, workspace: Path, install_hooks: Optional[bool] = None,
+                   *, configured_hooks: Optional[bool] = None) -> Dict[str, Any]:
+    with _workspace_link(paths, workspace) as (workspace, pointer, previous):
+        config = config_mod.load_soft(paths)
+        # CLI overrides are per workspace. Construction follows its configured
+        # preference while retaining any explicit per-workspace opt-out.
+        hook_override = install_hooks if install_hooks is not None else previous.get("hook_override")
+        if hook_override is None and previous and "hook_override" not in previous and not previous.get("installed"):
+            hook_override = False  # an older, possibly docs-only link
+        if install_hooks is not None:
+            enabled = install_hooks
+        elif configured_hooks is not None:
+            enabled = configured_hooks and hook_override is not False
+        else:
+            enabled = previous.get("hooks_enabled", hook_override is not False)
+
+        template = paths.templates_dir / "workspace_block.md.tmpl"
+        if not template.is_file():
+            raise TaosError("missing template: taos_core/templates/workspace_block.md.tmpl")
+        block = _render(template.read_text(encoding="utf-8"), {
+            "taos_home": str(paths.home), "taos_cli": _cli(paths),
             "project_name": config.get("project", {}).get("name", "this project"),
             "prefix": config.get("project", {}).get("prefix", "TASK"),
-        },
-    )
+        })
+        hashes = dict(previous.get("file_sha256", {}))
+        docs = dict(previous.get("blocks", {}))
+        # Verify every prospective destination and source before changing this link.
+        for name in ("AGENTS.md", "CLAUDE.md"):
+            target = _safe_target(workspace, name)
+            if target.exists():
+                target.read_bytes().decode("utf-8")
+        payloads = {}
+        for rel in HOOK_FILES:
+            for name in (rel, _snippet(rel)):
+                if enabled or name in hashes or name in previous.get("installed", []):
+                    _safe_target(workspace, name)
+            if enabled:
+                source = _safe_target(paths.home, rel)
+                if source.is_file():
+                    payloads[rel] = _hook_payload(paths, source)
 
-    actions = {
-        "AGENTS.md": _upsert_block(workspace / "AGENTS.md", block),
-        "CLAUDE.md": _upsert_block(workspace / "CLAUDE.md", block),
-    }
-
-    installed: List[str] = []
-    hooks: Dict[str, str] = {}
-    if install_hooks:
-        for source_rel, target_rel in (
-            (".codex/hooks.json", ".codex/hooks.json"),
-            (".claude/settings.json", ".claude/settings.json"),
-        ):
-            source = paths.home / source_rel
-            if not source.is_file():
+        actions = {name: _edit_block(workspace / name, block, docs) for name in ("AGENTS.md", "CLAUDE.md")}
+        hooks = {}
+        generated = {}
+        for rel in HOOK_FILES:
+            target = workspace / rel
+            snippet = _snippet(rel)
+            if not enabled or rel not in payloads:
+                hooks[rel] = "hooks disabled" if not enabled else "hook source missing: " + str(paths.home / rel)
+                for name in (rel, snippet):
+                    if name in hashes or name in previous.get("installed", []):
+                        if enabled:
+                            hooks[name] = "kept (source missing)"
+                            if name in hashes:
+                                generated[name] = hashes[name]
+                        else:
+                            hooks[name] = _drop_generated(workspace / name, hashes.get(name)) + " (hooks disabled)"
                 continue
-            payload = source.read_text(encoding="utf-8").replace("${CLAUDE_PROJECT_DIR}", str(paths.home))
-            payload = payload.replace('"python3 hooks/', '"python3 {0}/hooks/'.format(paths.home))
-            target = workspace / target_rel
-            previous = read_json(workspace / ".taos-link.json", {}) or {}
-            ours_before = target_rel in (previous.get("installed") or [])
-            if target.exists() and not ours_before:
-                snippet = target.with_name(target.stem + ".taos-snippet.json")
-                atomic_write_text(snippet, payload)
-                hooks[target_rel] = "existing file kept; merge {0} by hand".format(snippet.name)
-            else:
-                target.parent.mkdir(parents=True, exist_ok=True)
+            payload = payloads[rel]
+            if not target.exists() or sha256_file(target) == hashes.get(rel):
                 atomic_write_text(target, payload)
-                hooks[target_rel] = "written"
-                installed.append(target_rel)
+                generated[rel] = sha256_text(payload)
+                hooks[rel] = "written"
+                if snippet in hashes:
+                    hooks[snippet] = _drop_generated(workspace / snippet, hashes[snippet])
+                continue
+            suggestion = workspace / snippet
+            if not suggestion.exists() or sha256_file(suggestion) == hashes.get(snippet):
+                atomic_write_text(suggestion, payload)
+                generated[snippet] = sha256_text(payload)
+                hooks[rel] = "existing file kept; merge {0} by hand".format(snippet)
+            else:
+                hooks[rel] = "existing file and {0} kept; review {1} and merge the TAOS hooks by hand".format(
+                    snippet, paths.home / rel)
 
-    atomic_write_json(
-        workspace / ".taos-link.json",
-        {"schema": "TAOS_LINK_V1", "taos_home": str(paths.home), "linked_at": utc_now(), "installed": installed},
-        mode=0o644,
-    )
-    events_mod.emit(paths, "workspace_link", "system", workspace=str(workspace), hooks=bool(install_hooks))
-    return {"path": str(workspace), "docs": actions, "hooks": hooks}
-
-
-def _remove_block(path: Path) -> str:
-    if not path.is_file():
-        return "absent"
-    text = path.read_text(encoding="utf-8")
-    if BEGIN not in text or END not in text:
-        return "no block"
-    head, rest = text.split(BEGIN, 1)
-    _, tail = rest.split(END, 1)
-    new_text = (head.rstrip() + "\n" + tail.lstrip("\n")).strip("\n")
-    if new_text.strip():
-        atomic_write_text(path, new_text + "\n")
-        return "block removed"
-    path.unlink()
-    return "removed (the file held only our block)"
+        atomic_write_json(pointer, {"schema": "TAOS_LINK_V1", "taos_home": str(paths.home),
+                                   "linked_at": utc_now(), "hook_override": hook_override,
+                                   "hooks_enabled": enabled, "blocks": docs,
+                                   "installed": [rel for rel in HOOK_FILES if rel in generated],
+                                   "file_sha256": generated}, mode=0o644)
+        events_mod.emit(paths, "workspace_link", "system", workspace=str(workspace), hooks=enabled)
+        return {"path": str(workspace), "docs": actions, "hooks": hooks}
 
 
 def unlink_workspace(paths: Paths, workspace: Path) -> Dict[str, Any]:
     """Drop out cleanly: remove exactly what link_workspace added, nothing else."""
-    workspace = Path(workspace).expanduser()
-    if not workspace.is_dir():
-        raise TaosError("workspace does not exist: {0}".format(workspace))
-    link = read_json(workspace / ".taos-link.json", {}) or {}
-    removed: Dict[str, str] = {
-        "AGENTS.md": _remove_block(workspace / "AGENTS.md"),
-        "CLAUDE.md": _remove_block(workspace / "CLAUDE.md"),
-    }
-    for rel in link.get("installed") or []:
-        target = workspace / rel
-        if target.is_file():
-            target.unlink()
-            removed[rel] = "removed"
-    for snippet in workspace.glob("*/*.taos-snippet.json"):
-        snippet.unlink()
-        removed[str(snippet.relative_to(workspace))] = "removed"
-    if (workspace / ".taos-link.json").is_file():
-        (workspace / ".taos-link.json").unlink()
+    with _workspace_link(paths, workspace) as (workspace, pointer, link):
+        if not link:
+            return {"path": str(workspace), "removed": {}, "already_unlinked": True}
+        hashes = link.get("file_sha256", {})
+        docs = dict(link.get("blocks", {}))
+        removed = {}
+        for name in ("AGENTS.md", "CLAUDE.md"):
+            try:
+                removed[name] = _edit_block(_safe_target(workspace, name), None, docs)
+            except (TaosError, UnicodeError) as exc:
+                removed[name] = "kept: {0}".format(exc)
+        for rel in HOOK_FILES:
+            for name in (rel, _snippet(rel)):
+                try:
+                    target = _safe_target(workspace, name)
+                except TaosError as exc:
+                    removed[name] = str(exc)
+                    continue
+                if target.exists():
+                    removed[name] = _drop_generated(target, hashes.get(name))
+        pointer.unlink()
         removed[".taos-link.json"] = "removed"
-    events_mod.emit(paths, "workspace_unlink", "human", workspace=str(workspace))
-    return {"path": str(workspace), "removed": removed}
+        events_mod.emit(paths, "workspace_unlink", "human", workspace=str(workspace))
+        return {"path": str(workspace), "removed": removed}
 
 
 PAUSE_FILE = "paused"
@@ -650,11 +845,19 @@ def _cmd_construct(args: argparse.Namespace, paths: Paths) -> int:
     print("constructed {0}".format(report["config"]))
     if report["tasks_created"]:
         print("tasks: {0}".format(", ".join(report["tasks_created"])))
+    for name in report["kept"]:
+        print("kept {0} (edited or unverified); review it against the setup answers".format(name))
+    if not report["workspaces_linked"]:
+        print("project workspace: {0} (OS home)".format(paths.home))
+    failed_link = False
     for linked in report["workspaces_linked"]:
         if linked.get("error"):
-            print("workspace {0}: {1}".format(linked.get("path"), linked["error"]))
+            failed_link = True
+            print("link failed for {0}: {1}".format(linked["path"], linked["error"]))
         else:
-            print("linked {0} ({1})".format(linked["path"], ", ".join("{0} {1}".format(k, v) for k, v in linked["hooks"].items()) or "docs only"))
+            print("linked {0}".format(linked["path"]))
+            for name, action in {**linked["docs"], **linked["hooks"]}.items():
+                print("  {0}: {1}".format(name, action))
     adapters = (report.get("telemetry") or {}).get("adapters") or {}
     for name, data in sorted(adapters.items()):
         if data.get("available"):
@@ -666,11 +869,15 @@ def _cmd_construct(args: argparse.Namespace, paths: Paths) -> int:
     for check in report["doctor"]["checks"]:
         if check["status"] != "pass":
             print("  {0} {1}: {2}".format(check["status"], check["name"], check["detail"]))
-    return 0
+    if failed_link:
+        print("Check the workspace path and its existing link, then rerun bootstrap construct with the same answers.")
+    if not report["doctor"]["ok"]:
+        print("Fix the failing checks above, then run {0} doctor.".format(_cli(paths)))
+    return 1 if failed_link or not report["doctor"]["ok"] else 0
 
 
 def _cmd_link(args: argparse.Namespace, paths: Paths) -> int:
-    result = link_workspace(paths, Path(args.path), install_hooks=not args.no_hooks)
+    result = link_workspace(paths, Path(args.path), install_hooks=args.install_hooks)
     print("linked {0}".format(result["path"]))
     for name, action in result["docs"].items():
         print("  {0}: {1}".format(name, action))
@@ -681,7 +888,7 @@ def _cmd_link(args: argparse.Namespace, paths: Paths) -> int:
 
 def _cmd_unlink(args: argparse.Namespace, paths: Paths) -> int:
     result = unlink_workspace(paths, Path(args.path))
-    print("unlinked {0}".format(result["path"]))
+    print(("already unlinked {0}" if result.get("already_unlinked") else "unlinked {0}").format(result["path"]))
     for name, action in result["removed"].items():
         print("  {0}: {1}".format(name, action))
     return 0
@@ -700,11 +907,37 @@ def _cmd_resume(args: argparse.Namespace, paths: Paths) -> int:
     return 0
 
 
+def _cmd_add_agent(args: argparse.Namespace, paths: Paths) -> int:
+    problem = config_mod.agent_name_problem(args.name)
+    if problem:
+        raise TaosError(problem)
+    config_mod.load(paths)  # refuse an unconstructed home before creating its lock
+    with locked(paths):
+        config = config_mod.load(paths)
+        agents = config_mod.project_agents(paths)
+        added = args.name not in agents
+        if added:
+            agents.append(args.name)
+            config["agents"] = agents
+            config.setdefault("added_agents", []).append(args.name)
+            atomic_write_json(paths.config_file, config)
+            events_mod.emit(paths, "agent_added", args.by, name=args.name)
+    if args.json:
+        print(json.dumps({"agents": agents, "added": added}))
+    else:
+        print(f"{args.name} is on the project roster. See every name with taos bootstrap status.")
+    return 0
+
+
 def _cmd_status(args: argparse.Namespace, paths: Paths) -> int:
     if not paths.constructed():
-        print(config_mod.NOT_CONSTRUCTED)
+        print(json.dumps({"constructed": False, "agents": []}) if args.json else config_mod.NOT_CONSTRUCTED)
         return 0
     config = config_mod.load(paths)
+    if args.json:
+        print(json.dumps({"constructed": True, "agents": config["agents"], "project": config["project"],
+                          "workspaces": config.get("workspaces", [])}, indent=2))
+        return 0
     print("project:   {0} ({1}-)".format(config["project"]["name"], config["project"]["prefix"]))
     print("principal: {0}".format(config["principal"]["name"]))
     print("agents:    {0}".format(", ".join(config.get("agents", []))))
@@ -715,7 +948,7 @@ def _cmd_status(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    bootstrap = subparsers.add_parser("bootstrap", help="set this OS up for one person")
+    bootstrap = subparsers.add_parser("bootstrap", help="set up a project from a full set of answers")
     sub = bootstrap.add_subparsers(dest="bootstrap_cmd", required=True)
 
     questions = sub.add_parser("questions", help="print the questions to ask")
@@ -727,12 +960,15 @@ def register(subparsers: Any) -> None:
 
     construct_parser = sub.add_parser("construct", help="build the OS from answers")
     construct_parser.add_argument("--answers")
-    construct_parser.add_argument("--agent", default="system", choices=list(events_mod.AGENTS))
+    construct_parser.add_argument("--agent", default="system", help="a name from the setup roster, human or system")
     construct_parser.set_defaults(func=_cmd_construct)
 
     link = sub.add_parser("link-workspace", help="point a repo at this OS")
     link.add_argument("path")
-    link.add_argument("--no-hooks", action="store_true")
+    hook_options = link.add_mutually_exclusive_group()
+    hook_options.add_argument("--no-hooks", dest="install_hooks", action="store_false", help="link instructions only")
+    hook_options.add_argument("--hooks", dest="install_hooks", action="store_true", help="enable hooks on this link")
+    link.set_defaults(install_hooks=None)
     link.set_defaults(func=_cmd_link)
 
     unlink = sub.add_parser("unlink-workspace", help="remove exactly what link-workspace added")
@@ -740,11 +976,18 @@ def register(subparsers: Any) -> None:
     unlink.set_defaults(func=_cmd_unlink)
 
     status = sub.add_parser("status", help="what was constructed")
+    status.add_argument("--json", action="store_true")
     status.set_defaults(func=_cmd_status)
 
-    pause_parser = subparsers.add_parser("pause", help="drop out: keep the safety floor, stop the ceremony")
+    add = sub.add_parser("add-agent", help="add an agent name to this project")
+    add.add_argument("name")
+    add.add_argument("--by", choices=["human"], required=True, help="the person choosing the name")
+    add.add_argument("--json", action="store_true")
+    add.set_defaults(func=_cmd_add_agent)
+
+    pause_parser = subparsers.add_parser("pause", help="pause the project workflow and keep its safety checks")
     pause_parser.add_argument("--note")
     pause_parser.set_defaults(func=_cmd_pause)
 
-    resume_parser = subparsers.add_parser("resume", help="drop back in")
+    resume_parser = subparsers.add_parser("resume", help="resume the paused project workflow")
     resume_parser.set_defaults(func=_cmd_resume)

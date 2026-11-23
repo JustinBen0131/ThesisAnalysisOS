@@ -27,6 +27,14 @@ routes:
       - If the task is broader than this deliverable, create a child and start that.
       - `taos start` and read the capsule before touching a file.
 
+  research_computing:
+    triggers: [hpc, htcondor, slurm, aws batch, compute campaign, compute cluster, university cluster, on the cluster, on a cluster, supercomputer, compute budget, cluster job, batch job, job array, pilot run]
+    load: [policies/HPC.md, policies/DUPLICATE_WORK.md]
+    first_actions:
+      - Get the research question and the manifest of expected outputs.
+      - Use taos hpc brief for a read-only inspection and taos hpc review on the returned evidence.
+      - Read taos usage progress for the task or evidence packet. The resource owner approves proposed work.
+
   repeating_work:
     triggers: [rerun, again, redo, regenerate, rebuild, retrain, reproduce, another run]
     load: [policies/DUPLICATE_WORK.md, policies/EVIDENCE.md]

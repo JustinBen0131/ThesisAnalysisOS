@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 
 from . import config as config_mod
 from . import events as events_mod
+from . import plain
 from .paths import Paths
 from .store import atomic_write_json, locked, read_json, utc_now
 from .util import TaosError
@@ -44,6 +45,11 @@ def _task_number(task_id: str) -> int:
         return int(str(task_id).rsplit("-", 1)[1])
     except (IndexError, ValueError):
         return 0
+
+
+def no_task(task_id: Any, tasks: Any) -> str:
+    """There is no such task: the nearest real id, and where to see them all."""
+    return plain.missing("task", str(task_id), tasks, "taos task list")
 
 
 class TaskStore(object):
@@ -85,9 +91,10 @@ class TaskStore(object):
     # -- reads -------------------------------------------------------------
 
     def get(self, task_id: str) -> Dict[str, Any]:
-        task = self.load()["tasks"].get(str(task_id))
+        tasks = self.load()["tasks"]
+        task = tasks.get(str(task_id))
         if task is None:
-            raise TaosError("no such task: {0}".format(task_id))
+            raise TaosError(no_task(task_id, tasks))
         return task
 
     def exists(self, task_id: str) -> bool:
@@ -157,6 +164,7 @@ class TaskStore(object):
         done_when: str = "",
         verification: str = "",
     ) -> Dict[str, Any]:
+        config_mod.require_actor(self.paths, actor)
         title = str(title).strip()
         if not title:
             raise TaosError("a task needs a title")
@@ -208,12 +216,14 @@ class TaskStore(object):
     def update(self, task_id: str, fields: Dict[str, Any], actor: str) -> Dict[str, Any]:
         unknown = sorted(set(fields) - set(MUTABLE_FIELDS))
         if unknown:
-            raise TaosError("not updatable: {0}. Allowed: {1}".format(", ".join(unknown), ", ".join(MUTABLE_FIELDS)))
+            near = plain.nearest(unknown[0], MUTABLE_FIELDS)
+            raise TaosError("taos task update cannot change {0}.{1} It changes: {2}".format(
+                ", ".join(unknown), " Did you mean '{0}'?".format(near) if near else "", ", ".join(MUTABLE_FIELDS)))
         with locked(self.paths):
             data = self.load()
             task = data["tasks"].get(str(task_id))
             if task is None:
-                raise TaosError("no such task: {0}".format(task_id))
+                raise TaosError(no_task(task_id, data["tasks"]))
             for key, value in fields.items():
                 if key == "priority" and value not in PRIORITIES:
                     raise TaosError("priority must be one of {0}".format(", ".join(PRIORITIES)))
@@ -258,7 +268,7 @@ class TaskStore(object):
             data = self.load()
             task = data["tasks"].get(str(task_id))
             if task is None:
-                raise TaosError("no such task: {0}".format(task_id))
+                raise TaosError(no_task(task_id, data["tasks"]))
             current = task.get("status", "next")
             if current == to:
                 raise TaosError("{0} is already {1}".format(task_id, to))
@@ -345,7 +355,7 @@ class TaskStore(object):
             data = self.load()
             task = data["tasks"].get(str(task_id))
             if task is None:
-                raise TaosError("no such task: {0}".format(task_id))
+                raise TaosError(no_task(task_id, data["tasks"]))
             if task.get("status") not in ("review", "done"):
                 raise TaosError("accept a task once it is in review or done; {0} is {1}".format(task_id, task.get("status")))
             from . import basis as basis_mod
@@ -386,7 +396,7 @@ class TaskStore(object):
             data = self.load()
             task = data["tasks"].get(str(task_id))
             if task is None:
-                raise TaosError("no such task: {0}".format(task_id))
+                raise TaosError(no_task(task_id, data["tasks"]))
             now = utc_now()
             task.setdefault("comments", []).append(
                 {"ts": now, "agent": agent, "session": str(session or ""), "body": str(body)}
@@ -415,7 +425,7 @@ class TaskStore(object):
             data = self.load()
             task = data["tasks"].get(str(task_id))
             if task is None:
-                raise TaosError("no such task: {0}".format(task_id))
+                raise TaosError(no_task(task_id, data["tasks"]))
             now = utc_now()
             row: Dict[str, Any] = {"ts": now, "agent": agent, "ref": str(ref), "note": str(note or "")}
             if artifact or depends_on:
@@ -450,7 +460,7 @@ class TaskStore(object):
             data = self.load()
             task = data["tasks"].get(str(task_id))
             if task is None:
-                raise TaosError("no such task: {0}".format(task_id))
+                raise TaosError(no_task(task_id, data["tasks"]))
             hit = None
             for row in task.get("evidence", []):
                 if row.get("ref") == str(ref) and isinstance(row.get("artifact"), dict):
@@ -482,9 +492,9 @@ class TaskStore(object):
             task = data["tasks"].get(str(task_id))
             other = data["tasks"].get(str(other_id))
             if task is None:
-                raise TaosError("no such task: {0}".format(task_id))
+                raise TaosError(no_task(task_id, data["tasks"]))
             if other is None:
-                raise TaosError("no such task: {0}".format(other_id))
+                raise TaosError(no_task(other_id, data["tasks"]))
             inverse = INVERSE[kind]
             forward = task.setdefault("relations", {}).setdefault(kind, [])
             backward = other.setdefault("relations", {}).setdefault(inverse, [])
@@ -521,6 +531,8 @@ class TaskStore(object):
         title: str,
         actor: str,
     ) -> Dict[str, Any]:
+        config_mod.require_actor(self.paths, actor)
+        config_mod.require_actor(self.paths, provider)
         if not re.match(r"^[a-z0-9][a-z0-9._-]{2,79}$", str(session_key)):
             raise TaosError(
                 "session key must be a slug like 'az7-fix-ssa' (lowercase, no spaces)"
@@ -529,9 +541,9 @@ class TaskStore(object):
             data = self.load()
             task = data["tasks"].get(str(task_id))
             if task is None:
-                raise TaosError("no such task: {0}".format(task_id))
+                raise TaosError(no_task(task_id, data["tasks"]))
             sessions = task.setdefault("sessions", [])
-            existing = [s for s in sessions if s.get("session_key") == str(session_key)]
+            existing = [s for s in sessions if s.get("provider") == provider and s.get("session_key") == session_key]
             if not existing:
                 sessions.append(
                     {
@@ -567,7 +579,7 @@ class TaskStore(object):
             data = self.load()
             task = data["tasks"].get(str(task_id))
             if task is None:
-                raise TaosError("no such task: {0}".format(task_id))
+                raise TaosError(no_task(task_id, data["tasks"]))
             changed = []
             if workspace and not task.get("workspace"):
                 task["workspace"] = str(workspace)
@@ -586,7 +598,7 @@ class TaskStore(object):
             data = self.load()
             task = data["tasks"].get(str(task_id))
             if task is None:
-                raise TaosError("no such task: {0}".format(task_id))
+                raise TaosError(no_task(task_id, data["tasks"]))
             now = utc_now()
             if hot and task.get("status") in TERMINAL:
                 raise TaosError("a {0} task cannot be hot".format(task.get("status")))
@@ -647,7 +659,7 @@ def _cmd_create(args: argparse.Namespace, paths: Paths) -> int:
         done_when=args.done_when or "",
         verification=args.verification or "",
     )
-    print(task["id"] if args.json else "created {0}: {1}".format(task["id"], task["title"]))
+    print(json.dumps(task, indent=2, sort_keys=True) if args.json else "created {0}: {1}".format(task["id"], task["title"]))
     return 0
 
 
@@ -761,11 +773,11 @@ def _cmd_hot(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    task = subparsers.add_parser("task", help="create and move work")
+    task = subparsers.add_parser("task", help="create, list and move tasks")
     sub = task.add_subparsers(dest="task_cmd", required=True)
 
     create = sub.add_parser("create", help="create a task")
-    create.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    create.add_argument("--agent", required=True, choices=subparsers.actors)
     create.add_argument("--title", required=True)
     create.add_argument("--goal", help="what finishing this unlocks")
     create.add_argument("--next-action", dest="next_action", help="the exact next step")
@@ -796,14 +808,14 @@ def register(subparsers: Any) -> None:
 
     update = sub.add_parser("update", help="edit task fields")
     update.add_argument("task_id")
-    update.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    update.add_argument("--agent", required=True, choices=subparsers.actors)
     update.add_argument("--set", action="append", required=True, metavar="key=value",
                         help="keys: title goal next_action priority parent_id labels branch")
     update.set_defaults(func=_cmd_update)
 
     transition = sub.add_parser("transition", help="change status")
     transition.add_argument("task_id")
-    transition.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    transition.add_argument("--agent", required=True, choices=subparsers.actors)
     transition.add_argument("--to", required=True, choices=list(STATUSES))
     transition.add_argument("--reason", required=True)
     transition.add_argument("--evidence")
@@ -813,13 +825,13 @@ def register(subparsers: Any) -> None:
 
     accept = sub.add_parser("accept", help="the human accepts the result as it is now")
     accept.add_argument("task_id")
-    accept.add_argument("--by", default="human", choices=list(events_mod.AGENTS))
+    accept.add_argument("--by", default="human", choices=subparsers.actors)
     accept.add_argument("--note")
     accept.set_defaults(func=_cmd_accept)
 
     comment = sub.add_parser("comment", help="add an attributed comment")
     comment.add_argument("task_id")
-    comment.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    comment.add_argument("--agent", required=True, choices=subparsers.actors)
     comment.add_argument("--session", required=True)
     comment.add_argument("--body", required=True)
     comment.add_argument("--evidence")
@@ -827,7 +839,7 @@ def register(subparsers: Any) -> None:
 
     evidence = sub.add_parser("evidence", help="attach evidence")
     evidence.add_argument("task_id")
-    evidence.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    evidence.add_argument("--agent", required=True, choices=subparsers.actors)
     evidence.add_argument("--ref", required=True)
     evidence.add_argument("--note")
     evidence.add_argument("--artifact", action="store_true", help="a reusable work product, with a validity contract")
@@ -836,14 +848,14 @@ def register(subparsers: Any) -> None:
 
     invalidate = sub.add_parser("invalidate", help="mark an artifact invalid because a dependency changed")
     invalidate.add_argument("task_id")
-    invalidate.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    invalidate.add_argument("--agent", required=True, choices=subparsers.actors)
     invalidate.add_argument("--ref", required=True)
     invalidate.add_argument("--reason", required=True)
     invalidate.set_defaults(func=_cmd_invalidate)
 
     relate = sub.add_parser("relate", help="link two tasks")
     relate.add_argument("task_id")
-    relate.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    relate.add_argument("--agent", required=True, choices=subparsers.actors)
     relate.add_argument("kind", choices=list(RELATION_TYPES))
     relate.add_argument("other_id")
     relate.add_argument("--remove", action="store_true")
@@ -851,15 +863,15 @@ def register(subparsers: Any) -> None:
 
     mapping = sub.add_parser("map-session", help="bind a chat session to a task")
     mapping.add_argument("task_id")
-    mapping.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
-    mapping.add_argument("--provider", required=True, choices=["codex", "claude"])
+    mapping.add_argument("--agent", required=True, choices=subparsers.actors)
+    mapping.add_argument("--provider", required=True, choices=subparsers.agents)
     mapping.add_argument("--session-key", dest="session_key", required=True)
     mapping.add_argument("--title", required=True)
     mapping.set_defaults(func=_cmd_map_session)
 
     hot = sub.add_parser("hot", help="add or remove a task from the hot rail")
     hot.add_argument("task_id")
-    hot.add_argument("--agent", required=True, choices=list(events_mod.AGENTS))
+    hot.add_argument("--agent", required=True, choices=subparsers.actors)
     group = hot.add_mutually_exclusive_group(required=True)
     group.add_argument("--on", action="store_true")
     group.add_argument("--off", action="store_true")

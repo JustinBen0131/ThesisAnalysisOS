@@ -16,10 +16,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from . import basis
+from . import basis, page, plain
 from . import claims as claims_mod
 from . import gates as gates_mod
 from . import kernels as kernels_mod
@@ -123,7 +125,7 @@ def _next(task_id: str, parts: List[Dict[str, Any]]) -> List[str]:
     short = {part["kind"] for part in parts if part["state"] != basis.HOLDS}
     out = []
     if "check" in short:
-        out.append("run the checks on the files as they are: taos gate run --task {0} --agent <you>".format(task_id))
+        out.append("run the checks on the files as they are: {0}".format(gates_mod._again(task_id)))
     if "artifact" in short:
         out.append("rebuild the work products named above, or record them again with --depends-on")
     if "closure" in short and "check" not in short:
@@ -174,7 +176,30 @@ def everything(paths: Paths) -> Dict[str, Any]:
             rows.append(dict(_part("summary", kernel.get("name"), KERNEL_STATES.get(kernel.get("status"), basis.UNKNOWN),
                                    "; ".join(kernel.get("reasons") or []) or str(kernel.get("status"))), task=None))
     return {"closed": len(views), "standing": sum(1 for view in views if view["state"] == basis.HOLDS),
-            "unaccepted": [view["task"] for view in views if not view["accepted"]], "rows": rows}
+            "unaccepted": [view["task"] for view in views if not view["accepted"]], "rows": rows,
+            "open": open_work(paths, tasks, snaps)}
+
+
+def open_work(paths: Paths, tasks: Dict[str, Any], snaps: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """Work not yet closed whose checks have been run: a row for each check that no longer holds, and a count of the rest.
+
+    Nothing is claimed for open work, so none of this makes closed work fall; it answers "do my checks still hold?"."""
+    rows, holding, checked = [], 0, []
+    for task_id in sorted(tasks):
+        task = tasks[task_id]
+        record = None if task.get("status") in CLOSED + tasks_mod.TERMINAL else gates_mod.latest(paths, task_id)
+        if record is None:
+            continue
+        root = str(gates_mod._where(paths, task, record))
+        if root not in snaps:
+            snaps[root] = basis.snapshot(Path(root), gates_mod._settings(paths))
+        checked.append(task_id)
+        for verdict in gates_mod.standing(paths, task_id, snaps[root]):
+            if verdict["state"] == basis.HOLDS:
+                holding += 1
+            else:
+                rows.append(dict(_part("check", verdict["gate"], verdict["state"], verdict["reason"]), task=task_id))
+    return {"tasks": checked, "rows": rows, "holding": holding}
 
 
 # --------------------------------------------------------------------------
@@ -183,7 +208,10 @@ def everything(paths: Paths) -> Dict[str, Any]:
 
 
 def _label(part: Dict[str, Any]) -> str:
-    return part["kind"] if part["kind"] in ("closure", "acceptance") else "{0} {1}".format(part["kind"], part["name"])
+    """What a part is about: its kind, then its name, and the kind word once when the name is that word ("check")."""
+    if part["kind"] in ("closure", "acceptance") or str(part["name"]) == part["kind"]:
+        return part["kind"]
+    return "{0} {1}".format(part["kind"], part["name"])
 
 
 def lines(view: Dict[str, Any]) -> List[str]:
@@ -191,7 +219,7 @@ def lines(view: Dict[str, Any]) -> List[str]:
     return ["{0:<8} {1}: {2}".format(part["state"], _label(part), part["reason"]) for part in view["parts"]]
 
 
-def text(view: Dict[str, Any]) -> str:
+def text(view: Dict[str, Any], ids: bool = True) -> str:
     out = ["{0}  {1}  {2}".format(view["task"], view["status"], view["title"])]
     if view.get("done_when"):
         out.append("  done when: {0}".format(view["done_when"]))
@@ -201,7 +229,8 @@ def text(view: Dict[str, Any]) -> str:
         out += ["", "  instructions in force today, in the words they were given:"]
         for rule in view["instructions"]:
             until = ", until {0}".format(rule["expires"]) if rule.get("expires") else ""
-            out.append("    {0}  \"{1}\"  (said {2}, scope {3}{4})".format(rule["id"], rule["quote"], rule["said_on"], rule["scope"], until))
+            out.append("    {0}\"{1}\"  (said {2}, scope {3}{4})".format(
+                rule["id"] + "  " if ids else "", rule["quote"], rule["said_on"], rule["scope"], until))
     out.append("")
     if not view["closed"]:
         out.append("{0} is {1}: nothing is claimed finished yet. The lines above are what closing it would rest on.".format(
@@ -214,18 +243,27 @@ def text(view: Dict[str, Any]) -> str:
     return "\n".join(out)
 
 
-def summary(found: Dict[str, Any]) -> str:
-    out = ["{0} of {1} closed task(s) stand as recorded.".format(found["standing"], found["closed"])]
-    if found["rows"]:
+def summary(found: Dict[str, Any], person: bool = False) -> str:
+    """Everything that no longer holds. A person with nothing closed yet is not told "0 of 0": their open work leads."""
+    work = found.get("open") or {}
+    lead = not (person and not found["closed"] and work.get("tasks"))
+    out = ["{0} of {1} closed task(s) stand as recorded.".format(found["standing"], found["closed"])] if lead else []
+    if found["rows"] and out:
         out.append("")
     grouped: Dict[Any, List[str]] = {}   # one cause is one line, however many tasks rest on it
     for row in found["rows"]:
         grouped.setdefault((row["state"], _label(row), row["reason"]), []).extend([row["task"]] if row.get("task") else [])
     for (state, label, reason), tasks in grouped.items():
         out.append("  {0:<8} {1}: {2}{3}".format(state, label, reason, "  [{0}]".format(", ".join(tasks)) if tasks else ""))
+    work = found.get("open") or {}
+    if work.get("tasks"):                                          # open work: do its checks still hold?
+        out += ([""] if out else []) + ["Open work, each check on the files as they are now:"]
+        out += ["  {0:<8} {1}: {2}  [{3}]".format(row["state"], _label(row), row["reason"], row["task"]) for row in work["rows"]]
+        if work["holding"]:
+            out.append("  {0:<8} {1}{2} check(s)".format(basis.HOLDS, "the other " if work["rows"] else "all ", work["holding"]))
     if found["unaccepted"]:
         out += ["", "not accepted by a person: {0}".format(", ".join(found["unaccepted"]))]
-    if found["rows"]:
+    if found["rows"] or work.get("rows"):
         out += ["", "taos why <task> shows every part and what to do next."]
     return "\n".join(out)
 
@@ -235,13 +273,61 @@ def summary(found: Dict[str, Any]) -> str:
 # --------------------------------------------------------------------------
 
 
+# --------------------------------------------------------------------------
+# For a person at a terminal: the same parts, in the words people use
+# --------------------------------------------------------------------------
+
+RULE_ID = re.compile(r"\brule_[0-9a-f]{10}\b")
+WAS = re.compile(r'\b(rule_[0-9a-f]{10}) no longer governs \("(.*?)"\)')
+NOW = re.compile(r'\b(rule_[0-9a-f]{10}) governs now and is not one this was recorded under \("(.*?)", said ([^)]*)\)')
+
+
+def _plainly(reason: str, words: Dict[str, str], stamp: Any = None) -> str:
+    """A reason as a person reads it: an instruction by its words rather than its id, and dates on the local clock."""
+    reason = WAS.sub(r'"\2" no longer governs', reason)
+    reason = NOW.sub(r'"\2" (said \3) governs now, and was not in force when this was recorded', reason)
+    reason = RULE_ID.sub(lambda found: '"{0}"'.format(words[found.group(0)]) if found.group(0) in words else found.group(0), reason)
+    if stamp:                                                      # "moved it to done on <UTC date>": the reader's own date
+        reason = reason.replace(" on {0}".format(str(stamp)[:10]), " on {0}".format(plain.day(stamp)), 1)
+    return plain.local(reason)
+
+
+def _stamp(task: Optional[Dict[str, Any]], kind: str) -> Any:
+    if not task:
+        return None
+    if kind == "closure":
+        return ((task.get("closures") or [None])[-1] or {}).get("ts")
+    return (task.get("acceptance") or {}).get("ts") if kind == "acceptance" else None
+
+
+def for_person(paths: Paths, found: Dict[str, Any], key: str) -> Dict[str, Any]:
+    """A copy of a view (key "parts") or of the summary (key "rows") whose reasons read in plain words."""
+    words = {rule["id"]: rule["quote"] for rule in rules_mod._load(paths).get("rules", [])}
+    tasks = tasks_mod.TaskStore(paths).load()["tasks"]
+    owner = found.get("task")
+    def plainly(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        return [dict(row, reason=_plainly(row["reason"], words, _stamp(tasks.get(row.get("task") or owner), row["kind"])))
+                for row in rows]
+    out = dict(found, **{key: plainly(found[key])}, next=[plain.local(step) for step in found.get("next", [])])
+    if found.get("open"):
+        out["open"] = dict(found["open"], rows=plainly(found["open"]["rows"]))
+    return out
+
+
 def _cmd_why(args: argparse.Namespace, paths: Paths) -> int:
+    person = not args.json and not args.full and page.terminal(sys.stdout)
     if args.task_id:
         view = of_task(paths, args.task_id)
-        print(json.dumps(view, indent=2, sort_keys=True) if args.json else text(view))
+        if args.json:
+            print(json.dumps(view, indent=2, sort_keys=True))
+        else:
+            print(plain.fold(text(for_person(paths, view, "parts"), ids=False)) if person else text(view))
         return 1 if args.check and view["state"] != basis.HOLDS else 0
     found = everything(paths)
-    print(json.dumps(found, indent=2, sort_keys=True) if args.json else summary(found))
+    if args.json:
+        print(json.dumps(found, indent=2, sort_keys=True))
+    else:
+        print(plain.fold(summary(for_person(paths, found, "rows"), person=True)) if person else summary(found))
     return 1 if args.check and found["rows"] else 0
 
 
@@ -249,5 +335,6 @@ def register(subparsers: Any) -> None:
     why = subparsers.add_parser("why", help="what a result rests on, and whether it still holds")
     why.add_argument("task_id", nargs="?", metavar="TASK", help="one task; leave out to list everything that no longer holds")
     why.add_argument("--json", action="store_true")
+    why.add_argument("--full", action="store_true", help="every id and recorded UTC time, as an agent reads it")
     why.add_argument("--check", action="store_true", help="exit 1 when something does not hold, for scripts")
     why.set_defaults(func=_cmd_why)

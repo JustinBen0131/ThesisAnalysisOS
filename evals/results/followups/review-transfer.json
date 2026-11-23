@@ -1,0 +1,327 @@
+{
+  "controls": {
+    "changed-selected-bytes": {
+      "cli_exit": 1,
+      "core_match": false,
+      "diagnostic": "The request ID differs. Check the question and the selected source files.",
+      "expected_match": false
+    },
+    "editor-reformatted": {
+      "cli_exit": 0,
+      "core_match": true,
+      "diagnostic": "The reply matches this task, question and selected sources. The operator evaluates its conclusion.",
+      "expected_match": true
+    },
+    "exact-source-rewind": {
+      "cli_exit": 0,
+      "core_match": true,
+      "diagnostic": "The reply matches this task, question and selected sources. The operator evaluates its conclusion.",
+      "expected_match": true
+    },
+    "markdown-fenced-json": {
+      "cli_exit": 1,
+      "core_match": false,
+      "diagnostic": "The review must be a readable UTF-8 JSON object with unique field names.",
+      "expected_match": false
+    },
+    "omitted-sources": {
+      "cli_exit": 1,
+      "core_match": false,
+      "diagnostic": "The request ID differs. Check the question and the selected source files.",
+      "expected_match": false
+    },
+    "reordered-sources": {
+      "cli_exit": 0,
+      "core_match": true,
+      "diagnostic": "The reply matches this task, question and selected sources. The operator evaluates its conclusion.",
+      "expected_match": true
+    },
+    "right-identity-wrong-science": {
+      "cli_exit": 0,
+      "core_match": true,
+      "diagnostic": "The reply matches this task, question and selected sources. The operator evaluates its conclusion.",
+      "expected_match": true
+    },
+    "supported-without-evidence": {
+      "cli_exit": 1,
+      "core_match": false,
+      "diagnostic": "Cite the evidence for a supported or contradicted finding.",
+      "expected_match": false
+    },
+    "terminal-compact": {
+      "cli_exit": 0,
+      "core_match": true,
+      "diagnostic": "The reply matches this task, question and selected sources. The operator evaluates its conclusion.",
+      "expected_match": true
+    },
+    "uncertain-without-evidence": {
+      "cli_exit": 0,
+      "core_match": true,
+      "diagnostic": "The reply matches this task, question and selected sources. The operator evaluates its conclusion.",
+      "expected_match": true
+    },
+    "unshared-file-edit": {
+      "cli_exit": 0,
+      "core_match": true,
+      "diagnostic": "The reply matches this task, question and selected sources. The operator evaluates its conclusion.",
+      "expected_match": true
+    },
+    "web-plain-crlf": {
+      "cli_exit": 0,
+      "core_match": true,
+      "diagnostic": "The reply matches this task, question and selected sources. The operator evaluates its conclusion.",
+      "expected_match": true
+    }
+  },
+  "counts": {
+    "cli": {
+      "control": {
+        "fail": 4,
+        "success": 8
+      },
+      "matrix": {
+        "fail": 56,
+        "success": 8
+      }
+    },
+    "core": {
+      "control": {
+        "fail": 4,
+        "success": 8
+      },
+      "matrix": {
+        "fail": 56,
+        "success": 8
+      }
+    }
+  },
+  "distinct_requests": 8,
+  "distinct_task_packets": 2,
+  "fixture_case": {
+    "corrected_source_sha256": {
+      "a.csv": "3bb79b3416cbc0bd3810a655c6b5bd0b9cac8dba6421f2ed5d15d6ac1517b17b",
+      "b.csv": "b9dc5a91a213c8da371e36ed65483a8c070ffd2398559f2010170bb2dccc5d30",
+      "policy.json": "8152ed2bd1ed563bef2423d57cb3fd4e56574dc91e5c9ed1191df99c4049a87a"
+    },
+    "edits": [
+      {
+        "file": "a.csv",
+        "id": "A03",
+        "score": 50
+      },
+      {
+        "file": "b.csv",
+        "id": "B04",
+        "score": 70
+      }
+    ],
+    "id": "offsetting-score-corrections"
+  },
+  "fixture_human_acceptance": {
+    "acceptance_record_unchanged": true,
+    "event_bytes_unchanged": true,
+    "receipt_bytes_unchanged": true,
+    "standing_after": "holds",
+    "standing_before": "holds",
+    "task_bytes_unchanged": true
+  },
+  "matrix_cli_exit_rows": [
+    [
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    [
+      1,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    [
+      1,
+      1,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    [
+      1,
+      1,
+      1,
+      0,
+      1,
+      1,
+      1,
+      1
+    ],
+    [
+      1,
+      1,
+      1,
+      1,
+      0,
+      1,
+      1,
+      1
+    ],
+    [
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      1,
+      1
+    ],
+    [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0,
+      1
+    ],
+    [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0
+    ]
+  ],
+  "matrix_core_match_bits": [
+    "10000000",
+    "01000000",
+    "00100000",
+    "00010000",
+    "00001000",
+    "00000100",
+    "00000010",
+    "00000001"
+  ],
+  "matrix_diagnostics": {
+    "The project record differs from the packet this reviewer used.": 16,
+    "The reply matches this task, question and selected sources. The operator evaluates its conclusion.": 8,
+    "The request ID differs. Check the question and the selected source files.": 8,
+    "This reply answers a different question.": 32
+  },
+  "matrix_expected_match_bits": [
+    "10000000",
+    "01000000",
+    "00100000",
+    "00010000",
+    "00001000",
+    "00000100",
+    "00000010",
+    "00000001"
+  ],
+  "matrix_order": [
+    {
+      "format": "terminal-compact",
+      "question": "sensitivity",
+      "record": "current",
+      "sources": "a-policy"
+    },
+    {
+      "format": "editor-reformatted",
+      "question": "sensitivity",
+      "record": "current",
+      "sources": "all-policy"
+    },
+    {
+      "format": "web-plain-crlf",
+      "question": "false-alarms",
+      "record": "current",
+      "sources": "a-policy"
+    },
+    {
+      "format": "terminal-compact",
+      "question": "false-alarms",
+      "record": "current",
+      "sources": "all-policy"
+    },
+    {
+      "format": "editor-reformatted",
+      "question": "sensitivity",
+      "record": "changed",
+      "sources": "a-policy"
+    },
+    {
+      "format": "web-plain-crlf",
+      "question": "sensitivity",
+      "record": "changed",
+      "sources": "all-policy"
+    },
+    {
+      "format": "terminal-compact",
+      "question": "false-alarms",
+      "record": "changed",
+      "sources": "a-policy"
+    },
+    {
+      "format": "editor-reformatted",
+      "question": "false-alarms",
+      "record": "changed",
+      "sources": "all-policy"
+    }
+  ],
+  "question_predeclared": "Can a plain-text reply travel from a terminal to a text editor or a web-style message and still match the exact question and selected sources?",
+  "questions": {
+    "false-alarms": "How many false alarms did instrument A produce at score ≥60?",
+    "sensitivity": "Did instrument A detect at least ¾ of the known faults?"
+  },
+  "schema": "taos-review-transfer-experiment/1",
+  "scope": "Real local CLI and core. Local simulation of plain-text formats. Public fictional readings. No model or network calls.",
+  "source_subsets": {
+    "a-policy": [
+      "a.csv",
+      "policy.json"
+    ],
+    "all-policy": [
+      "a.csv",
+      "b.csv",
+      "policy.json"
+    ]
+  },
+  "sources": {
+    "evals/model_evaluation.py": "e9d32cb1bc583505ace18177fa5c239ab40a99af4e60e09f989b6a0f3ebc8d29",
+    "evals/review_transfer.py": "17a2613a93d696d6b67bed269742d4e0de370874e22e153749e52a4d643d94b9",
+    "examples/model_evaluation/a.csv": "7d8067525c66ce5346d2732f37f86da19e599663220ee245439a2be0c935a4e2",
+    "examples/model_evaluation/b.csv": "19c200941878010a3a77805a58a985193c20cbc1f12d4719925a5eeceef05f3b",
+    "examples/model_evaluation/policy.json": "8152ed2bd1ed563bef2423d57cb3fd4e56574dc91e5c9ed1191df99c4049a87a",
+    "examples/model_evaluation/predictions.json": "3c558dae1dabe8e9a451b4867da305a040a324e6b00e6956cbfe6df2ebdf025c",
+    "taos": "58fa0d76b7326f31463b2b8990afca1fdf532579bf3e58f5e160ea68cce32863",
+    "taos_core/lifecycle.py": "152383dc772aef1453cfc5a157ca5f3cdbc714e3ca7c4f0da8eafffe7a4aa135",
+    "taos_core/reviews.py": "4c0de05e9c5a9c95a420f679918a3aebd3fdda2b2d245bb1fa86acbffbf0e2b6"
+  },
+  "wrong_conclusion": {
+    "claimed_detected": 3,
+    "independently_counted": {
+      "fn": 2,
+      "fp": 1,
+      "tn": 3,
+      "tp": 2
+    },
+    "known_faults": 4,
+    "minimum_sensitivity": "3/4",
+    "recount_disagreed": true
+  }
+}

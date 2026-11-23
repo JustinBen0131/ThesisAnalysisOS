@@ -32,6 +32,17 @@ def entry(study, raw, observed, replies_to=None, stance=None, text="p", **extra)
                  "replies_to": replies_to, "note": note}, **extra)
 
 
+class TestVisitorCheckFiles(unittest.TestCase):
+    def test_root_and_chained_replies_list_the_files_the_visitor_needs(self):
+        root = {"id": "a", "replies_to": None, "record": "records/first.json"}
+        reply = {"id": "b", "replies_to": "a", "record": "records/second.json"}
+        followup = {"id": "c", "replies_to": "b", "record": "records/first.json"}
+        rows = [root, reply, followup]
+        self.assertEqual(exchange.entry_check_files(root, rows), (["records/first.json"], []))
+        self.assertEqual(exchange.entry_check_files(followup, rows),
+                         (["records/first.json", "records/second.json"], ["b", "a"]))
+
+
 class ExchangeTest(unittest.TestCase):
     def setUp(self):
         self.a, self.b = record(3), record(7)

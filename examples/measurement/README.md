@@ -5,7 +5,7 @@ to a temporary place and uses it to show what TAOS records about a result. It
 has no dependencies.
 
     python3 analysis/fit.py      prints g and its uncertainty
-    python3 analysis/check.py    the check: exits 0 when the fit is sane
+    python3 analysis/check.py    the check: five swings or more, g in 9.6 to 10.0, error up to 0.2
 
 | File | What it is |
 |---|---|

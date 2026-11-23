@@ -36,8 +36,25 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: ${{ matrix.python }}
+      - name: Check saved evidence and its refresh command
+        run: |
+          python3 -m unittest evals.test_refresh_results evals.test_reuse_timing
+          python3 evals/refresh_results.py --check
       - name: selftest
         run: python3 taos selftest
+      - name: Read the example HPC campaign as a researcher
+        shell: python
+        run: |
+          import os
+          import subprocess
+          import sys
+          from pathlib import Path
+
+          command = [sys.executable, "taos", "usage", "progress", "--packet", "examples/hpc/campaign.json"]
+          report = subprocess.check_output(command, text=True)
+          with Path(os.environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as summary:
+              summary.write("### Fictional sensor campaign\n\n")
+              summary.writelines("    " + line for line in report.splitlines(keepends=True))
       - name: claims
         run: python3 evals/claims.py --strict
       - name: Reproduce the README picture of the opener
@@ -53,11 +70,22 @@ jobs:
         run: |
           python3 evals/handoff_audit.py --verify
           python3 evals/review_handoff_audit.py --self-test
+      - name: Replay the two-session transit workflow
+        if: matrix.python == '3.12'
+        run: |
+          python3 evals/transit_workflow.py --verify
+          python3 evals/transit_workflow.py --adaptation --verify
       - name: Reproduce and independently check the instrument comparison
         if: matrix.python == '3.12'
         run: |
           python3 evals/model_evaluation.py --verify
           python3 evals/review_model_evaluation.py --self-test
+      - name: Replay the review transfer and the instrument correction paths
+        if: matrix.python == '3.12'
+        run: |
+          python3 evals/review_transfer.py --verify
+          python3 evals/replay_instrument_paths.py --verify
+          python3 evals/replay_setting_change.py --verify
       - name: Reproduce the research exchange examples
         if: matrix.python == '3.12'
         run: |
@@ -65,11 +93,19 @@ jobs:
           python3 evals/exchange_simulation.py --verify
           python3 evals/replay_instrument_imbalance.py --json > "${RUNNER_TEMP}/instrument-imbalance.json"
           cmp evals/results/followups/instrument-imbalance.json "${RUNNER_TEMP}/instrument-imbalance.json"
+      - name: Check privacy preferences before sending an analytics event
+        if: matrix.python == '3.12' && matrix.os == 'ubuntu-latest'
+        run: node site/verify_tracking_preferences.cjs
+      - name: Check the interactive pilot worksheet in Chrome
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
+        run: python3 site/verify_hpc_planner.py
       - name: Build and verify the website before merge
         if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         run: |
+          cut -f1 site/published-archives.tsv | xargs git fetch --depth=1 --no-tags origin
           python3 site/build.py --release --out "$RUNNER_TEMP/checked-site" --ref "$GITHUB_SHA" --url "https://whatstillholds.com/"
           python3 site/release_integrity.py "$RUNNER_TEMP/checked-site"
+          python3 site/verify_demo_download.py "$RUNNER_TEMP/checked-site"
 
   build:
     needs: test
@@ -87,7 +123,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: build
-        run: python3 site/build.py --release --out _site --ref "$GITHUB_SHA" --url "https://whatstillholds.com/"
+        run: |
+          cut -f1 site/published-archives.tsv | xargs git fetch --depth=1 --no-tags origin
+          python3 site/build.py --release --out _site --ref "$GITHUB_SHA" --url "https://whatstillholds.com/"
       - name: Verify and package the finished site for Pages
         run: |
           python3 site/release_integrity.py _site
@@ -97,6 +135,7 @@ jobs:
           tar -C "$RUNNER_TEMP/pages-readback" -xf "$RUNNER_TEMP/artifact.tar"
           cmp _site/release.json "$RUNNER_TEMP/pages-readback/release.json"
           python3 site/release_integrity.py "$RUNNER_TEMP/pages-readback"
+          python3 site/verify_demo_download.py "$RUNNER_TEMP/pages-readback"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: github-pages

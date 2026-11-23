@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import re
 from typing import Any, Dict, List
 
 from .paths import Paths
@@ -70,9 +71,46 @@ STACK_GATES: Dict[str, List[Dict[str, str]]] = {
     "generic": [],
 }
 
+DEFAULT_AGENTS = ("codex", "claude")
+RESERVED_ACTORS = ("human", "system")
+AGENT_ID = re.compile(r"[a-z][a-z0-9_-]{0,31}")
+
+
+def agent_name_problem(name: Any) -> str:
+    if isinstance(name, str) and name.lower() in (*RESERVED_ACTORS, "any"):
+        return f"{name!r} is reserved. Choose a different agent name."
+    if not isinstance(name, str) or not AGENT_ID.fullmatch(name):
+        return "Use a lowercase agent name of up to 32 characters, starting with a letter, then letters, digits, - or _."
+    return ""
+
+
+def roster_problems(agents: Any) -> List[str]:
+    if not isinstance(agents, list) or not agents:
+        return ["agents must be a non-empty list"]
+    problems = [problem for name in agents if (problem := agent_name_problem(name))]
+    if not problems and len(set(agents)) != len(agents):
+        problems.append("Each agent needs a different name.")
+    return problems
+
+
+def project_agents(paths: Paths) -> List[str]:
+    if not paths.config_file.exists():
+        return list(DEFAULT_AGENTS)
+    agents = load(paths).get("agents")
+    problems = roster_problems(agents)
+    if problems:
+        raise TaosError("Invalid project roster: " + " ".join(problems))
+    return list(agents)
+
+
+def require_actor(paths: Paths, name: str) -> None:
+    if name not in RESERVED_ACTORS and name not in project_agents(paths):
+        raise TaosError(f"{name!r} is outside the project roster. See taos bootstrap status.")
+
+
 DEFAULTS: Dict[str, Any] = {
     "schema": SCHEMA,
-    "agents": ["codex", "claude"],
+    "agents": list(DEFAULT_AGENTS),
     "human_only": list(DEFAULT_HUMAN_ONLY),
     "secret_patterns": list(DEFAULT_SECRET_PATTERNS),
     "planning_surface": "none",
@@ -176,15 +214,12 @@ def validate(config: Dict[str, Any]) -> List[str]:
     if not isinstance(project, dict):
         problems.append("config.project is required")
     else:
-        import re
-
         if not project.get("name"):
             problems.append("config.project.name is required")
         prefix = project.get("prefix", "")
         if not re.match(r"^[A-Z][A-Z0-9]{1,7}$", str(prefix)):
             problems.append("config.project.prefix must be 2-8 uppercase alphanumerics")
-    if not isinstance(config.get("agents"), list) or not config.get("agents"):
-        problems.append("config.agents must be a non-empty list")
+    problems.extend(roster_problems(config.get("agents")))
     if not isinstance(config.get("human_only"), list) or not config.get("human_only"):
         problems.append("config.human_only must be a non-empty list")
     if not isinstance(config.get("secret_patterns"), list):

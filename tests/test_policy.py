@@ -55,6 +55,11 @@ class TestPolicy(unittest.TestCase):
         self.assertEqual(result["routes"][0]["name"], "repeating_work")
         self.assertIn("policies/DUPLICATE_WORK.md", result["load"])
 
+        result = policy_mod.route(self.paths, "Run 400 simulations on the university cluster after checking the pilot, storage and compute budget.")
+        self.assertIn("research_computing", [route["name"] for route in result["routes"]])
+        self.assertIn("policies/HPC.md", result["load"])
+        self.assertTrue(any("usage progress" in action for action in result["first_actions"]))
+
         result = policy_mod.route(self.paths, "hello")
         self.assertEqual(result["routes"], [])
         self.assertEqual(len(result["load"]), 5)

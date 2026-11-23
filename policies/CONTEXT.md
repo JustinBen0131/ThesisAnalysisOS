@@ -5,7 +5,7 @@ the rest of the session.
 
 ## Order of operations
 
-1. `taos status --compact`: injected at session start. Ten lines.
+1. Run `taos status --compact` for the project summary. An enabled session-start hook supplies this text automatically. Its length depends on the project.
 2. `taos policy route "<request>"`: the two or three policies that apply.
 3. `taos capsule <ID>`: the compiled answer for one task: state, blockers,
    evidence, decisions, the last handoff's head, where to work.

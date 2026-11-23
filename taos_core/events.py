@@ -68,17 +68,17 @@ def _cmd_note(args: argparse.Namespace, paths: Paths) -> int:
 
 
 def register(subparsers: Any) -> None:
-    events = subparsers.add_parser("events", help="read the event log")
+    events = subparsers.add_parser("events", help="read the log of what happened")
     events.add_argument("--since", help="ISO timestamp lower bound")
     events.add_argument("--type", action="append", help="filter by event type (repeatable)")
     events.add_argument("--limit", type=int, help="show only the last N events")
     events.add_argument("--json", action="store_true")
     events.set_defaults(func=_cmd_events)
 
-    event = subparsers.add_parser("event", help="write a small event")
+    event = subparsers.add_parser("event", help="add a short note to the log")
     event_sub = event.add_subparsers(dest="event_cmd", required=True)
     note = event_sub.add_parser("note", help="append a free-text note event")
-    note.add_argument("--agent", required=True, choices=list(AGENTS))
+    note.add_argument("--agent", required=True, choices=subparsers.actors)
     note.add_argument("--text", required=True)
     note.add_argument("--task", help="task id this note belongs to")
     note.set_defaults(func=_cmd_note)
