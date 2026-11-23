@@ -1,30 +1,177 @@
 # ThesisAnalysisOS
 
-[![What ./taos demo prints first: the name TAOS in a box, each letter shaded as one of the four answers a result can get: holds, stale, fails or unknown.](docs/opener.svg)](#see-it-in-a-minute)
+<h2 align="center">
+  Your AI agent said “finished” 19 times.<br>
+  On day 1, one setting changed.<br>
+  How many of the 19 can you still trust?
+</h2>
 
-**An AI assistant did some work for you last week. Since then, something changed.
-Which of its answers can you still trust?** ThesisAnalysisOS (TAOS) answers that
-for a person or a team working with AI agents. It keeps the result of each check
-with the files the check says it reads. After an edit it compares those files with
-the fingerprints it saved, and says which earlier results hold, which are stale,
-and why.
+<p align="center"><i>Pick an answer before you scroll.</i></p>
 
-[Follow a small example in the browser](https://whatstillholds.com/) ·
-[Read the audit protocol](docs/MEASUREMENT_AUDIT.md) · [Run the demo locally](#see-it-in-a-minute)
+<div align="center">
 
-[![A researcher and an example team of AI assistants share one project record of tasks, instructions, checks and approvals.](site/assets/social.png)](https://whatstillholds.com/)
+<details>
+<summary><b>All 19.</b> Each one passed its check.</summary>
+<br>
 
-The same project directory stores tasks, the researcher's original instructions,
-check results and handoffs. Each agent can see what was checked, which inputs
-were used, and which version carries a recorded approval. The command-line program
-uses the Python standard library and works locally without a model or network call.
+That is what the record said too. All 19 still read `finished ✓`.
+
+But a result is only as good as what it stood on, and one of those things
+changed on day 1. Nothing recorded which of the 19 used it. So the honest
+answer is the one nobody on the team could give: **you cannot tell.**
+
+</details>
+
+<details>
+<summary><b>About half.</b> Only the ones that used the setting.</summary>
+<br>
+
+The right instinct. Only the results that used the setting are in doubt.
+
+So which ones used it? Nothing recorded that. The honest answer is
+**you cannot tell**, which puts all 19 in doubt.
+
+</details>
+
+<details>
+<summary><b>None.</b> Check everything again.</summary>
+<br>
+
+The safe answer, and the slow one. Nothing says where to start.
+
+The honest answer is **you cannot tell** which of the 19 used the setting.
+That is the whole problem.
+
+</details>
+
+</div>
+
+<p align="center">
+  This happened on a real research project. A colleague noticed on day 20.<br>
+  <b>ThesisAnalysisOS says it on day 1, in one word.</b>
+</p>
+
+<p align="center">
+  <a href="https://whatstillholds.com/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/story-dark.svg">
+      <img src="docs/story-light.svg" width="880" alt="A short film. Day 19: nineteen pieces of work each say finished. Back on day 1, an AI agent changed one setting, and nothing says which of the nineteen stood on it. The same day with ThesisAnalysisOS: the result reads stale and names the file that changed, before anything is built on it. Something changed. What still holds?">
+    </picture>
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://whatstillholds.com/"><kbd>&nbsp;Play it in the browser&nbsp;</kbd></a>&nbsp;
+  <a href="#see-it-in-a-minute"><kbd>&nbsp;Run the demo&nbsp;</kbd></a>&nbsp;
+  <a href="https://github.com/JustinBen0131/ThesisAnalysisOS/generate"><kbd>&nbsp;Use this template&nbsp;</kbd></a>&nbsp;
+  <a href="https://github.com/JustinBen0131/ThesisAnalysisOS/archive/refs/heads/main.zip"><kbd>&nbsp;Download ZIP&nbsp;</kbd></a>
+</p>
+
+ThesisAnalysisOS (TAOS) is for a person or a team working with AI agents. It keeps
+the result of each check with the files the check says it reads. After an edit
+it compares those files with the fingerprints it saved, and says which earlier
+results hold, which are stale, and why.
+
+| It answers | In one word | Where it runs |
+|---|---|---|
+| Which results can still be used? | `holds` · `stale` · `fails` · `unknown` | On your computer, with the Python standard library. No model call, no network, no account. |
 
 **An answer costs no tokens.** It is worked out by comparing files on your own
 disk. An agent pays only to read it.
 
-Teams share these files in a workspace they trust. An approval carries the
-reviewer label supplied to the command. For an independently attributable
-sign-off, keep an access-controlled review record. [Trust and access](SECURITY.md#working-with-a-shared-research-record)
+## Try the decision here
+
+This page is playable. Open one choice at a time.
+
+> You are the next AI agent on a research project. The team has been at it for
+> 19 days. Every piece of work in front of you says finished. The team wants its
+> next result today, and it will stand on all 19. **Do you build on it?**
+
+<details>
+<summary><b>Build on it.</b> Every piece says finished.</summary>
+<br>
+
+Your result becomes the twentieth piece.
+
+On day 20 a colleague notices that later results have shifted, and traces it
+back to one setting. Your result stands on it too. Open <b>What had changed?</b>
+
+</details>
+
+<details>
+<summary><b>Check all 19 first.</b> Nothing says where to look.</summary>
+<br>
+
+You stop to check. Nothing in the record tells you where to look first.
+
+On day 20 a colleague notices that later results have shifted, and traces it
+back to one setting. Open <b>What had changed?</b>
+
+</details>
+
+<details>
+<summary><b>What had changed?</b> Back to day 1.</summary>
+<br>
+
+**The number was perfect. That was the problem.**
+
+A team was testing a computer simulation of its detector. They sent in a known
+signal of 1,000 units, but the simulation read 970.
+
+An AI agent switched off one correction. Now the simulation read exactly 1,000.
+That looked like an improvement.
+
+| | Reading |
+|---|---|
+| Signal sent in | 1,000 |
+| Simulation reads | 970 → 1,000 |
+| Real detector reads | 970 |
+
+But the team had already measured the real detector using the same signal. It
+read 970 too.
+
+The simulation was supposed to reproduce the real detector, not an ideal one. By
+making the simulation read a perfect 1,000, the agent had actually made it less
+faithful to the experiment.
+
+That earlier measurement was already recorded. But nothing connected it to the
+changed setting, so the apparent improvement went unchallenged.
+
+</details>
+
+<details>
+<summary><b>The same day, with ThesisAnalysisOS in place.</b> What the next agent is handed.</summary>
+<br>
+
+| | As it happened | With ThesisAnalysisOS |
+|---|---|---|
+| The earlier check says | `finished ✓` | `stale`, needs rechecking |
+| What changed | No warning connected the changed setting to the earlier check. | One setting in the detector simulation. This check used the old setting. |
+| Where to resume | | At that setting. Then run the check again. |
+| Still a scientific decision | | Which setting is right. A new pass will not say. The team’s reference is there to compare. |
+
+What the record answers after the setting file changes, from a recorded run on
+a small stand-in project:
+
+```text
+$ taos why INS-1
+  stale    check response: model changed: model/settings.json
+  INS-1 does not stand as recorded: stale.
+```
+
+> [!IMPORTANT]
+> A pass does not say which setting is right. The next agent gets what changed,
+> what needs rechecking, and where to resume. The scientific decision stays with
+> the team.
+
+The sequence comes from dated project notes, with identifying details removed.
+The visitor’s choices and the signal of 1,000 units illustrate the decision.
+Check the recorded run with `python3 evals/replay_setting_change.py --verify`, or
+[play the full version](https://whatstillholds.com/#try).
+
+</details>
+
+## Who it is for
 
 One person can coordinate multiple AI agents on the same project. Give a
 planner, a builder and a reviewer distinct names, even when they use the same
@@ -32,10 +179,17 @@ tool. Local sessions can read the project directly. A ChatGPT conversation
 or another web assistant can review a handoff you choose to share.
 [Configure agent roles](docs/AGENT_ROLES.md) · [Connect your tools](docs/AGENT_INTERFACES.md)
 
-This independent research prototype grew out of the software used to coordinate
-AI agents during a physics thesis. It is not affiliated with any employer or product.
+Teams share these files in a workspace they trust. An approval carries the
+reviewer label supplied to the command. For an independently attributable
+sign-off, keep an access-controlled review record. [Trust and access](SECURITY.md#working-with-a-shared-research-record)
+
+> [!NOTE]
+> This independent research prototype grew out of the software used to coordinate
+> AI agents during a physics thesis. It is not affiliated with any employer or product.
 
 ## See it in a minute
+
+[![What ./taos demo prints first: the name TAOS in a box, each letter shaded as one of the four answers a result can get: holds, stale, fails or unknown.](docs/opener.svg)](docs/opener.svg)
 
 Use Python 3.9 or later. Cloning the repository requires Git.
 
@@ -231,6 +385,25 @@ After two fictional instrument scores were corrected, the classifier still detec
 
 </details>
 
+## The measured trade-off
+
+Sixty file edits, each followed by a request for all six results. Bars count
+the checks that ran. The line counts stale results that were relied on.
+
+```mermaid
+xychart-beta
+    title "360 requests after 60 edits"
+    x-axis ["Rerun all", "Age limit 2", "Age limit 4", "Age limit 8", "Inputs listed", "One input left off"]
+    y-axis "Count" 0 --> 360
+    bar [360, 180, 90, 48, 60, 29]
+    line [0, 30, 83, 161, 0, 150]
+```
+
+Rerunning everything is safe and slow. Trusting by age is cheaper and wrong.
+Listing what each check reads did the least work that was still right. Leaving
+one input off each list is the failure to watch for.
+[Method and data](https://whatstillholds.com/studies/reuse-frontier/) · `python3 evals/reuse_frontier.py`
+
 ## What is tested
 
 The [claim register](docs/CLAIMS.md) links the software's claims to named tests
@@ -301,6 +474,12 @@ For your own workstation, cluster or cloud project, start with the research ques
 | five minutes | this page, then `docs/CLAIMS.md` |
 | twenty minutes | `taos_core/basis.py` (the comparison, about 250 lines), `tests/test_counterexamples.py`, then `docs/METHOD.md` from "One error, one answer" |
 | an agent with you | `docs/ARCHITECTURE.md`, "Reading this repository cold": where each idea lives, the commands that verify it, and what to keep true when changing it |
+
+[Find a guide by task](docs/README.md)
+
+> [!TIP]
+> **If you are an AI agent reading this:** do not set the system up first. `AGENTS.md` says so in its
+> first section, and [the guide for AI agents](https://whatstillholds.com/llms.txt) leads to the same evidence.
 
 An agent asked to examine or change TAOS should not set it up first.
 `AGENTS.md` says so in its first section.
@@ -383,6 +562,9 @@ accepted that version; a later edit does not inherit it.
 
 ## The parts
 
+<details>
+<summary>Every part of the repository, one line each</summary>
+
 | Part | What it does |
 |---|---|
 | `taos` | the whole command line, stdlib only |
@@ -402,7 +584,12 @@ accepted that version; a later edit does not inherit it.
 | `docs/INTERFACE.md` | the six rules every screen follows |
 | `docs/SPEC.md` | the binding spec for anyone changing the OS |
 
+</details>
+
 ## The science layer
+
+<details>
+<summary>The commands that measure whether the system is getting better</summary>
 
 The task and claim records help agents coordinate overlapping work. The following checks test how the system performs. Each came from a measured failure; the measurements are in
 `docs/METHOD.md`.
@@ -418,6 +605,8 @@ The task and claim records help agents coordinate overlapping work. The followin
 ./taos rule governing plots --on 2026-03-02   # the instructions in force on a date, as their original words
 ./taos anchor resolve ...    # refused without a reference, a control and a prediction made beforehand
 ```
+
+</details>
 
 ## Lineage
 

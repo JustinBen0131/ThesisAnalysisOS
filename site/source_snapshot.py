@@ -38,6 +38,11 @@ RAW_SUFFIXES = {".md", ".markdown", ".py", ".txt", ".json", ".csv", ".tsv", ".ym
 PLAIN_MODES = {"100644", "100755"}
 LEGAL_TEXT = {"LICENSE", "NOTICE"}
 TERMINAL_IMAGE = "docs/opener.svg"
+# Only these reviewed illustrations are served as SVG alongside the raw README.
+README_ART_SHA256 = {
+    "docs/story-light.svg": "f4234530adb6fb4dc27fa51ac4abc86fd9a7640618cf22b17332877d37d794a3",
+    "docs/story-dark.svg": "de1c735a0259b12066d55d7d75031a4265a2ef5a4b564f70d64317b68500d486",
+}
 RAW_MARKDOWN_LINK = re.compile(r"(?<!!)\[[^\[\]\r\n]*\]\(\s*(?:<([^>\r\n]+)>|([^\s)]+))")
 RAW_MARKDOWN_IMAGE = re.compile(r"!\[[^\]\r\n]*\]\(\s*(?:<([^>\r\n]+)>|([^\s)]+))")
 RAW_INDEX_DIRECTORIES = {"evals/results", "examples/model_evaluation"}
@@ -176,8 +181,19 @@ def _write_raw_directory_indexes(out, directories, referenced):
         (out / page).write_text(_html(directory, body, page), encoding="utf-8")
 
 
-def _copy_markdown_images(out, tracked, referenced):
-    """Preserve relative image links in byte-identical Markdown using the site's published raster assets."""
+def _copy_markdown_images(out, repo, tracked, referenced):
+    """Preserve reviewed README illustrations and published raster assets beside the raw Markdown."""
+    readme = referenced.get("README.md")
+    if readme:
+        for name, expected_hash in README_ART_SHA256.items():
+            if name in readme[1]:
+                source = _read_text(repo, name) if tracked.get(name) in PLAIN_MODES else None
+                if not source or hashlib.sha256(source[0]).hexdigest() != expected_hash:
+                    raise ValueError(f"Review the changed README illustration and update its fingerprint: {name}")
+                target = out / "source/raw" / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(source[0])
+
     images = set()
     for name, (_, text) in referenced.items():
         if PurePosixPath(name).suffix.lower() in {".md", ".markdown"}:
@@ -376,7 +392,7 @@ def write_source_snapshot(out, repo, github, ref, revision, evidence_files=()):
                       "viewer_url": _href(MANIFEST, _file_target(name)),
                       "sha256": hashlib.sha256(data).hexdigest(), "bytes": len(data)})
     _write_raw_directory_indexes(out, directories, referenced)
-    _copy_markdown_images(out, tracked, referenced)
+    _copy_markdown_images(out, repo, tracked, referenced)
     manifest = {"schema": "source-snapshot/1", "revision": revision,
                 "provenance": "commit" if archive else "workspace", "files": files}
     (out / MANIFEST).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
