@@ -202,7 +202,7 @@ def _write_viewer(out, name, text, note, raw):
         lines.append(f'<li id="L{number}"><a href="#L{number}" aria-label="Line {number}">{number}</a>'
                      f'<code>{html.escape(line)}</code></li>')
     index = _href(location, INDEX)
-    raw_link = f'<a href="{_href(location, raw)}">Raw source</a>' if raw else ""
+    raw_link = f'<a data-raw-source="true" href="{_href(location, raw)}">Raw source</a>' if raw else ""
     body = (f'<nav class="source-links" aria-label="Source navigation"><a href="{index}">Source index</a>'
             f'{raw_link}</nav>'
             f'<h1>{html.escape(name)}</h1><p>{note}</p>'

@@ -400,7 +400,9 @@ def verify_sources(site, revision):
             verify_terminal_image(data)
         require(len(data) == entry["bytes"] and hash_bytes(data) == entry["sha256"], f"Changed raw source: {name}")
         route = viewer.relative_to(site.root).as_posix()
-        require(any(tag == "a" and site.path(attr["href"], route) == raw for tag, attr in viewer_page.links),
+        raw_links = [attr["href"] for tag, attr in viewer_page.links
+                     if tag == "a" and attr.get("data-raw-source") == "true"]
+        require(len(raw_links) == 1 and site.path(raw_links[0], route) == raw,
                 f"Viewer does not link its raw source: {name}")
     return manifest_files, len(raw_paths)
 
