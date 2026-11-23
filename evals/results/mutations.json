@@ -71,7 +71,7 @@
         "tests/test_plain_words.py": "401fc902655863dc665a9876ca8c24f1aa6e8a4d39bdb9a4a54e135c372a93de",
         "tests/test_policy.py": "1bce21e05d5f9c3a88536a97cad6f732c1414caf1f6b788652ae75464ff88a52",
         "tests/test_progress.py": "7708e54578a3cdc4f5890476b77941775dadcb18ef8b42dcaefd60f3d138fa90",
-        "tests/test_project_actors.py": "d8ae7b280ff30d01b5a08765af1dfa0f5eac48f87b2d94eecf861906b64a4cf2",
+        "tests/test_project_actors.py": "5e58b35fecb4a0d1768766de2fdb1cdb53d9c396d930c9ee32dd0a24627e9ab5",
         "tests/test_questions.py": "b313b425cec9dffea4dcb374b924981887773883e2b791123261dbe73a6af149",
         "tests/test_review_practice.py": "375ec0e557a7d1164fa06f4a269abb3089f515adfd8724f7a3754c850be1b0f7",
         "tests/test_run_records.py": "dcce4a258a470be537ef3513a8a2b4b0e39cb85ba3b258f0f46688eb96fa77b8",
@@ -85,7 +85,7 @@
         "tests/test_use.py": "9e0954110511d578802d0d51b0fc83c21dcc0bf1b635628ad93cd44b865d774b",
         "tests/test_welcome.py": "f30f65ccbea66cb1e0690629d7710f644d69d999316e2a2c29ba4bcd86e9c3fd"
       },
-      "sha256": "7909a07afca7f9001b6a560a50a7ebd6d5bb926683cde0cef131bb1ed093deef"
+      "sha256": "a4382db5db0324eda1186d47791f3e1b2425fac20c5e240b4b1bcc3d965738e8"
     },
     "patterns": [
       "evals/mutations.py",
