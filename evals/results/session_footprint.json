@@ -29,7 +29,7 @@
         "kernels/PROJECT_KERNEL.md": "999c64dcb56f6147ef5d4474e37ce8a0e0ceb6c587aaa9b520d94d8a8b16a371",
         "policies/CLAIMS.md": "003ea242f6f34b0c9eae3b54c122a1d69cb1185c57a0246547a35b610c605b0b",
         "policies/CONTEXT.md": "25aec18cd790a9c1c6bdc456ce0b053a7d627edd7a7b553690fb87ae1e53ca7c",
-        "policies/CONTROL.md": "fa6430325f4f0d8093958712d1cd755da8822bbf4654c3e1915814a37688428b",
+        "policies/CONTROL.md": "782e18a3d4e6b677f3d57db8f1500701f6a784f1f3ce1c5ad7a8f2fc42baddcd",
         "policies/DECOMPOSITION.md": "1cf0491eb838cf09a3e65da346a61eec2960629ef5ef8c2fe28e5e608e7df658",
         "policies/DUPLICATE_WORK.md": "516068d6458e6eaf672a999f4a14149633a8db83bcefa8903a38b57b28712987",
         "policies/EVIDENCE.md": "86063a9d0618adb87e437bd4e6e60dffdd6907154300ec399a9a8db14b2a9f56",
@@ -60,14 +60,14 @@
         "taos_core/claims.py": "07beb6e62538c93385d168a665eed6391251be063e1e6ba4eaa37b58f08a1f63",
         "taos_core/cli.py": "dc856252f7bf5be0d4fa7bfbb5a056c5315ee192b4b2824bbd97bef67f8ab9b6",
         "taos_core/config.py": "1dae50f3cd2d0eb0460e9cdf3a0a9620deece1415ddb4238311423b3ff050bb1",
-        "taos_core/control.py": "a9fab3c3551a14d6376ad436126992d1bcee13a10011ee03d9fd8d9ea56c8016",
+        "taos_core/control.py": "8d414cfa65735319ce182daa80e09a31e45dbf4d5d142dfa1a25ba416fce8167",
         "taos_core/decisions.py": "ea76401780a93b7bedca1df132617e859abe9598c50805ae576d51fd049c6022",
         "taos_core/demo.py": "e7fe8cf969b450ed624640c6a0a0f3977d7e3c3b66107af8a810fc21123a23ac",
         "taos_core/doctor.py": "243c505bd8b63568222ade179b4db3e3665b16a8d2e62eb3a0a62ed8300aa836",
         "taos_core/events.py": "688a9ab160a2342f34f0dbe93f8d2589180bd22eeab9de02f768fb8dbffae816",
         "taos_core/gates.py": "f6248c9c6f746ea0a7da8dc8bbcc06f1185f4b0e329eca4eb5d8db2d085f12cb",
         "taos_core/handoff.py": "79368dc51a82170a36e5511ec9a8686ac8c48b9f9cb6a2353048c1c5e4cfb5d5",
-        "taos_core/hpc.py": "4df80fae9e4ea8020e18855fda81f1da7edd8e203b0738f79b26de4388ab26c9",
+        "taos_core/hpc.py": "e93cf370e1d1dd65c24db274501e069966d5e860d5209c80936050118d76903a",
         "taos_core/kernels.py": "ae2b8e0a02ffb5f14a8cf7a3eb677025e79b642df1daff9053c8bbe82ad12a11",
         "taos_core/lessons.py": "5abcc2cafaa59ba67419dd919f69caff0b40ffa9eb5cc1e258f81d57f8f71a35",
         "taos_core/lifecycle.py": "152383dc772aef1453cfc5a157ca5f3cdbc714e3ca7c4f0da8eafffe7a4aa135",
@@ -77,7 +77,7 @@
         "taos_core/paths.py": "3e84e3bc70632fdac2d995a0b93e25bee83ef5ad8e7cf0b9a2d224f4ac829878",
         "taos_core/plain.py": "182be6352d35712a8bc836d1488f7dc00adc21962fc7fbc066b3d4c69bdc3a59",
         "taos_core/policy.py": "dbffa785ee8e344f5ae157a3047f49d5d5dfa4ca73370f073b7cbd74e30059be",
-        "taos_core/progress.py": "70dc2536f149c0cc38ae03b7e2e1716e5bc560194430e4788b7556d09940059f",
+        "taos_core/progress.py": "bb32c35de1d957cf81b40daba74ace95184426bfbb2a46a828ea3a76e772ebff",
         "taos_core/projections.py": "125b2f1009a44ca9572170ab5b3ef601ba8b81cd7ab4474dbda4cb98f43f41f7",
         "taos_core/proposals.py": "4e784e3d242e7605c8c726485f13eaeebdc59ca8558fe6afbfaea44ffb16c1d0",
         "taos_core/replay.py": "e3f91b1e89c4f4650c8230d6050020fad70cd737ded064392c8a3fe8d2bc3831",
@@ -97,7 +97,7 @@
         "taos_core/util.py": "e02eb73a86172fcf632efed3f27bf9d1d8253d54ba0f3bc788101672bae2dba0",
         "taos_core/welcome.py": "121776e21d3f8a9fe678d672c787e20d5656cd5b3e71a2821e0f9e2df314dd63"
       },
-      "sha256": "85bd59437cc0daa6b1899796b2c347ca854d047b1c5245f36d81498edfd4eb96"
+      "sha256": "535ef51bd5da6a9a807fd06bfb2eb2d3b4642fcc14aa8268c975fc0dfb55b260"
     },
     "patterns": [
       ".claude/settings.json",

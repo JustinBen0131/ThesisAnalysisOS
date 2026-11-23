@@ -1,21 +1,23 @@
 {
   "here": {
-    "base_commit": "f28baabd7b255a690e48538307b1f9636ae75470",
+    "base_commit": "2f5027ccd31e14e9aceefa32bf0440092dc1ecfa",
+    "case_roster_sha256": "fc7d175bdf3b45da863fb6a44940d9def55594482c9b4c08418b6497304ab565",
     "did_not_pass": 0,
     "names": [],
     "ran": 22,
-    "source_commit": "f28baabd7b255a690e48538307b1f9636ae75470",
-    "source_sha256": "37ea6bbcbd75885779d2ee05eecd901f355a0784649fbbfde3d0710a60b1de78"
+    "source_commit": "2f5027ccd31e14e9aceefa32bf0440092dc1ecfa",
+    "source_sha256": "d511ff0b06b10f2a0da4e7df160b30b6637397e3fab41d01975e3d04b0cc1984"
   },
   "measured_on": {
     "files": {
-      "count": 57,
+      "count": 58,
       "files": {
         "bootstrap/answers.example.json": "3be8a24afb6b69e93ab4c4c87b2a4f3714ae458bf8fe9bd6e752fcad6450ffa8",
         "bootstrap/answers.schema.json": "5d888f22174dab4f56eeecd12ddb6de2c2c72c44799bd09407e85c9ffb9c0ac2",
         "bootstrap/rates.json": "95dd1b598eec308ac734b1684457efe2dca108616c4319bfb5fff00470be5b47",
-        "evals/at_revision.py": "a2bdbd0c66b27c78cc0f9219c9b9c7a7aa879e703eb2a8f20f598ae5f0ea0b76",
+        "evals/at_revision.py": "52897f5e782adce3afbf570ae1abfc036568e58a76b9c32e8920227ae9300e63",
         "evals/measured.py": "7fb496a405c29068c118873d34546d98ede75732fc75dfed61485f3fbede8869",
+        "evals/revision_suite.py": "0805451d0e602f4171e8e1d236e903fe93649dfb5489b4b047931885ad709770",
         "taos": "58fa0d76b7326f31463b2b8990afca1fdf532579bf3e58f5e160ea68cce32863",
         "taos_core/__init__.py": "66629c3555bb4a5eb5d6ab16af575f0adf6b656cfd82f59dea5b15e19a40326c",
         "taos_core/_science.py": "72488b088fcb3a9f12f3fed832d9d9d6272a0ae9e816b783e3bcced66cb81cda",
@@ -30,14 +32,14 @@
         "taos_core/claims.py": "07beb6e62538c93385d168a665eed6391251be063e1e6ba4eaa37b58f08a1f63",
         "taos_core/cli.py": "dc856252f7bf5be0d4fa7bfbb5a056c5315ee192b4b2824bbd97bef67f8ab9b6",
         "taos_core/config.py": "1dae50f3cd2d0eb0460e9cdf3a0a9620deece1415ddb4238311423b3ff050bb1",
-        "taos_core/control.py": "a9fab3c3551a14d6376ad436126992d1bcee13a10011ee03d9fd8d9ea56c8016",
+        "taos_core/control.py": "8d414cfa65735319ce182daa80e09a31e45dbf4d5d142dfa1a25ba416fce8167",
         "taos_core/decisions.py": "ea76401780a93b7bedca1df132617e859abe9598c50805ae576d51fd049c6022",
         "taos_core/demo.py": "e7fe8cf969b450ed624640c6a0a0f3977d7e3c3b66107af8a810fc21123a23ac",
         "taos_core/doctor.py": "243c505bd8b63568222ade179b4db3e3665b16a8d2e62eb3a0a62ed8300aa836",
         "taos_core/events.py": "688a9ab160a2342f34f0dbe93f8d2589180bd22eeab9de02f768fb8dbffae816",
         "taos_core/gates.py": "f6248c9c6f746ea0a7da8dc8bbcc06f1185f4b0e329eca4eb5d8db2d085f12cb",
         "taos_core/handoff.py": "79368dc51a82170a36e5511ec9a8686ac8c48b9f9cb6a2353048c1c5e4cfb5d5",
-        "taos_core/hpc.py": "4df80fae9e4ea8020e18855fda81f1da7edd8e203b0738f79b26de4388ab26c9",
+        "taos_core/hpc.py": "e93cf370e1d1dd65c24db274501e069966d5e860d5209c80936050118d76903a",
         "taos_core/kernels.py": "ae2b8e0a02ffb5f14a8cf7a3eb677025e79b642df1daff9053c8bbe82ad12a11",
         "taos_core/lessons.py": "5abcc2cafaa59ba67419dd919f69caff0b40ffa9eb5cc1e258f81d57f8f71a35",
         "taos_core/lifecycle.py": "152383dc772aef1453cfc5a157ca5f3cdbc714e3ca7c4f0da8eafffe7a4aa135",
@@ -47,7 +49,7 @@
         "taos_core/paths.py": "3e84e3bc70632fdac2d995a0b93e25bee83ef5ad8e7cf0b9a2d224f4ac829878",
         "taos_core/plain.py": "182be6352d35712a8bc836d1488f7dc00adc21962fc7fbc066b3d4c69bdc3a59",
         "taos_core/policy.py": "dbffa785ee8e344f5ae157a3047f49d5d5dfa4ca73370f073b7cbd74e30059be",
-        "taos_core/progress.py": "70dc2536f149c0cc38ae03b7e2e1716e5bc560194430e4788b7556d09940059f",
+        "taos_core/progress.py": "bb32c35de1d957cf81b40daba74ace95184426bfbb2a46a828ea3a76e772ebff",
         "taos_core/projections.py": "125b2f1009a44ca9572170ab5b3ef601ba8b81cd7ab4474dbda4cb98f43f41f7",
         "taos_core/proposals.py": "4e784e3d242e7605c8c726485f13eaeebdc59ca8558fe6afbfaea44ffb16c1d0",
         "taos_core/replay.py": "e3f91b1e89c4f4650c8230d6050020fad70cd737ded064392c8a3fe8d2bc3831",
@@ -69,12 +71,13 @@
         "tests/helpers.py": "f601485fb48c21788c6bd9a47bb65588cea1abffa85ed4b46c8dd9c1ed711dd8",
         "tests/test_counterexamples.py": "e6f35d8c643bf98bea33ef3e9e5826fca85c2ecf43788b6100f50123301520cc"
       },
-      "sha256": "37ea6bbcbd75885779d2ee05eecd901f355a0784649fbbfde3d0710a60b1de78"
+      "sha256": "d511ff0b06b10f2a0da4e7df160b30b6637397e3fab41d01975e3d04b0cc1984"
     },
     "patterns": [
       "bootstrap/*.json",
       "evals/at_revision.py",
       "evals/measured.py",
+      "evals/revision_suite.py",
       "taos",
       "taos_core/*.py",
       "taos_core/templates/*",
@@ -84,35 +87,37 @@
   },
   "revisions": {
     "071a348": {
+      "case_roster_sha256": "fc7d175bdf3b45da863fb6a44940d9def55594482c9b4c08418b6497304ab565",
       "did_not_pass": 22,
       "names": [
-        "test_a_change_is_not_confirmed_by_a_number_from_nowhere",
-        "test_a_check_cannot_pass_on_a_file_it_did_not_declare",
-        "test_a_date_that_is_not_on_the_calendar_is_refused",
         "test_a_lapsed_lease_is_over_even_when_nobody_else_took_the_work",
         "test_a_lapsed_owner_cannot_come_back_after_reassignment",
-        "test_a_later_replacement_does_not_erase_the_earlier_answer",
-        "test_a_lesson_for_one_task_does_not_reach_a_task_whose_id_merely_starts_the_same",
-        "test_a_narrow_exception_leaves_the_general_rule_in_force_elsewhere",
-        "test_a_pass_does_not_cover_a_file_edited_afterwards",
-        "test_a_prediction_cannot_be_rewritten_once_made",
         "test_a_refused_start_takes_nothing",
-        "test_a_reminder_shown_for_correct_work_is_not_a_repeated_mistake",
+        "test_a_pass_does_not_cover_a_file_edited_afterwards",
+        "test_done_cannot_be_reached_by_a_route_that_skips_the_check",
+        "test_a_date_that_is_not_on_the_calendar_is_refused",
+        "test_a_later_replacement_does_not_erase_the_earlier_answer",
+        "test_a_narrow_exception_leaves_the_general_rule_in_force_elsewhere",
         "test_a_replacement_dated_in_the_future_does_not_govern_yet",
         "test_a_temporary_replacement_gives_the_rule_back_when_it_lapses",
+        "test_a_change_is_not_confirmed_by_a_number_from_nowhere",
+        "test_a_prediction_cannot_be_rewritten_once_made",
+        "test_an_unlabelled_case_is_not_counted_as_harmless",
+        "test_the_text_false_is_not_read_as_true",
+        "test_an_unobserved_profile_earns_no_credit",
+        "test_a_lesson_for_one_task_does_not_reach_a_task_whose_id_merely_starts_the_same",
+        "test_a_reminder_shown_for_correct_work_is_not_a_repeated_mistake",
+        "test_a_check_cannot_pass_on_a_file_it_did_not_declare",
         "test_an_input_git_ignores_is_still_part_of_what_a_check_stood_on",
         "test_an_isolated_check_does_not_see_the_environment",
-        "test_an_unlabelled_case_is_not_counted_as_harmless",
-        "test_an_unobserved_profile_earns_no_credit",
-        "test_done_cannot_be_reached_by_a_route_that_skips_the_check",
         "test_setup_can_say_what_a_check_reads",
-        "test_the_record_says_what_was_closed_and_it_was",
-        "test_the_text_false_is_not_read_as_true"
+        "test_the_record_says_what_was_closed_and_it_was"
       ],
       "ran": 22,
       "source_commit": "071a3485d39473a476b55093264de3b2453f8080"
     },
     "89f36ce": {
+      "case_roster_sha256": "fc7d175bdf3b45da863fb6a44940d9def55594482c9b4c08418b6497304ab565",
       "did_not_pass": 5,
       "names": [
         "test_a_check_cannot_pass_on_a_file_it_did_not_declare",
