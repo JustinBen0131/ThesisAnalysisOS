@@ -219,24 +219,29 @@
     const el = document.querySelector(selector);
     return Boolean(el && !el.closest("[hidden]") && el.getClientRects().length);
   };
+  // The story advances on timers as well as clicks and can replace its controls on Back.
   const story = decision && document.querySelector(".visitor-story");
-  function decisionProgress() {
-    if (!story || !(flags & START)) return;
-    const stop = Number(story.dataset.decisionStop);
-    if (stop >= 1) mark(CHECKPOINT);
-    if (story.dataset.ref === "1" && shown("#meter")) mark(REFERENCE);
-    if (stop === 4 && shown("#second")) mark(FINISH);
+  function readStory() {
+    if (!story || !(flags & START) || document.hidden) return;
+    if (shown("#stakes") || shown("#track .wrong")) mark(CHECKPOINT);
+    if ((flags & CHECKPOINT) && story.dataset.ref === "1" && shown("#meter")) mark(REFERENCE);
+    if ((flags & REFERENCE) && shown("#after")) mark(FINISH);
   }
   if (story) {
-    new MutationObserver(decisionProgress).observe(story, {attributes:true, attributeFilter:["data-decision-stop", "data-ref"]});
-    document.addEventListener("visibilitychange", decisionProgress);
+    const changes = new MutationObserver(() => {
+      readStory();
+      if (flags & FINISH) changes.disconnect();
+    });
+    changes.observe(story, {subtree:true, childList:true, attributes:true,
+      attributeFilter:["hidden", "class", "data-ref"]});
+    document.addEventListener("visibilitychange", readStory);
   }
   function controls(target) {
     if (decision && target.closest("#try")) {
       const btn = target.closest("button");
       if (btn && !(flags & START) && ["build", "check"].includes(btn.id) && shown("#recap"))
         mark(OFFER | START | (btn.id === "build" ? BUILD : CHECK));
-      decisionProgress();
+      readStory();
     }
     if (page === "decision" && target.closest(".rd-case.is-done .rd-choices button")) mark(CASE);
     if (page === "record" && target.closest("#mind-start, #guide-next")) {
@@ -264,7 +269,7 @@
     if (dest.origin === "https://github.com" && dest.pathname === "/JustinBen0131/ThesisAnalysisOS/issues/new" &&
         page === "exchange") mark(FEEDBACK);
     if (dest.origin !== own) return;
-    if (decision && flags & FINISH && link.closest("#second .onward, #after .case-link")) mark(CONTINUE);
+    if (decision && flags & FINISH && link.closest("#after, #second .onward")) mark(CONTINUE);
     if (/^\/(evidence|studies|records)(\/|$)/.test(dest.pathname) &&
         (dest.pathname !== location.pathname || dest.hash && dest.hash !== location.hash)) mark(PROOF);
     if (/^\/source\/thesisanalysisos-[a-f0-9]{7,40}\.zip$/.test(dest.pathname)) mark(ZIP);

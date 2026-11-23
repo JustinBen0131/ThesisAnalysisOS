@@ -381,6 +381,20 @@ border-bottom:1px solid var(--line)}
 @keyframes flagged{0%{box-shadow:0 0 0 0 var(--stale)}45%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
 @media (prefers-reduced-motion:reduce){#try .unfold,#try .unfold .pill.now{animation:none}}
 @media (max-width:720px){#try .hand col.k{width:104px}#try .hand col.a{width:104px}#try .hand th,#try .hand td{padding:10px}#try .pill{white-space:normal}}
+@media (max-width:560px){
+#try .hand,#try .hand tbody,#try .hand tbody tr,#try .hand tbody th,#try .hand tbody td{display:block}
+#try .hand colgroup{display:none}
+#try .hand thead{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#try .hand tbody th{padding:12px 14px 0;border:0}
+#try .hand tbody td{padding:6px 14px 12px;border:0;font-size:17px}
+#try .hand tbody tr+tr th,#try .hand tbody tr+tr td{border-top:0}
+#try .hand tbody tr+tr{border-top:1px solid var(--line)}
+#try .hand .a{border-right:0}
+#try .hand tbody td::before{content:"With ThesisAnalysisOS";display:block;margin-bottom:5px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+#try .hand tbody td.a::before{content:"As it happened"}
+#try .hand tbody td.a{padding-bottom:4px}
+#try .pill{font-size:16px}
+}
 /* The end of the page: three doors stay in view, the rest folds. */
 #run .doors{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin:26px 0 8px}
 #run .doors span{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-right:6px}
