@@ -18,6 +18,7 @@ from pathlib import Path
 SITE = Path(__file__).resolve().parent
 sys.path.insert(0, str(SITE.parent))
 from hpc_planner import render_planner
+from hpc_review import sample_review
 
 
 def resource_cases():
@@ -106,10 +107,48 @@ try {
 } catch (error) {
   check("Browser error: " + error.message, false);
 }
-const output = document.createElement("pre");
-output.id = "worksheet-verdict";
-output.textContent = JSON.stringify(readings);
-document.body.replaceChildren(output);
+async function readReview(record) {
+  const field = document.querySelector("[data-review-file]");
+  const transfer = new DataTransfer();
+  transfer.items.add(new File([JSON.stringify(record)], "campaign-review.json", {type: "application/json"}));
+  field.files = transfer.files;
+  const status = document.querySelector("[data-report-status]");
+  const value = document.querySelector("[data-imported]");
+  const done = new Promise(resolve => {
+    const observer = new MutationObserver(() => {
+      if (status.textContent) { observer.disconnect(); resolve(); }
+    });
+    observer.observe(status, {childList: true, subtree: true});
+  });
+  field.dispatchEvent(new Event("change", {bubbles: true}));
+  await done;
+  return value;
+}
+async function checkAccounting() {
+  try {
+    const current = JSON.parse(document.getElementById("review-fixture").textContent);
+    const imported = await readReview(current);
+    const workerEstimate = Array.from(imported.querySelectorAll("dt")).find(label => label.textContent === "Worker-seconds");
+    check("Retained worker time and projected batch time have separate labels",
+      imported.textContent.includes("220 recorded worker-seconds") &&
+      imported.textContent.includes("Estimated batch use") && workerEstimate?.nextElementSibling?.textContent === "90");
+    check("The displayed decision accounts for all three listed outputs",
+      imported.textContent.includes("2 of 3 listed outputs were reusable"));
+    const old = {...current}; delete old.accounting;
+    check("An older review shows unknown worker time", (await readReview(old)).textContent.includes("Worker time unknown"));
+    const invalid = {...current, accounting: {...current.accounting, attempts: -1}};
+    check("Invalid accounting clears the previous report", !(await readReview(invalid)).textContent);
+    check("A valid review can be opened after an invalid report",
+      (await readReview(current)).textContent.includes(current.accounting.sha256));
+  } catch (error) {
+    check("Imported review error: " + error.message, false);
+  }
+  const output = document.createElement("pre");
+  output.id = "worksheet-verdict";
+  output.textContent = JSON.stringify(readings);
+  document.body.replaceChildren(output);
+}
+checkAccounting();
 """
 
 
@@ -125,12 +164,14 @@ def main():
         root = Path(directory)
         page = root / "worksheet.html"
         script = escape((SITE / "assets/hpc-planner.js").as_uri(), quote=True)
+        review_script = escape((SITE / "assets/hpc-review.js").as_uri(), quote=True)
         cases = resource_cases()
         page.write_text(f'<!doctype html><meta charset="utf-8">{render_planner()}'
                         f'<script id="cases" type="application/json">{json.dumps(cases)}</script>'
-                        f'<script src="{script}"></script><script>{DRIVE}</script>', encoding="utf-8")
+                        f'<script id="review-fixture" type="application/json">{json.dumps(sample_review())}</script>'
+                        f'<script src="{script}"></script><script src="{review_script}"></script><script>{DRIVE}</script>', encoding="utf-8")
         result = subprocess.run([browser, "--headless", "--disable-background-networking", "--no-first-run",
-                                 "--user-data-dir=" + str(root / "profile"), "--dump-dom", page.as_uri()],
+                                 "--user-data-dir=" + str(root / "profile"), "--virtual-time-budget=5000", "--dump-dom", page.as_uri()],
                                 capture_output=True, text=True, timeout=45)
         match = re.search(r'<pre id="worksheet-verdict">(.*?)</pre>', result.stdout, re.S)
         if result.returncode or not match:
