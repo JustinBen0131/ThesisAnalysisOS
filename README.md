@@ -166,8 +166,7 @@ The first line says what was found. The account folds open under it.
 
 ### Audit a measurement
 
-**Every edit that changed the fitted result made the earlier pass `stale`: 27
-of 27. Run again, 21 still passed and 6 failed.** A stale pass says the old
+**With all inputs declared, all 27 edits that changed the fit made its earlier pass `stale`. Fresh checks passed in 21 cases and failed in six.** A stale pass says the old
 result no longer speaks for these files. Only the new run says whether the fit
 still meets its limits.
 

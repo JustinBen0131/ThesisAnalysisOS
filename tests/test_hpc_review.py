@@ -162,6 +162,12 @@ class CampaignReviewTests(unittest.TestCase):
         self.assertEqual(self.report()["batch"]["state"], "hold")
         batch["measured"]["cost_minor"] = 12
         batch["limits"].update(currency="USD", budget_minor=23)
+        batch["measured"]["currency"] = "EUR"
+        different = self.report()["batch"]
+        self.assertEqual(different["state"], "hold")
+        self.assertNotIn("cost_minor", different["estimates"])
+        self.assertTrue(any("different currencies" in problem for problem in different["issues"]))
+        batch["measured"]["currency"] = "USD"
         self.assertEqual(self.report()["batch"]["state"], "hold")
         batch["limits"]["budget_minor"] = 24
         self.assertEqual(self.report()["batch"]["state"], "owner_review")

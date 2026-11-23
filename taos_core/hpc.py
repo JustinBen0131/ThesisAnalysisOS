@@ -250,7 +250,9 @@ def _batch(request, plan, findings, setting):
         comparisons.append((memory, limits["shared_memory_mib"], "MiB of shared memory"))
     if measured["wall_seconds"] < limits.get("min_job_seconds", 0):
         issues.append("Group short jobs or reduce dispatch pressure under this site's minimum job length.")
-    if priced:
+    if priced and "currency" in measured and measured["currency"] != limits["currency"]:
+        issues.append("The measured cost and the available budget use different currencies. Supply both in one currency.")
+    elif priced:
         spend = count * measured["cost_minor"]
         result["estimates"].update(cost_minor=spend, currency=limits["currency"])
         comparisons.append((spend, limits["budget_minor"], "minor currency units"))
