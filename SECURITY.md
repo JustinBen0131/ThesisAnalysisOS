@@ -29,7 +29,7 @@ python3 site/release_integrity.py PATH_TO_SITE --expected-sha256 SAVED_FINGERPRI
 
 The browser policy is set on each generated HTML page. Source listings can be read with scripts disabled. Only the private film templates can supply approved inline scripts. The project’s ordinary links to source files, research data and scientific discussions remain usable directly.
 
-Pages that show the comparison with public main ask GitHub’s API for the repository’s file list. The production site uses Cloudflare Web Analytics. Its homepage and evidence pages also count steps through the walkthrough. The private preview omits both readership scripts. Downloaded research records and the command-line checkers work offline.
+Pages that show the comparison with public main ask GitHub’s API for the repository’s file list. The production site uses Cloudflare Web Analytics. A separate collector records selected actions on the home, decisions, record, HPC, workflow, evidence and exchange pages. Actions within one page load share a random ID. Opening another page creates a new ID. The record includes the UTC day, site revision, page category, broad referral and screen-size categories, and actions taken. The collector defines no automatic deletion period for these records. The dashboard uses shorter reporting windows. The private preview omits both readership scripts. Downloaded research records and the command-line checkers work offline.
 
 ## Sharing a compute review
 

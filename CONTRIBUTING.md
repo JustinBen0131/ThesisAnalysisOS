@@ -1,8 +1,11 @@
 # Contributing
 
 Research notes, exchange entries, questions and reports of mistakes are welcome
-from anyone. Open an issue, or follow the steps on the research-notes and
-exchange pages.
+from anyone. GitHub issues are public. For a workflow problem, keep the original
+receipt local and describe a small example with invented names and data.
+Include what you tried, what happened and how you checked it. You can also follow
+the research-notes and exchange pages. For a suspected security vulnerability,
+use the private reporting route. [Security policy](SECURITY.md)
 
 ## Code
 

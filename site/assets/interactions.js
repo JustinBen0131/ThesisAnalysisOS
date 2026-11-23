@@ -88,8 +88,8 @@
   "use strict";
   const loader = document.currentScript;
   const release = loader?.dataset.release;
-  if (!/^[0-9a-f]{12}$/.test(release || "") || location.origin !== "https://whatstillholds.com" ||
-      navigator.globalPrivacyControl || navigator.doNotTrack === "1" || window.doNotTrack === "1") return;
+  const optedOut = () => navigator.globalPrivacyControl || navigator.doNotTrack === "1" || window.doNotTrack === "1";
+  if (!/^[0-9a-f]{12}$/.test(release || "") || location.origin !== "https://whatstillholds.com" || optedOut()) return;
 
   const own = location.origin;
   const params = new URLSearchParams(location.search);
@@ -164,13 +164,13 @@
   const CASE=16384, SHEET=32768, REFERENCE=65536, CONTINUE=131072, FILM_OFFER=262144;
   let flags = 0;
   function mark(bits) {
-    if (document.hidden || document.prerendering || (flags & bits) === bits) return;
+    if (optedOut() || document.hidden || document.prerendering || (flags & bits) === bits) return;
     flags |= OPEN | bits;
     const body = ["2", key, release, page, entry, layout, Number(test), flags].join("|");
     const options = {method:"POST", body, credentials:"omit", mode:"cors", referrerPolicy:"no-referrer", keepalive:true};
     // Each update contains the full state. Retried or reordered requests merge into the same page row.
     const sent = flags;
-    const retry = () => { if (flags === sent) fetch(endpoint, options).catch(() => {}); };
+    const retry = () => { if (!optedOut() && flags === sent) fetch(endpoint, options).catch(() => {}); };
     fetch(endpoint, options).then(response => { if (response.status >= 500) retry(); }, retry);
   }
   function opened() { mark(OPEN); }

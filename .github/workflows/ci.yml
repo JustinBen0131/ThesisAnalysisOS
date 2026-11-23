@@ -93,6 +93,9 @@ jobs:
           python3 evals/exchange_simulation.py --verify
           python3 evals/replay_instrument_imbalance.py --json > "${RUNNER_TEMP}/instrument-imbalance.json"
           cmp evals/results/followups/instrument-imbalance.json "${RUNNER_TEMP}/instrument-imbalance.json"
+      - name: Check privacy preferences before sending an analytics event
+        if: matrix.python == '3.12' && matrix.os == 'ubuntu-latest'
+        run: node site/verify_tracking_preferences.cjs
       - name: Check the interactive pilot worksheet in Chrome
         if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12'
         run: python3 site/verify_hpc_planner.py

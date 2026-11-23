@@ -290,6 +290,8 @@ Three jobs finished. One returned an empty result. See which outputs you can kee
 
 The fictional scheduler record accounts for 220 worker-seconds across three attempts. A and B passed their output checks. C needs review. In a configured project, add `--task TASK-ID` to the review and run `./taos usage progress --task TASK-ID` to see the recorded compute beside executed checks, reused checks and human acceptance.
 
+GitHub runs this example in CI. Open a completed run and find **Fictional sensor campaign** on its Summary page. [View the selftest runs](https://github.com/JustinBen0131/ThesisAnalysisOS/actions/workflows/ci.yml)
+
 For your own workstation, cluster or cloud project, start with the research question and the checks your outputs must pass. [HPC policy and agent instructions](policies/HPC.md)
 
 ## Reading this repository

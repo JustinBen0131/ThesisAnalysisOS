@@ -603,7 +603,8 @@ def shell(ctx: Dict[str, Any], root: str, title: str, body: str, url: str, path:
         measurement_note=('<details class="visit-counts"><summary>How visits are counted</summary>'
                           '<p>We count actions such as starting an example or opening its evidence. Each page view '
                           'gets a fresh random ID. The report records the type of page, how you arrived, a broad '
-                          'screen-size category, and which actions you took. Your research questions and the contents '
+                          'screen-size category, the UTC day, site version and which actions you took. The collector has no automatic '
+                          'deletion period. Your research questions and the contents '
                           'of files you open stay in your browser. Global Privacy Control or Do Not Track turns these '
                           'counts off.</p></details>' if count_visits else ""),
         description=esc(dataset["abstract"] if dataset else PAGE_DESCRIPTIONS.get(path, DESCRIPTION)),

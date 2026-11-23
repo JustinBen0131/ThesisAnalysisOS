@@ -127,6 +127,8 @@ Evening: nothing. The brief regenerates on demand; the state is already on disk.
 
 ### Follow the evidence behind your compute
 
+A backup of `.taos/` preserves filed summaries. To repeat a compute review, keep the original packet and the files it cites alongside your project backup. If you open a report in the browser, keep its JSON file to reopen it after refreshing the page.
+
 Run `./taos usage progress` to see which tasks have run checks, reused checks or received a compute review. Add `--task TASK-ID` for one question. The view identifies each campaign, its last review, recorded worker time, and the current standing of the task checks and acceptance. Use `./taos usage show` separately for the token usage your local tools expose. [Try the three-output example](policies/HPC.md)
 
 ## 5. Working with multiple AI agents
