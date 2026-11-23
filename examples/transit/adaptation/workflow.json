@@ -77,7 +77,7 @@
       "successor": "service-auditor"
     }
   },
-  "record_sha256": "689b8afa8de5659664ec87b6f422efa72c1e46d25fa5358f84aecf7289cd4cea",
+  "record_sha256": "deda6253f94e2ca559aca2a9e9c5eb601bc9a8e6c087903cfa8d6a2f57c94ba1",
   "records": {
     "accepted-receipt": {
       "command": "python3 -B -c 'from pathlib import Path; import sys; print(Path(sys.argv[1]).read_text(encoding='\"'\"'utf-8'\"'\"'), end='\"'\"''\"'\"')' <scratch>/os/.taos/proposals/prop_3.json",
@@ -402,7 +402,7 @@
     "taos_core/hpc.py": "4df80fae9e4ea8020e18855fda81f1da7edd8e203b0738f79b26de4388ab26c9",
     "taos_core/kernels.py": "ae2b8e0a02ffb5f14a8cf7a3eb677025e79b642df1daff9053c8bbe82ad12a11",
     "taos_core/lessons.py": "5abcc2cafaa59ba67419dd919f69caff0b40ffa9eb5cc1e258f81d57f8f71a35",
-    "taos_core/lifecycle.py": "e29cae87ffa90a31d9d781996804b6d23eef6772f49e14b9a282b78a43c3f550",
+    "taos_core/lifecycle.py": "152383dc772aef1453cfc5a157ca5f3cdbc714e3ca7c4f0da8eafffe7a4aa135",
     "taos_core/mcp_stdio.py": "aa51d77a24a3024a1ff15fe56e1a0de1abc3dc73cdf09c5aef8d5fd88772ace7",
     "taos_core/page.py": "44a5d24e840ff9aff37570142823c55b705654c3436057a4eb0772f859851dd4",
     "taos_core/panel.py": "f214a7d0c42ee5c920baa22dc91cabcb74858f3b859583ad1b210e9f7d06f294",

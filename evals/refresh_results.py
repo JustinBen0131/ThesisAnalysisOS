@@ -211,6 +211,7 @@ def items():
     import reuse_frontier
     import session_footprint
     import transit_workflow
+    from setting_change_exhibit import SETTING_RECORD, SETTING_RUNNER, load_setting_change
     from docs.opener import picture
 
     def sources(current):
@@ -231,6 +232,8 @@ def items():
              writer("evals/reuse_frontier.py", "--write", output_attribute="RECORD")),
         Item(SESSION, lambda p: measured_reason(p, session_footprint, session_footprint.verify),
              writer("evals/session_footprint.py")),
+        Item(Path(SETTING_RECORD), recorded(lambda path: load_setting_change(ROOT, path)),
+             writer(SETTING_RUNNER, stdout=True)),
         Item(Path("examples/transit/workflow.json"), recorded(transit_workflow.load_record),
              writer("evals/transit_workflow.py", stdout=True)),
         Item(Path("examples/transit/adaptation/workflow.json"), recorded(transit_workflow.load_adaptation_record),

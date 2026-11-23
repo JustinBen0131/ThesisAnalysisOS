@@ -43,7 +43,7 @@
         "policies/PANEL.md": "0711eb76a19dcbcd16cfde999dc532269043d85e413dd5741e548e4ad63ce8f7",
         "policies/REPO_SPLIT.md": "2d6ecce1691f482a650785bbc899417bf2c2f7b56cfeb737ea6bb32c9f140924",
         "policies/REVIEW.md": "9a6904b8884181a02022c497321e53464d2ca61166478597325a8a84fafeae0f",
-        "policies/ROUTING.yaml": "96ffea05d8bb312871d391b3dc5f5491b8390c52de7e245cdd2fa54dcbc3608c",
+        "policies/ROUTING.yaml": "c5cd173aaaa28736f24fe62dbafa242f66fbbd58d1a2ee630a8bfc2c590dc966",
         "policies/SCIENCE.md": "eba7646266fe684cf141acbe7c0a4774c75bc5ed3e678512e1f1e61b02470a49",
         "policies/SELF_ITERATION.md": "c54a8049a970622fdf83054aa07037f6d32ee3c825d599add89ae2199ae58a37",
         "taos": "58fa0d76b7326f31463b2b8990afca1fdf532579bf3e58f5e160ea68cce32863",
@@ -70,7 +70,7 @@
         "taos_core/hpc.py": "4df80fae9e4ea8020e18855fda81f1da7edd8e203b0738f79b26de4388ab26c9",
         "taos_core/kernels.py": "ae2b8e0a02ffb5f14a8cf7a3eb677025e79b642df1daff9053c8bbe82ad12a11",
         "taos_core/lessons.py": "5abcc2cafaa59ba67419dd919f69caff0b40ffa9eb5cc1e258f81d57f8f71a35",
-        "taos_core/lifecycle.py": "e29cae87ffa90a31d9d781996804b6d23eef6772f49e14b9a282b78a43c3f550",
+        "taos_core/lifecycle.py": "152383dc772aef1453cfc5a157ca5f3cdbc714e3ca7c4f0da8eafffe7a4aa135",
         "taos_core/mcp_stdio.py": "aa51d77a24a3024a1ff15fe56e1a0de1abc3dc73cdf09c5aef8d5fd88772ace7",
         "taos_core/page.py": "44a5d24e840ff9aff37570142823c55b705654c3436057a4eb0772f859851dd4",
         "taos_core/panel.py": "f214a7d0c42ee5c920baa22dc91cabcb74858f3b859583ad1b210e9f7d06f294",
@@ -97,7 +97,7 @@
         "taos_core/util.py": "e02eb73a86172fcf632efed3f27bf9d1d8253d54ba0f3bc788101672bae2dba0",
         "taos_core/welcome.py": "121776e21d3f8a9fe678d672c787e20d5656cd5b3e71a2821e0f9e2df314dd63"
       },
-      "sha256": "ef5ae94696298a71fff22189a50c3e1f2e8e271b6b1a154310285ae71418d324"
+      "sha256": "85bd59437cc0daa6b1899796b2c347ca854d047b1c5245f36d81498edfd4eb96"
     },
     "patterns": [
       ".claude/settings.json",

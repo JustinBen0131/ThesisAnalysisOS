@@ -4,6 +4,10 @@
   <p class="stakes" id="stakes" hidden>One setting. Nineteen days. A colleague finds that later results have shifted.</p>
   <div class="stage" id="stage">
     <div class="tag" id="tag">Day 19</div>
+    <div class="steps" id="steps" role="group" aria-label="Move through the story">
+      <button id="back" type="button" disabled>← Back</button>
+      <button id="fwd" type="button" disabled>Forward →</button>
+    </div>
     <div class="scene" id="scene">
       <p class="ln">A research team has been at this for 19 days. Every piece of work in front of you says finished.</p>
     </div>
@@ -21,26 +25,37 @@
       <button id="check" type="button"><span id="checkmain">Check all 19 first</span><small id="checksub">Nothing says where to look.</small></button>
     </div>
     <div class="meter" id="meter" hidden>
-      <div class="mrow"><span>Fed in</span><i class="mb"></i><b>100</b></div>
-      <div class="mrow"><span>The copy read back</span><i class="mb sim"></i><b id="simval">a little under 100</b></div>
-      <div class="mrow refrow"><span>The team’s own reference</span><i class="mb refbar"></i><b>a little under 100</b></div>
+      <div class="mrow"><span>Signal sent in</span><i class="mb"></i><b>1,000</b></div>
+      <div class="mrow"><span>Simulation reads</span><i class="mb sim"></i><b id="simval">970</b></div>
+      <div class="mrow refrow"><span>Real detector reads</span><i class="mb refbar"></i><b>970</b></div>
     </div>
     <p class="caption" id="caption" aria-live="polite" tabindex="-1" hidden></p>
+    <p class="caption more" id="caption2" aria-live="polite" hidden></p>
     <button class="next" id="next" type="button" hidden></button>
-    <div class="second" id="second" hidden>
-      <h3>What the next person or agent can use</h3>
-      <div class="row"><span>As it happened</span><span>nothing marked, for 19 days</span></div>
-      <div class="row"><span>Model result saved before the setting changed</span><strong class="s">Stale · check again</strong></div>
-      <div class="row"><span>Earlier reference measurement</span><strong class="ho">Still available to compare</strong></div>
-      <p class="limit">The recorded check names the changed file. The team’s earlier reference helps you choose which setting belongs in the analysis.</p>
+    <div class="second handed" id="second" hidden>
+      <table class="hand" aria-label="What the next agent is handed">
+        <colgroup><col class="k"><col class="a"><col></colgroup>
+        <thead><tr><td></td><th scope="col" class="a">As it happened</th><th scope="col">With ThesisAnalysisOS</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">The earlier check says</th><td class="a"><span class="pill was">finished ✓</span></td><td><span class="pill now"><i aria-hidden="true">!</i>${standing_label}</span></td></tr>
+          <tr><th scope="row">What changed</th><td class="a none" rowspan="3">No warning connected the changed setting to the earlier check.</td><td>One setting in the detector simulation. This check used the old setting.</td></tr>
+          <tr class="begin"><th scope="row">Where to resume</th><td>At that setting. Then run the check again.</td></tr>
+          <tr><th scope="row">Still a scientific decision<small>the team’s, not the software’s</small></th><td>Which setting is right. A new pass will not say. The team’s reference is there to compare.</td></tr>
+        </tbody>
+      </table>
+      <details class="inspect"><summary>Inspect the saved record</summary>
+${saved_record}
+      </details>
+      <p class="verdict">The next agent gets what changed, what needs rechecking, and where to resume. The scientific decision stays with the team.</p>
+      <p class="onward"><a class="go" href="${root}#run">Put it under your own work ↓</a><span>It starts with a practice result on your computer, then asks for your folder.</span></p>
     </div>
   </div>
   <div class="after" id="after" hidden>
-    <p>Within a day the setting became a fixed rule for every AI agent on the project, with an automatic check that runs before it can be switched off again.</p>
-    <a class="go" href="${root}#run">Put it under your own work ↓</a>
+    <details class="epilogue"><summary>What the team changed afterwards</summary>
+      <p>Within a day the setting became a fixed rule for every AI agent on the project, with an automatic check that runs before it can be switched off again.</p></details>
     <a class="case-link" href="${cases}">Five more real decisions</a>
     <button class="v-replay" id="replay" type="button">Try the other choice</button>
   </div>
-  <p class="note" id="note" hidden>The sequence comes from dated project notes, with identifying details removed. Each mark represents a day. The visitor’s choices and the reading of 100 illustrate the decision. The second pass shows how the software handles a declared input today. <a href="${root}workflows/transit/#handoff">Inspect a saved check</a>.</p>
-  <noscript><p>The team built on a changed setting for 19 days before a colleague noticed. With the setting recorded as an input, the old result reads “stale” as soon as that file changes. A researcher can still use the earlier reference to decide what to do next. <a href="${cases}">Five more real decisions</a>.</p></noscript>
+  <p class="note" id="note" hidden>The sequence comes from dated project notes, with identifying details removed. Each mark represents a day. The visitor’s choices and the signal of 1,000 units illustrate the decision. The second pass shows how the software handles a declared input today. Its answers under “Inspect the saved record” come from a recorded run on a small stand-in project, not from the original one.</p>
+  <noscript><p>The team built on a changed setting for 19 days before a colleague noticed. With the setting recorded as an input, the old result reads “stale” when anyone opens it after that file changes. A researcher can still use the earlier reference to decide what to do next. <a href="${cases}">Five more real decisions</a>.</p></noscript>
 </section>

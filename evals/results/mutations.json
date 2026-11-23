@@ -29,7 +29,7 @@
         "taos_core/hpc.py": "4df80fae9e4ea8020e18855fda81f1da7edd8e203b0738f79b26de4388ab26c9",
         "taos_core/kernels.py": "ae2b8e0a02ffb5f14a8cf7a3eb677025e79b642df1daff9053c8bbe82ad12a11",
         "taos_core/lessons.py": "5abcc2cafaa59ba67419dd919f69caff0b40ffa9eb5cc1e258f81d57f8f71a35",
-        "taos_core/lifecycle.py": "e29cae87ffa90a31d9d781996804b6d23eef6772f49e14b9a282b78a43c3f550",
+        "taos_core/lifecycle.py": "152383dc772aef1453cfc5a157ca5f3cdbc714e3ca7c4f0da8eafffe7a4aa135",
         "taos_core/mcp_stdio.py": "aa51d77a24a3024a1ff15fe56e1a0de1abc3dc73cdf09c5aef8d5fd88772ace7",
         "taos_core/page.py": "44a5d24e840ff9aff37570142823c55b705654c3436057a4eb0772f859851dd4",
         "taos_core/panel.py": "f214a7d0c42ee5c920baa22dc91cabcb74858f3b859583ad1b210e9f7d06f294",
@@ -69,8 +69,8 @@
         "tests/test_mcp_stdio.py": "f969df35e23922b9d0c7b4bddb68acb1d6cb3ddb10ff669a46edb1f2f86769ba",
         "tests/test_panel.py": "f48403f27c097ced229528beb54840285d1df02bafbd90b92930ccd7d4eebabb",
         "tests/test_plain_words.py": "401fc902655863dc665a9876ca8c24f1aa6e8a4d39bdb9a4a54e135c372a93de",
-        "tests/test_policy.py": "fda531baa4b896223be113d8040d5d856c0b9548e90b1346c04e314804c7f9de",
-        "tests/test_progress.py": "00f1741d195f8e6cfaffe214091bcd8e90a91c0fd0ccaea3de30c5938d286534",
+        "tests/test_policy.py": "1bce21e05d5f9c3a88536a97cad6f732c1414caf1f6b788652ae75464ff88a52",
+        "tests/test_progress.py": "b2aef8950c7b4761842076c1776c1ee7dc24403892c0e429eb56333e84537361",
         "tests/test_project_actors.py": "d8ae7b280ff30d01b5a08765af1dfa0f5eac48f87b2d94eecf861906b64a4cf2",
         "tests/test_questions.py": "b313b425cec9dffea4dcb374b924981887773883e2b791123261dbe73a6af149",
         "tests/test_review_practice.py": "375ec0e557a7d1164fa06f4a269abb3089f515adfd8724f7a3754c850be1b0f7",
@@ -85,7 +85,7 @@
         "tests/test_use.py": "9e0954110511d578802d0d51b0fc83c21dcc0bf1b635628ad93cd44b865d774b",
         "tests/test_welcome.py": "f30f65ccbea66cb1e0690629d7710f644d69d999316e2a2c29ba4bcd86e9c3fd"
       },
-      "sha256": "6dc1f686ecb377ede88573dbcaec1173c7ec7951f649d97cb7c108759701766f"
+      "sha256": "df97985b129088b80ff687cdb495fb4a55b9192ced7b8d7c2698cebe2961cb6f"
     },
     "patterns": [
       "evals/mutations.py",

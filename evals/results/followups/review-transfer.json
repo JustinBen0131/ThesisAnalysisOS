@@ -309,7 +309,7 @@
     "examples/model_evaluation/policy.json": "8152ed2bd1ed563bef2423d57cb3fd4e56574dc91e5c9ed1191df99c4049a87a",
     "examples/model_evaluation/predictions.json": "3c558dae1dabe8e9a451b4867da305a040a324e6b00e6956cbfe6df2ebdf025c",
     "taos": "58fa0d76b7326f31463b2b8990afca1fdf532579bf3e58f5e160ea68cce32863",
-    "taos_core/lifecycle.py": "e29cae87ffa90a31d9d781996804b6d23eef6772f49e14b9a282b78a43c3f550",
+    "taos_core/lifecycle.py": "152383dc772aef1453cfc5a157ca5f3cdbc714e3ca7c4f0da8eafffe7a4aa135",
     "taos_core/reviews.py": "4c0de05e9c5a9c95a420f679918a3aebd3fdda2b2d245bb1fa86acbffbf0e2b6"
   },
   "wrong_conclusion": {

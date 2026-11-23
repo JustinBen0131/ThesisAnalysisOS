@@ -219,16 +219,24 @@
     const el = document.querySelector(selector);
     return Boolean(el && !el.closest("[hidden]") && el.getClientRects().length);
   };
+  const story = decision && document.querySelector(".visitor-story");
+  function decisionProgress() {
+    if (!story || !(flags & START)) return;
+    const stop = Number(story.dataset.decisionStop);
+    if (stop >= 1) mark(CHECKPOINT);
+    if (story.dataset.ref === "1" && shown("#meter")) mark(REFERENCE);
+    if (stop === 4 && shown("#second")) mark(FINISH);
+  }
+  if (story) {
+    new MutationObserver(decisionProgress).observe(story, {attributes:true, attributeFilter:["data-decision-stop", "data-ref"]});
+    document.addEventListener("visibilitychange", decisionProgress);
+  }
   function controls(target) {
     if (decision && target.closest("#try")) {
       const btn = target.closest("button");
       if (btn && !(flags & START) && ["build", "check"].includes(btn.id) && shown("#recap"))
         mark(OFFER | START | (btn.id === "build" ? BUILD : CHECK));
-      if (btn?.id === "next" && flags & START) {
-        if (shown("#stakes")) mark(CHECKPOINT);
-        if (document.querySelector('.visitor-story[data-ref="1"]')) mark(REFERENCE);
-        if (shown("#after")) mark(FINISH);
-      }
+      decisionProgress();
     }
     if (page === "decision" && target.closest(".rd-case.is-done .rd-choices button")) mark(CASE);
     if (page === "record" && target.closest("#mind-start, #guide-next")) {
@@ -256,7 +264,7 @@
     if (dest.origin === "https://github.com" && dest.pathname === "/JustinBen0131/ThesisAnalysisOS/issues/new" &&
         page === "exchange") mark(FEEDBACK);
     if (dest.origin !== own) return;
-    if (decision && flags & FINISH && link.closest("#after")) mark(CONTINUE);
+    if (decision && flags & FINISH && link.closest("#second .onward, #after .case-link")) mark(CONTINUE);
     if (/^\/(evidence|studies|records)(\/|$)/.test(dest.pathname) &&
         (dest.pathname !== location.pathname || dest.hash && dest.hash !== location.hash)) mark(PROOF);
     if (/^\/source\/thesisanalysisos-[a-f0-9]{7,40}\.zip$/.test(dest.pathname)) mark(ZIP);

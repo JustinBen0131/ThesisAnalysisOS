@@ -81,17 +81,24 @@
 
   const startingView = byId("try").cloneNode(true);
   let changeTimer;
-  function mountDecision() {
+  let instant = false;
+  let choice = null;
+  function mountDecision(target = 0) {
     const stage = byId("stage");
     const track = byId("track");
     const buildButton = byId("build");
     const checkButton = byId("check");
     const nextButton = byId("next");
     let builtOnIt = false;
+    let stop = 0;
+    let busy = false;
+    const backButton = byId("back");
+    const forwardButton = byId("fwd");
     scene = 0;
     story.dataset.mode = "then";
     story.dataset.sw = "none";
     story.dataset.ref = "0";
+    story.dataset.decisionStop = "0";
     setMood();
     stage.dataset.live = "true";
     for (let day = 0; day < 19; day++) {
@@ -131,8 +138,38 @@
         }
       };
     }
+    // One timer at a time. With reduced motion the same information arrives at once.
+    function later(ms, action) {
+      if (instant) { action(); return; }
+      changeTimer = window.setTimeout(action, reduced.matches ? 0 : ms);
+    }
+    // Back and Forward. A stop is a place where the story waits for the visitor.
+    function steps() {
+      backButton.disabled = stop === 0 && !busy;
+      forwardButton.disabled = stop === 4 || (stop === 0 && !busy && choice === null);
+    }
+    function leave() { busy = true; steps(); }
+    function settle(value) {
+      stop = value;
+      busy = false;
+      story.dataset.decisionStop = String(value);
+      steps();
+    }
+    function jump(value, from) {
+      clearTimeout(changeTimer);
+      byId("try").replaceWith(startingView.cloneNode(true));
+      mountDecision(value);
+      const again = byId(from);
+      (again.disabled ? byId(from === "back" ? "fwd" : "back") : again).focus({preventScroll:true});
+    }
+    function setMain(button, id, text) {
+      const main = byId(id);
+      if (main) main.textContent = text; else button.firstChild.textContent = text;
+    }
+    // The visitor makes one choice; day 20 then arrives by itself.
     function pick(build) {
-      builtOnIt = build;
+      builtOnIt = choice = build;
+      leave();
       at(1);
       byId("scene").hidden = byId("scene2").hidden = byId("switch").hidden = true;
       const recap = byId("recap");
@@ -147,92 +184,132 @@
       } else {
         recap.textContent = "You stop to check. Nothing in the record tells you where to look first.";
       }
-      caption("On the real project, work was built on the changed setting for 19 days.");
-      advance("Go to day 20", dayTwenty);
       recap.focus({preventScroll:true});
+      later(1500, dayTwenty);
     }
     function dayTwenty() {
       at(2);
-      Array.from(track.children).forEach(tile => {
+      Array.from(track.children).forEach((tile, index) => {
+        tile.style.transitionDelay = reduced.matches ? "0s" : (index * 45) + "ms";
         tile.classList.remove("built");
         tile.classList.add("wrong");
       });
       byId("tag").textContent = "Day 20";
       byId("tracklabel").textContent = "Day 20 · the work that used this setting needs checking";
       heading("Everything said finished.", "One thing had changed.");
-      byId("stakes").hidden = byId("note").hidden = false;
-      caption("A colleague noticed that later results had shifted and traced the change back to one setting." +
-        (builtOnIt ? " Your result uses it too." : ""));
+      byId("note").hidden = false;
+      caption("On the real project the team built on it for 19 days. Then a colleague noticed that later results had shifted, and traced it back to one setting." +
+        (builtOnIt ? " Your result stands on it too." : ""));
       advance("What had changed?", showInstrument);
+      settle(1);
     }
+    // Back to day 1. The reference arrives by itself, under the reading it contradicts.
     function showInstrument() {
+      leave();
       at(3);
       byId("tag").textContent = "Back to day 1";
       stage.querySelector(".days").hidden = true;
+      byId("recap").hidden = true;
       byId("meter").hidden = false;
       story.dataset.sw = "on";
-      changeTimer = window.setTimeout(() => {
-        story.dataset.sw = "off";
-        byId("simval").textContent = "100, almost exactly";
-      }, reduced.matches ? 0 : 950);
       heading("The number was perfect.", "That was the problem.");
-      caption("An agent tested a computer model of an instrument. Put in 100 and it read a little under 100. Switching off one correction made it read almost exactly 100, so the agent kept that setting.");
-      advance("Why was a perfect 100 wrong?", showReference);
+      caption("A team was testing a computer simulation of its detector. They sent in a known signal of 1,000 units, but the simulation read 970.\nAn AI agent switched off one correction. Now the simulation read exactly 1,000. That looked like an improvement.");
+      later(950, () => {
+        story.dataset.sw = "off";
+        byId("simval").textContent = "1,000";
+        later(2600, showReference);
+      });
     }
     function showReference() {
       story.dataset.ref = "1";
-      caption("The team had already tested the instrument. Its reference reading was a little under 100. The rounder number came from changing how the model measured. The earlier test still stood.");
-      advance("Open the project again, with this system in place", reopen);
+      const text = "But the team had already measured the real detector using the same signal. It read 970 too.\nThe simulation was supposed to reproduce the real detector, not an ideal one. By making the simulation read a perfect 1,000, the agent had actually made it less faithful to the experiment.\nThat earlier measurement was already recorded. But nothing connected it to the changed setting, so the apparent improvement went unchallenged.";
+      const more = byId("caption2");
+      if (more) { more.hidden = false; more.textContent = text; } else caption(text);
+      advance("Same day, with this system in place", reopen);
+      settle(2);
     }
+    // Day 1 again. The tick turns stale by itself, then the first question returns.
     function reopen() {
+      leave();
       at(4);
       story.dataset.mode = "today";
       story.dataset.ref = "0";
       byId("meter").hidden = byId("stakes").hidden = true;
+      const more = byId("caption2");
+      if (more) more.hidden = true;
+      byId("caption").hidden = true;
       byId("tag").textContent = "With this system in place";
-      stage.querySelector(".days").hidden = false;
       heading("Same project, same change.", "This time it says so.");
       if (builtOnIt) track.lastElementChild.remove();
       track.style.gridTemplateColumns = "";
-      Array.from(track.children).forEach(tile => { tile.className = ""; });
-      track.firstElementChild.className = "stale";
-      byId("tracklabel").textContent = "Day 1 · the result reads stale · changed: one setting";
-      byId("recap").textContent = "Day 1 again. The agent switches the setting.";
+      const tiles = Array.from(track.children);
+      tiles.forEach(tile => { tile.style.transitionDelay = ""; tile.className = ""; });
+      tiles[0].className = "built";
+      stage.querySelector(".days").hidden = false;
+      byId("tracklabel").textContent = "Day 1 · the first check says finished ✓";
+      const recap = byId("recap");
+      recap.hidden = false;
+      recap.textContent = "Day 1 again. The agent switches the same setting.";
+      recap.focus({preventScroll:true});
       buildButton.disabled = true;
-      byId("buildsub").textContent = "The result reads stale.";
-      byId("checkmain").textContent = "Check it first";
-      byId("checksub").textContent = "One setting changed. Start there.";
-      byId("switch").hidden = false;
-      checkButton.classList.add("beckon");
-      caption("You open the project. The saved result now names the setting that changed. Where would you start?");
-      checkButton.focus({preventScroll:true});
+      setMain(buildButton, "buildmain", "Build on it as checked");
+      byId("buildsub").textContent = "Not this time. That check used the old setting.";
+      byId("checkmain").textContent = "See where to check";
+      byId("checksub").textContent = "The record names what changed.";
+      later(1200, () => {
+        tiles[0].className = "stale";
+        byId("tracklabel").textContent = "Day 1 · the setting changed · the earlier check reads stale, before anything is built on it";
+        caption("The earlier check was recorded with the setting it used. Open the project after the change and it reads stale. Nobody had to notice. The question in front of you is the same.");
+        byId("switch").hidden = false;
+        checkButton.classList.add("beckon");
+        settle(3);
+      });
     }
+    // The payoff takes the place of the two buttons: what the next agent is handed, then the way onward.
     function checkAgain() {
       at(5);
       checkButton.classList.remove("beckon");
-      checkButton.classList.add("sel");
-      checkButton.disabled = true;
-      byId("second").hidden = false;
-      caption("Set aside the model result saved before the setting changed. Keep the earlier instrument measurement and use it to check the next result.");
-      advance("What changed after", () => {
-        const after = byId("after");
-        after.hidden = false;
-        after.setAttribute("tabindex", "-1");
-        after.focus({preventScroll:true});
-        after.scrollIntoView({behavior:reduced.matches ? "instant" : "smooth",block:"center"});
-      });
-      byId("caption").focus({preventScroll:true});
+      byId("switch").hidden = byId("caption").hidden = true;
+      const recap = byId("recap");
+      recap.textContent = "You open the project. This is what you are handed.";
+      const second = byId("second");
+      second.hidden = false;
+      second.classList.add("unfold");
+      byId("after").hidden = false;
+      recap.focus({preventScroll:true});
+      second.scrollIntoView({behavior:reduced.matches ? "instant" : "smooth",block:"nearest"});
+      settle(4);
     }
     buildButton.onclick = () => pick(true);
     checkButton.onclick = () => scene === 4 ? checkAgain() : pick(false);
+    backButton.onclick = () => jump(busy ? stop : stop - 1, "back");
+    forwardButton.onclick = () => {
+      if (busy) { jump(stop + 1, "fwd"); return; }
+      if (stop === 0) (choice ? buildButton : checkButton).click();
+      else if (stop === 3) checkButton.click();
+      else nextButton.click();
+      if (!forwardButton.disabled) forwardButton.focus({preventScroll:true});
+    };
     byId("replay").onclick = () => {
       clearTimeout(changeTimer);
+      choice = null;
       byId("try").replaceWith(startingView.cloneNode(true));
       mountDecision();
       byId("stage").classList.add("play");
       byId("tryh").focus({preventScroll:true});
       byId("try").scrollIntoView({block:"start",behavior:reduced.matches ? "instant" : "smooth"});
     };
+    // Arriving by Back or Forward: the same steps, with no waiting.
+    if (target || choice !== null) stage.classList.add("play");
+    if (target) {
+      instant = true;
+      pick(choice);
+      if (target > 1) { nextButton.hidden = true; showInstrument(); }
+      if (target > 2) { nextButton.hidden = true; reopen(); }
+      if (target > 3) checkAgain();
+      instant = false;
+    }
+    steps();
   }
   mountDecision();
 })();

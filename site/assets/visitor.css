@@ -334,3 +334,63 @@ border-bottom:1px solid var(--line)}
 .source-browser .listing a {text-align:right; color:var(--soft);}
 .source-browser h1,.source-browser .checksum,.source-browser li>a code {overflow-wrap:anywhere;}
 .source-browser .listing code {padding:0; background:transparent; font-size:.91rem; white-space:pre;}
+
+/* The decision's last card. One object: what the next agent is handed, as it happened beside the same day with the
+   software in place. The full handoff folds underneath, and its recorded rows come from a saved run. */
+#try .handed{border-top:0;padding-top:0;margin-top:16px;scroll-margin:84px 0 44px}
+#try .hand{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;border:1.5px solid var(--ink);border-radius:14px;background:var(--bg)}
+#try .hand col.k{width:196px}
+#try .hand col.a{width:208px}
+#try .hand th,#try .hand td{padding:11px 18px;text-align:left;vertical-align:middle;font-weight:400}
+#try .hand thead th,#try .hand thead td{border-bottom:1.5px solid var(--ink)}
+#try .hand thead th{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+#try .hand tbody th{font-size:14px;color:var(--mute)}
+#try .hand tbody td{font-size:18px;line-height:1.4}
+#try .hand tbody tr+tr th,#try .hand tbody tr+tr td{border-top:1px solid var(--line)}
+#try .hand .a{border-right:1px solid var(--line)}
+#try .hand td.none{vertical-align:top;line-height:1.45}
+#try .hand tbody th small{display:block;margin-top:3px;font-size:12px}
+#try .hand .none{color:var(--mute);font-size:16px}
+#try .hand .begin td:last-child{font-weight:600}
+#try .pill{display:inline-block;padding:7px 14px;border-radius:8px;font-weight:600;font-size:17px;white-space:nowrap;border:2px solid transparent}
+#try .pill.was{background:var(--built);color:var(--bg)}
+#try .pill.now{border-color:var(--stale);color:var(--ink)}
+#try .pill.now i{font-style:normal;font-weight:700;color:var(--stale);margin-right:8px}
+#try .inspect{margin:10px 2px 0;font-size:15px}
+#try .inspect summary{cursor:pointer;color:var(--mute);width:max-content;max-width:100%}
+#try .inspect summary:hover,#try .inspect summary:focus-visible,#try .inspect[open] summary{color:var(--ink)}
+#try .inspect[open] summary{margin-bottom:10px}
+#try .prov{margin:12px 0 0;font-size:15px;line-height:1.5;color:var(--mute);max-width:46em}
+#try .prov a{color:inherit}
+#try .run{margin:12px 0 0;padding:14px 16px;border-radius:10px;background:var(--ink);color:var(--bg);font-size:13px;line-height:1.55;overflow-x:auto}
+#try .run code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre}
+#try .verdict{margin:18px 0 0;font-family:var(--serif);font-size:23px;line-height:1.3;max-width:31em}
+#try .onward{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;margin:16px 0 0}
+#try .onward .go{margin-top:0}
+#try .onward span{font-size:15px;color:var(--mute)}
+#try .epilogue{margin:0 0 6px}
+#try .epilogue summary{cursor:pointer;color:var(--mute);font-size:16px;width:max-content;max-width:100%}
+#try .epilogue p{margin:10px 0 0;font-size:17px;max-width:38em}
+#try .caption{white-space:pre-line}
+#try .caption.more{margin-top:12px;min-height:0}
+#try .track i.stale::after{content:"!";font-weight:700}
+/* One arrival for the whole object, and one ring on the changed standing. Everything is visible without them. */
+#try .unfold{animation:handed-in .45s ease both}
+#try .unfold .pill.now{animation:flagged 1.5s ease .5s both}
+@keyframes handed-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes flagged{0%{box-shadow:0 0 0 0 var(--stale)}45%{box-shadow:0 0 0 9px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@media (prefers-reduced-motion:reduce){#try .unfold,#try .unfold .pill.now{animation:none}}
+@media (max-width:720px){#try .hand col.k{width:104px}#try .hand col.a{width:104px}#try .hand th,#try .hand td{padding:10px}#try .pill{white-space:normal}}
+/* The end of the page: three doors stay in view, the rest folds. */
+#run .doors{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;margin:26px 0 8px}
+#run .doors span{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin-right:6px}
+#run .doors a{display:inline-block;padding:9px 15px;border:1px solid var(--line);border-radius:999px;color:var(--ink);text-decoration:none;font-size:16px}
+#run .doors a:hover,#run .doors a:focus-visible{border-color:var(--ink)}
+#try .stage{position:relative}
+#try .steps{position:absolute;top:20px;right:22px;display:flex;gap:6px}
+#try .steps button{font:inherit;font-size:13px;line-height:1.2;padding:6px 13px;color:var(--ink);background:transparent;border:1px solid var(--line);border-radius:99px;cursor:pointer}
+#try .steps button:hover:not(:disabled){border-color:var(--ink)}
+#try .steps button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+#try .steps button:disabled{opacity:.38;cursor:default}
+#stage:not([data-live]) .steps{display:none}
+@media (max-width:560px){#try .steps{position:static;margin:10px 0 0}}

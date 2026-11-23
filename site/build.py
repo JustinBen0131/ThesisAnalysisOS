@@ -74,6 +74,8 @@ from verify_research_guide import verify as verify_research_guide  # noqa: E402
 from film_player import PUBLIC_MEDIA_DIR, film_files, opening_link, render_player  # noqa: E402
 from handoff_exhibit import HANDOFF_METHOD, HANDOFF_RECORD, HANDOFF_RUNNER  # noqa: E402
 from handoff_exhibit import handoff_markdown, handoff_section, load_handoff  # noqa: E402
+from setting_change_exhibit import SETTING_DOWNLOAD, SETTING_FIXTURE_FILES, SETTING_RECORD, SETTING_SOURCES  # noqa: E402
+from setting_change_exhibit import load_setting_change, next_agent_fields  # noqa: E402
 from measurement_exhibit import audit_cases_page, audit_section, load_audit  # noqa: E402
 
 from model_evaluation_exhibit import (  # noqa: E402
@@ -355,7 +357,7 @@ def record_graph(ctx: Dict[str, Any]) -> Dict[str, Any]:
                  "site/home_reading.html", "site/visitor_header.html", "site/next_agent.html", "site/assets/visitor.css",
                  "site/decision.html", "site/decision.md", "site/assets/living-brain.js",
                  "site/assets/living-brain.css", "site/assets/real-decisions.js", "site/assets/real-decisions.css",
-                 "site/assets/journey.css", "site/assets/report-story.js"):
+                 "site/assets/journey.css", "site/assets/report-story.js", *SETTING_SOURCES):
         edges.append([page_at, len(nodes)])
         nodes.append({"k": "f", "l": path, "g": "other"})
     correction = next(row for row in ctx["model_evaluation"]["cases"] if row["id"] == "offsetting-score-corrections")["counts"]
@@ -467,6 +469,7 @@ def gather(ref: str) -> Dict[str, Any]:
         "faults": runs["mutations"]["faults"], "caught": runs["mutations"]["caught"],
         "audit": load_audit(REPO),
         "handoff": load_handoff(REPO),
+        "setting_change": load_setting_change(REPO),
         "model_evaluation": load_model_evaluation(REPO),
         "instrument_paths": load_instrument_paths(REPO),
         "decisions": agent_guide.decision_readings(REPO, RESEARCH_QUESTIONS),
@@ -581,7 +584,9 @@ def shell(ctx: Dict[str, Any], root: str, title: str, body: str, url: str, path:
     if path in ("", "decision/"):
         exercise = Template((HERE / "next_agent.html").read_text(encoding="utf-8"))
         cases = "#decisions" if path else "decision/#decisions"
-        body = body.replace("<!--next-agent-->", exercise.substitute(root=root, cases=cases, title_tag="h1" if path else "h2"))
+        body = body.replace("<!--next-agent-->", exercise.substitute(
+            root=root, cases=cases, title_tag="h1" if path else "h2",
+            **next_agent_fields(ctx["setting_change"], root, lambda name: source(ctx, name))))
 
     if path == "hpc/":
         body = '<nav class="story-return" aria-label="Return to the homepage"><a href="../">← Back to the homepage</a></nav>' + body
@@ -1166,6 +1171,7 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(REPO / path, target)
     shutil.copy2(REPO / "evals/results/model_evaluation.json", out / "records/model_evaluation.json")
+    shutil.copy2(REPO / SETTING_RECORD, out / SETTING_DOWNLOAD)
     for name in read_back.RUNS:
         shutil.copy2(str(REPO / "evals" / "results" / (name + ".json")), str(out / "records" / (name + ".json")))
     write = lambda path, text: (out / path).write_text(text, encoding="utf-8")  # noqa: E731
@@ -1289,6 +1295,7 @@ def build(out: Path, ref: str, url: str, release: bool = False, preview_film_dir
                            "evals/session_footprint.py", "evals/transit_workflow.py",
                            "tests/test_transit_workflow.py", "docs/TRANSIT_WORKFLOW.md", "docs/LINEAGE.md",
                            "examples/transit/tuesday-schedule.csv", "examples/transit/tuesday-dispatch.csv"))
+    evidence_files.update((*SETTING_SOURCES, *SETTING_FIXTURE_FILES))
     snapshot = write_source_snapshot(out, REPO, GITHUB, ctx["ref"], ctx["revision"], evidence_files)
     if release and not snapshot["archive"]:
         raise SystemExit("Release requires the verified source archive for the tested commit.")

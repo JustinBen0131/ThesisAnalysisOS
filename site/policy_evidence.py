@@ -178,8 +178,13 @@ def _measured(src):
     pool = both["groups"]["pooled"]
     imbalance = observed(f"After both corrections the combined detector caught {pool['counts']['tp']} of {pool['reference_faults']} faults. Giving each instrument equal weight gave {both['equal_group_mean']}.",
                          fp, '"id": "both"', "Read the two-correction result")
+    cp, setting = record("followups/setting-change")
+    told = setting["handoff"]
+    switched = observed(f"After {told['changed']} was edited, the earlier pass of the {told['check']} check read {told['after']}. "
+                        "Run again on the new setting, the check passed.",
+                        cp, '"id": "after"', "Read what the record answered")
     studies = {rev_path: revision, mutation_path: mutations, rp: proper, model_path: threshold_test,
-               mp: pendulum, hp: hand, fp: imbalance, sp: reading}
+               mp: pendulum, hp: hand, fp: imbalance, cp: switched, sp: reading}
     claims = {"Reading one demo session": reading, "Earlier releases had": revision, "The tests notice": mutations, "Reuse by basis": proper,
               "Age limits trade": age, "In the open": missing, "Isolated, a check": isolated}
     if any(line.startswith("| Cost of consulting") for line in src.lines("docs/CLAIMS.md")):

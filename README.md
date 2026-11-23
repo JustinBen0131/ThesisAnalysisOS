@@ -243,7 +243,7 @@ or recorded experiments. The table summarizes the public checks.
 | The tests detect each of the 20 seeded faults in this run | 20 protections removed one at a time; 20 of 20 removals are caught | `python3 evals/mutations.py` |
 | Tracking the folders each check read avoided stale reuse on this synthetic workload | 60 edits, each followed by all six checks being asked (360 results relied on): 60 executions and 0 wrong reuses, the same as an oracle; age limits gave 180 to 48 executions with 30 to 161 wrong reuses | `python3 evals/reuse_frontier.py` |
 | Omitting an input folder allowed obsolete reuse in the open run and prevented the check from passing in the isolated run | 150 wrong reuses in 360 in the open; isolated, 0 of 366 runs passed (those 360 and the six first runs), so nothing was reused | same |
-| Cases in the self-test suite | 323 tests. CI exercises Python 3.9 and 3.12 on Linux and macOS. | `./taos selftest` |
+| Cases in the self-test suite | 328 tests. CI exercises Python 3.9 and 3.12 on Linux and macOS. | `./taos selftest` |
 | This page says what the recorded runs say | every row of `docs/CLAIMS.md` and every number above, read back against the code as it is | `python3 evals/claims.py` |
 
 **How to verify the numbers.** Each run is stored in `evals/results/`

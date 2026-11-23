@@ -85,6 +85,7 @@ jobs:
         run: |
           python3 evals/review_transfer.py --verify
           python3 evals/replay_instrument_paths.py --verify
+          python3 evals/replay_setting_change.py --verify
       - name: Reproduce the research exchange examples
         if: matrix.python == '3.12'
         run: |
