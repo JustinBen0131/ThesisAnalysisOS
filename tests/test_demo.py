@@ -112,15 +112,27 @@ class TestDemo(unittest.TestCase):
         self.assertIn("|  TAOS ", plain.buffer.getvalue().decode("ascii"))
 
     def test_at_a_terminal_the_page_arrives_and_what_is_left_is_the_page_a_pipe_gets(self) -> None:
+        class FrameClock:
+            elapsed = 0.0
+
+            def monotonic(self):
+                return self.elapsed
+
+            def sleep(self, seconds):
+                self.elapsed += seconds
+
         timed, out = re.compile(r"\d+\.\d s"), Terminal()
         quiet = {name: value for name, value in os.environ.items() if name not in ("NO_COLOR", "FORCE_COLOR", "CI", "TAOS_MOTION")}
         with mock.patch.dict(os.environ, dict(quiet, TERM="xterm-256color"), clear=True), \
                 mock.patch.object(page, "moves", return_value=True), mock.patch.object(page, "MOTION_S", 0.2), \
+                mock.patch.object(page, "time", FrameClock()), \
                 mock.patch.object(demo, "launcher", return_value="./taos"):
             self.assertEqual(demo.run(out=out, full=False, width=80), 0)
         written = out.getvalue()
         self.assertEqual(timed.sub("", screen(written)), timed.sub("", played(full=False, width=80, color=False)))
         self.assertGreater(written.count("\x1b[5A"), 2)                         # the box was redrawn in place
+        for verdict in ("The saved fit passed.", "Recheck the saved fit.", "The fit passed on the revised timing."):
+            self.assertIn(verdict, written)
         self.assertIn("$ python3 analysis/fit.py", written)                     # a command was shown while it ran
         self.assertNotIn("$ python3", screen(written))                          # and taken away when it had answered
         self.assertLess(written.rfind("\x1b[?25l"), written.rfind("\x1b[?25h"))  # the cursor was put away and given back
@@ -140,7 +152,7 @@ class TestDemo(unittest.TestCase):
         self.assertNotEqual(saved[2][1:18], opener.frame(0.2, plain)[2][1:18])
         piped = played(full=False, color=True)
         self.assertNotIn("Pendulum replay", piped)
-        self.assertEqual((piped.count("\\x1b[?"), piped.count("\\x1b]8")), (0, 0))
+        self.assertEqual((piped.count("\x1b[?"), piped.count("\x1b]8")), (0, 0))
         with mock.patch.dict(os.environ, {"TAOS_MOTION": "0"}):
             self.assertFalse(page.moves(Terminal()))
 

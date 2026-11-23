@@ -5,6 +5,7 @@ The check uses a temporary browser profile and the local site's actual controls.
 """
 
 import argparse
+import errno
 import json
 import queue
 import re
@@ -13,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from contextlib import contextmanager
 from fractions import Fraction
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -232,6 +234,25 @@ def run_browser(browser, version, root, pages):
                     process.wait()
 
 
+@contextmanager
+def worksheet_directory():
+    root = Path(tempfile.mkdtemp(prefix="hpc-worksheet-"))
+    try:
+        yield root
+    finally:
+        # Chrome helpers can finish a profile write just after the parent exits.
+        for attempt in range(8):
+            try:
+                shutil.rmtree(root)
+                break
+            except OSError as error:
+                if error.errno == errno.ENOENT and not root.exists():
+                    break
+                if error.errno not in (errno.ENOTEMPTY, errno.ENOENT) or attempt == 7:
+                    raise
+                time.sleep(0.1 * (attempt + 1))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--browser", help="Path to an installed Chromium or Chrome executable")
@@ -240,8 +261,7 @@ def main():
         browser, version = installed_browser(args.browser)
     except ValueError as error:
         parser.exit(2, str(error) + "\n")
-    with tempfile.TemporaryDirectory(prefix="hpc-worksheet-") as directory:
-        root = Path(directory)
+    with worksheet_directory() as root:
         pages = root / "site"
         pages.mkdir()
         for asset in ("hpc-planner.js", "hpc-review.js"):
