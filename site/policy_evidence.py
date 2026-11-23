@@ -221,6 +221,11 @@ def _file_examples(src, claims, studies, threshold):
     path = "bootstrap/answers.schema.json"
     files[path] = _example("tested", claims["The setup answers"]["text"],
         src.link(path, '"depends_on":', "See how checks list their inputs"), *claims["The setup answers"]["links"])
+    path = "bootstrap/rates.json"
+    files[path] = _example("tested",
+        "The example estimates the cost of three recorded model calls by pricing each call at the rate for its model. The result is an estimate in US dollars.",
+        src.link(path, '"currency": "USD"', "Read the rates and their date"),
+        src.test("mixed_model_pricing_and_inclusive_codex_cache", 'self.assertEqual(agents["claude"]["cost"]["amount"], 21.0)'))
     path = "evals/model_evaluation.schema.json"
     files[path] = _example("documented",
         "Each instrument report records four counts in a fixed order. That lets a reader distinguish missed faults from false alarms.",
