@@ -1,0 +1,12 @@
+# Vendor and package data: the numbers are fetched, not redistributed.
+# The manifests next to them (data/*.json: fingerprint and provenance) are committed.
+data/*.csv
+data/cache/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# OS noise
+.DS_Store

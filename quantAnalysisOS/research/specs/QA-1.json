@@ -1,0 +1,36 @@
+{
+  "id": "QA-1",
+  "title": "Slow risk-managed rules on the US stock market, 1926-2018",
+  "hypothesis": "A simple monthly rule that moves between the US stock market and Treasury bills, without leverage (a moving-average trend rule, 12-month momentum, or volatility scaling), earns return that its average market exposure does not explain: a positive alpha to buy-and-hold, after costs.",
+  "prior_exposure": "The researcher is an AI model trained on text through mid-2026. It has read the papers that proposed these rules (Faber 2007; Moskowitz, Ooi and Pedersen 2012; Moreira and Muir 2017) and later replications, which used this same US market history through dates inside this holdout. It recalls that trend rules on US equities gave returns similar to buy-and-hold with smaller drawdowns, that the advantage was concentrated in a few bear markets, and that volatility-managed results were disputed out of sample. It does not recall the numbers this registration will produce. The holdout is blind to this procedure and is not blind to the literature. No number from this dataset was computed before this registration was sealed.",
+  "registered_by": "claude",
+  "dataset": "us_market",
+  "holdout_start": "1970-01-01",
+  "grid": [
+    {"strategy": "trend_sma", "params": {"window": 6}},
+    {"strategy": "trend_sma", "params": {"window": 8}},
+    {"strategy": "trend_sma", "params": {"window": 10}},
+    {"strategy": "trend_sma", "params": {"window": 12}},
+    {"strategy": "tsmom", "params": {"lookback": 6, "skip": 0, "vol_window": 12, "target_vol": 10.0, "max_weight": 1.0}},
+    {"strategy": "tsmom", "params": {"lookback": 12, "skip": 0, "vol_window": 12, "target_vol": 10.0, "max_weight": 1.0}},
+    {"strategy": "vol_target", "params": {"vol_window": 6, "target_vol": 0.10, "max_leverage": 1.0}},
+    {"strategy": "vol_target", "params": {"vol_window": 6, "target_vol": 0.15, "max_leverage": 1.0}},
+    {"strategy": "vol_target", "params": {"vol_window": 12, "target_vol": 0.10, "max_leverage": 1.0}},
+    {"strategy": "vol_target", "params": {"vol_window": 12, "target_vol": 0.15, "max_leverage": 1.0}}
+  ],
+  "selection": "best development Sharpe",
+  "engine": {
+    "lag": 0,
+    "rebalance": "every",
+    "band": 0.0,
+    "costs": {"trade_bps": 10.0, "borrow_spread_ann": 0.015, "short_fee_ann": 0.01, "cash_drag_ann": 0.001}
+  },
+  "benchmark": {"strategy": "hold", "params": {}},
+  "decision": {"test": "alpha", "z_min": 2.0, "cost_stress": 2.0},
+  "notes": [
+    "Monthly data: lag 0 means the signal is computed from the month-end close and traded at that close. The systematics report what one full month of delay does.",
+    "tsmom with target_vol 10.0 and max_weight 1.0 is a pure long-or-cash rule on the sign of the trailing total return.",
+    "Costs are modern retail costs for a broad index fund (10 bps a trade, 10 bps a year on cash), not the costs of 1930. The question is whether the rule would be worth running now.",
+    "The bar is 2 sigma: evidence enough to spend time on paper, not a discovery claim."
+  ]
+}
