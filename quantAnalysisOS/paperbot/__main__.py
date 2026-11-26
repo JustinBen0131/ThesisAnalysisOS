@@ -103,7 +103,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     spec = reg["tracks"]["core"]
     try:
-        out = core_index.step(state["core"], src.daily_closes(spec.get("stooq_symbol", "spy.us")), spec, halted)
+        out = core_index.step(state["core"], src.daily_closes(spec["fred_series"]), spec, halted)
         ledger.append("core", out)
         state["errors"].pop("core", None)
         ok += 1

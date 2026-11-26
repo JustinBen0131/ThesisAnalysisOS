@@ -43,6 +43,8 @@ def quotes(market: Dict[str, Any]) -> Dict[str, Optional[float]]:
 
 def candidate(market: Dict[str, Any], now: float, spec: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     elig = spec["eligible"]
+    if elig.get("exclude_multivariate_combos") and market.get("mve_collection_ticker"):
+        return None
     closes = parse_ts(market.get("close_time", ""))
     if closes is None:
         return None
@@ -56,6 +58,8 @@ def candidate(market: Dict[str, Any], now: float, spec: Dict[str, Any]) -> Optio
         if ask is None or bid is None or bid <= 0:
             continue
         if lo <= ask <= hi:
+            if ask - bid > float(elig.get("max_spread_cents", 100)):
+                return None
             price = bid + 1.0
             if price >= ask:
                 return None
@@ -64,8 +68,11 @@ def candidate(market: Dict[str, Any], now: float, spec: Dict[str, Any]) -> Optio
     return None
 
 
-def filled_by(trades: List[Dict[str, Any]], side: str, price_c: float) -> Optional[Dict[str, Any]]:
+def filled_by(trades: List[Dict[str, Any]], side: str, price_c: float, until_ts: float = float("inf")) -> Optional[Dict[str, Any]]:
+    """First trade, before `until_ts`, that printed strictly through our price on our side."""
     for trade in sorted(trades, key=trade_ts):
+        if trade_ts(trade) > until_ts:
+            break
         printed = cents(trade, f"{side}_price")
         if printed is None:
             other = cents(trade, "no_price" if side == "yes" else "yes_price")
@@ -85,16 +92,19 @@ def step(state: Dict[str, Any], src: Any, now: float, spec: Dict[str, Any], halt
     rules = spec["order"]
     events: List[Dict[str, Any]] = []
 
-    # 1. Fills and expiries for resting orders.
+    # 1. Fills and expiries for resting orders. Only trades inside the order's life count,
+    #    so the run schedule can never stretch an order beyond its registered lifetime.
+    life = 3600.0 * float(rules["expire_hours"])
     for ticker in sorted(list(orders)):
         order = orders[ticker]
-        trade = filled_by(src.trades(ticker, int(order["placed_ts"])), order["side"], order["price_c"])
+        until = order["placed_ts"] + life
+        trade = filled_by(src.trades(ticker, int(order["placed_ts"])), order["side"], order["price_c"], until)
         if trade is not None:
             order["filled_ts"] = trade_ts(trade)
             positions[ticker] = order
             del orders[ticker]
             events.append({"fill": ticker, "side": order["side"], "price_c": order["price_c"]})
-        elif now - order["placed_ts"] > 3600.0 * rules["expire_hours"]:
+        elif now > until:
             del orders[ticker]
             events.append({"expire": ticker})
 
@@ -128,10 +138,19 @@ def step(state: Dict[str, Any], src: Any, now: float, spec: Dict[str, Any], halt
     # 3. New resting bids, earliest-closing first, unless halted.
     placed = 0
     if not halted:
+        elig = spec["eligible"]
         held = set(orders) | set(positions)
+        held_events = {o.get("event", "") for o in list(orders.values()) + list(positions.values())}
         room = max(0, int(rules["max_open"]) - len(orders) - len(positions))
-        picks = [c for c in (candidate(m, now, spec) for m in src.open_markets()) if c and c["ticker"] not in held]
-        picks.sort(key=lambda c: (c["close_ts"], c["ticker"]))
+        window = (int(now + 86400 * elig["days_to_close_min"]), int(now + 86400 * elig["days_to_close_max"]))
+        found = [c for c in (candidate(m, now, spec) for m in src.open_markets(*window)) if c and c["ticker"] not in held]
+        found.sort(key=lambda c: (c["close_ts"], c["ticker"]))
+        picks = []
+        for c in found:
+            if rules.get("one_order_per_event") and c["event"] and c["event"] in held_events:
+                continue
+            held_events.add(c["event"])
+            picks.append(c)
         for pick in picks[: min(room, int(rules["max_new_per_run"]))]:
             qty = int(rules["contracts"])
             pick.update({"contracts": qty, "fee_c": maker_fee_cents(qty, pick["price_c"]), "placed_ts": now})

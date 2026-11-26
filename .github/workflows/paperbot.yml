@@ -6,7 +6,7 @@ name: paperbot
 
 on:
   schedule:
-    - cron: "17 22 * * 1-5"   # 22:17 UTC weekdays, after the 21:00 UTC close
+    - cron: "17 22 * * *"     # 22:17 UTC daily: after the US close; Kalshi trades every day
   workflow_dispatch: {}
 
 permissions:

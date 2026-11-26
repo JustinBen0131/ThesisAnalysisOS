@@ -12,8 +12,7 @@
   "tracks": {
     "core": {
       "hypothesis": "H3: volatility-managed index exposure beats buy-and-hold on NAV per unit",
-      "symbol": "SPY",
-      "price_source": "stooq daily close (spy.us); price-only, dividends not included in either arm",
+      "price_source": "FRED series SP500: S&P 500 index daily close, price only (no dividends in either arm), published about one day late",
       "contribution_usd_per_week": 100.0,
       "target_weight": "min(1, vol_target^2 / realized_var), realized_var = annualized variance of the last 21 daily log returns",
       "vol_target_annual": 0.16,
@@ -23,25 +22,30 @@
       "fill": "orders decided on data through close t fill at the next close seen by a later run",
       "benchmark": "same contributions, always 100% invested, same fills and costs",
       "e_value": "strategy NAV per unit / benchmark NAV per unit",
-      "reject_if": "e-value of the reverse bet (benchmark/strategy) reaches 20, or 10 years pass without the strategy reaching 20"
+      "reject_if": "e-value of the reverse bet (benchmark/strategy) reaches 20, or 10 years pass without the strategy reaching 20",
+      "fred_series": "SP500"
     },
     "kalshi": {
       "hypothesis": "H1: resting maker bids on the favorite side of Kalshi contracts earn positive net returns",
       "eligible": {
-        "favorite_ask_min": 0.80,
+        "favorite_ask_min": 0.8,
         "favorite_ask_max": 0.95,
+        "max_spread_cents": 5,
         "days_to_close_min": 1,
-        "days_to_close_max": 30
+        "days_to_close_max": 7,
+        "exclude_multivariate_combos": true
       },
       "order": {
         "price": "best bid on the favorite side + 1 cent, if still below the ask",
         "contracts": 10,
-        "max_new_per_run": 50,
+        "max_new_per_run": 100,
         "max_open": 500,
         "one_order_per_market": true,
+        "one_order_per_event": true,
+        "selection": "earliest close time first, then ticker",
         "expire_hours": 24
       },
-      "fill_rule": "filled only if a later trade prints strictly through our price on our side (queue position assumed last)",
+      "fill_rule": "filled only if a trade prints strictly through our price on our side between placement and expiry (queue position assumed last)",
       "fee": "maker fee ceil(0.0175 * C * P * (1-P)) in cents per order, charged as if maker fees apply to every series",
       "settlement": "pay 1 dollar per contract if the market result equals our side; voided markets refund cost and fee",
       "e_value": "product over settlement batches of mean_i (1 + lambda * (Y_i / q_eff_i - 1)), q_eff = price + fee per contract",
@@ -49,5 +53,17 @@
       "batching_reason": "averaging within a batch keeps the factor's expectation at most 1 under the null whatever the dependence between contracts",
       "reject_if": "after 3,000 settled filled contracts the 95% CI of net return per dollar lies below +0.5 cents, or 18 months pass without e-value 20"
     }
-  }
+  },
+  "amendments": [
+    {
+      "date": "2026-11-26",
+      "before_first_live_run": true,
+      "outcome_data_read": false,
+      "changes": [
+        "core prices from FRED SP500 instead of stooq SPY",
+        "kalshi: spread at most 5 cents; one order per event; multivariate combos excluded; 1-7 days to close instead of 1-30; up to 100 new orders per run; fills counted only inside the order's 24-hour life"
+      ],
+      "reason": "stooq resets connections from this environment; the first live market scan showed parlay combos and favorites quoted as wide as 6c bid / 94c ask, where 'bid + 1 cent' is a deep bid filled mainly when the outcome is already decided against it, not the favorite-side maker the hypothesis describes; a full 1-30 day scan exceeded 60,000 markets per run"
+    }
+  ]
 }

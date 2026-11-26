@@ -20,11 +20,7 @@ CORE = {
     "rebalance_band": 0.05,
     "cost_bps_per_side": 5.0,
 }
-KALSHI = {
-    "eligible": {"favorite_ask_min": 0.80, "favorite_ask_max": 0.95, "days_to_close_min": 1, "days_to_close_max": 30},
-    "order": {"contracts": 10, "max_new_per_run": 50, "max_open": 500, "expire_hours": 24},
-    "lambda": 0.5,
-}
+KALSHI = json.loads((Path(__file__).resolve().parents[1] / "registration.json").read_text())["tracks"]["kalshi"]
 NOW = 1_800_000_000.0  # 2027-01-15
 
 
@@ -46,7 +42,7 @@ class FakeSource:
     def __init__(self, markets=(), market_info=None, trades=None):
         self.markets, self.info, self.tr = list(markets), dict(market_info or {}), dict(trades or {})
 
-    def open_markets(self, max_pages=20):
+    def open_markets(self, min_close_ts=0, max_close_ts=0, max_pages=200):
         return self.markets
 
     def market(self, ticker):
@@ -176,9 +172,23 @@ class KalshiTrack(unittest.TestCase):
         self.assertEqual((no_side["side"], no_side["price_c"], no_side["ask_c"]), ("no", 87.0, 90.0))
         self.assertIsNone(kalshi_maker.candidate(market("C", 84, 85, NOW + 5 * day), NOW, KALSHI))   # no room under the ask
         self.assertIsNone(kalshi_maker.candidate(market("D", 50, 52, NOW + 5 * day), NOW, KALSHI))   # not a favorite
-        self.assertIsNone(kalshi_maker.candidate(market("E", 84, 87, NOW + 40 * day), NOW, KALSHI))  # too far out
-        dollars = {"ticker": "F", "yes_bid_dollars": "0.8400", "yes_ask_dollars": "0.8700", "close_time": iso(NOW + 5 * day)}
+        self.assertIsNone(kalshi_maker.candidate(market("E", 84, 87, NOW + 10 * day), NOW, KALSHI))  # beyond 7 days
+        self.assertIsNone(kalshi_maker.candidate(market("G", 6, 94, NOW + 5 * day), NOW, KALSHI))    # spread 88c: not a maker quote
+        self.assertIsNone(kalshi_maker.candidate(market("H", 84, 87, NOW + 5 * day, mve_collection_ticker="KXMVE-X"), NOW, KALSHI))
+        dollars = {"ticker": "F", "yes_bid_dollars": "0.8400", "yes_ask_dollars": "0.8700", "yes_bid": None, "close_time": iso(NOW + 5 * day)}
         self.assertEqual(kalshi_maker.candidate(dollars, NOW, KALSHI)["price_c"], 85.0)
+
+    def test_one_order_per_event_and_only_trades_inside_the_order_life_count(self):
+        day = 86400.0
+        src = FakeSource(markets=[market("A1", 84, 87, NOW + 3 * day, event_ticker="EV"), market("A2", 85, 88, NOW + 3 * day, event_ticker="EV")])
+        state = {}
+        kalshi_maker.step(state, src, NOW, KALSHI, halted=False)
+        self.assertEqual(list(state["orders"]), ["A1"])
+        src.markets = []
+        src.tr = {"A1": [{"ts": int(NOW + 25 * 3600), "yes_price": 80}]}   # after the 24-hour life
+        kalshi_maker.step(state, src, NOW + 30 * 3600, KALSHI, halted=False)
+        self.assertEqual(state["orders"], {})
+        self.assertEqual(state["positions"], {})
 
     def test_fill_needs_a_trade_strictly_through_our_price(self):
         self.assertIsNone(kalshi_maker.filled_by([{"ts": 1, "yes_price": 85}], "yes", 85.0))
@@ -230,11 +240,11 @@ class EndToEnd(unittest.TestCase):
     def test_two_runs_then_verify_and_tamper(self):
         days = business_days("2026-10-01", 40)
         closes = [{"date": d, "close": 600.0 + i} for i, d in enumerate(days)]
-        (self.fx / "closes_spy_us.json").write_text(json.dumps(closes[:-1]))
+        (self.fx / "closes_SP500.json").write_text(json.dumps(closes[:-1]))
         (self.fx / "markets.json").write_text(json.dumps([market("A", 84, 87, NOW + 86400 * 3)]))
         code, out = self.run_cli("run", "--book", str(self.book), "--fixtures", str(self.fx), "--now", iso(NOW))
         self.assertEqual(code, 0, out)
-        (self.fx / "closes_spy_us.json").write_text(json.dumps(closes))
+        (self.fx / "closes_SP500.json").write_text(json.dumps(closes))
         code, out = self.run_cli("run", "--book", str(self.book), "--fixtures", str(self.fx), "--now", iso(NOW + 3600))
         self.assertEqual(code, 0, out)
         self.assertIn("E-value", out)
