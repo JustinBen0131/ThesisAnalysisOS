@@ -1,0 +1,53 @@
+{
+  "registration": "QAOS-PAPER-1",
+  "registered": "2026-11-26",
+  "authority": "Paper only. No live orders, transfers, borrowing or commitments. Any real-money step is the human's decision.",
+  "charter": "quantAnalysisOS/docs/FOUNDATIONS.md",
+  "evidence": {
+    "kind": "test supermartingale, Ville's inequality",
+    "pass_at": 20.0,
+    "alpha": 0.05,
+    "note": "The account may be checked at any time; peeking does not inflate the false-positive rate."
+  },
+  "tracks": {
+    "core": {
+      "hypothesis": "H3: volatility-managed index exposure beats buy-and-hold on NAV per unit",
+      "symbol": "SPY",
+      "price_source": "stooq daily close (spy.us); price-only, dividends not included in either arm",
+      "contribution_usd_per_week": 100.0,
+      "target_weight": "min(1, vol_target^2 / realized_var), realized_var = annualized variance of the last 21 daily log returns",
+      "vol_target_annual": 0.16,
+      "variance_window_days": 21,
+      "rebalance_band": 0.05,
+      "cost_bps_per_side": 5.0,
+      "fill": "orders decided on data through close t fill at the next close seen by a later run",
+      "benchmark": "same contributions, always 100% invested, same fills and costs",
+      "e_value": "strategy NAV per unit / benchmark NAV per unit",
+      "reject_if": "e-value of the reverse bet (benchmark/strategy) reaches 20, or 10 years pass without the strategy reaching 20"
+    },
+    "kalshi": {
+      "hypothesis": "H1: resting maker bids on the favorite side of Kalshi contracts earn positive net returns",
+      "eligible": {
+        "favorite_ask_min": 0.80,
+        "favorite_ask_max": 0.95,
+        "days_to_close_min": 1,
+        "days_to_close_max": 30
+      },
+      "order": {
+        "price": "best bid on the favorite side + 1 cent, if still below the ask",
+        "contracts": 10,
+        "max_new_per_run": 50,
+        "max_open": 500,
+        "one_order_per_market": true,
+        "expire_hours": 24
+      },
+      "fill_rule": "filled only if a later trade prints strictly through our price on our side (queue position assumed last)",
+      "fee": "maker fee ceil(0.0175 * C * P * (1-P)) in cents per order, charged as if maker fees apply to every series",
+      "settlement": "pay 1 dollar per contract if the market result equals our side; voided markets refund cost and fee",
+      "e_value": "product over settlement batches of mean_i (1 + lambda * (Y_i / q_eff_i - 1)), q_eff = price + fee per contract",
+      "lambda": 0.5,
+      "batching_reason": "averaging within a batch keeps the factor's expectation at most 1 under the null whatever the dependence between contracts",
+      "reject_if": "after 3,000 settled filled contracts the 95% CI of net return per dollar lies below +0.5 cents, or 18 months pass without e-value 20"
+    }
+  }
+}

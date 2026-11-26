@@ -1,0 +1,56 @@
+name: paperbot
+
+# Paper only. Runs the pre-registered QAOS-PAPER-1 strategies once a day after the
+# US close and commits the hash-chained book to the `paperbot-book` branch.
+# There is no broker client and no secret in this job.
+
+on:
+  schedule:
+    - cron: "17 22 * * 1-5"   # 22:17 UTC weekdays, after the 21:00 UTC close
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: paperbot
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Open the book branch
+        run: |
+          if git ls-remote --exit-code --heads origin paperbot-book >/dev/null; then
+            git fetch --depth=1 origin paperbot-book
+            git worktree add -B paperbot-book book origin/paperbot-book
+          else
+            git worktree add --orphan -b paperbot-book book
+          fi
+
+      - name: Test
+        working-directory: quantAnalysisOS
+        run: python3 -B -m unittest paperbot.tests.test_paperbot
+
+      - name: Run one cycle
+        working-directory: quantAnalysisOS
+        run: |
+          python3 -B -m paperbot run --book "$GITHUB_WORKSPACE/book/paperbook"
+          python3 -B -m paperbot verify --book "$GITHUB_WORKSPACE/book/paperbook"
+
+      - name: Commit the book
+        working-directory: book
+        run: |
+          git add -A
+          if git diff --cached --quiet; then echo "nothing new"; exit 0; fi
+          git -c user.name="paperbot" -c user.email="paperbot@users.noreply.github.com" \
+            commit -q -m "Paper book $(date -u +%Y-%m-%d)"
+          git push origin paperbot-book
